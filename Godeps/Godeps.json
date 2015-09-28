@@ -389,72 +389,72 @@
 		{
 			"ImportPath": "github.com/spf13/hugo/bufferpool",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/commands",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/create",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/helpers",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/hugofs",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/hugolib",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/livereload",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/parser",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/source",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/target",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/tpl",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/transform",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/utils",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/hugo/watcher",
 			"Comment": "v0.14-237-g365f776",
-			"Rev": "365f776df07d5a7de011f62a99c5cc633b2bc515"
+			"Rev": "2848e728a89ed159fecad7f0e0e2e147696802f9"
 		},
 		{
 			"ImportPath": "github.com/spf13/jwalterweatherman",

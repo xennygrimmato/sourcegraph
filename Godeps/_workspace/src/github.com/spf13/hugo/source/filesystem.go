@@ -107,6 +107,9 @@ func (f *Filesystem) captureFiles() {
 	vfs := WalkableAferoFS{hugofs.SourceFs}
 	w := fs.WalkFS(f.Base, vfs)
 	for w.Step() {
+		if w.Err() != nil {
+			continue
+		}
 		switch {
 		case w.Stat().IsDir():
 			if f.avoid(w.Path()) || isNonProcessablePath(w.Path()) {
