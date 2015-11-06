@@ -110,6 +110,7 @@ func (f *Filesystem) captureFiles() {
 		if w.Err() != nil {
 			continue
 		}
+
 		switch {
 		case w.Stat().IsDir():
 			if f.avoid(w.Path()) || isNonProcessablePath(w.Path()) {
