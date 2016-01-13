@@ -1,3 +1,7 @@
+# 0.11.8
+
+- Update to Go 1.5.3.
+
 # 0.11.7
 
 - Improve the process of running a Sourcegraph server in Docker. The
