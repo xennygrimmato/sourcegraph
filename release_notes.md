@@ -1,5 +1,10 @@
 # dev
 
+# 0.11.5
+
+- Add a section block to the install script in app/downloads.go. The
+  src serve command was failing without it.
+
 # 0.11.4
 
 - Improve git event parser to be significantly faster and correct for large git pushes.
