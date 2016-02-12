@@ -1,5 +1,15 @@
 # dev
 
+# 0.13.5
+
+- Optimized update query for build tasks to match the existing index.
+
+# 0.13.4
+
+# 0.13.3
+
+# 0.13.2
+
 - Removed the config option `--restrict-write-access`/`RestrictWriteAccess`.
   This flag would limit write access to admin users only. This is no longer
   necessary now that our ACL model includes write access.
