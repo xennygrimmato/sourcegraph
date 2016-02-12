@@ -1,5 +1,9 @@
 # dev
 
+# 0.13.6
+
+- Fixed output of build logs that rely on papertrail.
+
 # 0.13.5
 
 - Optimized update query for build tasks to match the existing index.
