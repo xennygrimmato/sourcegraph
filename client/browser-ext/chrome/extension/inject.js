@@ -184,9 +184,6 @@ class InjectApp extends React.Component {
 		this.props.actions.setRepoRev(repo, rev);
 		this.props.actions.setDefPath(defPath);
 		this.props.actions.setPath(path);
-		if (repo && defPath) {
-			this.props.actions.getDef(repo, rev, defPath);
-		}
 		if (repo && rev && this.supportsAnnotatingFile(path)) {
 			this.props.actions.getAnnotations(repo, rev, path);
 		}
