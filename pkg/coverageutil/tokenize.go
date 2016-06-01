@@ -3,6 +3,7 @@
 package coverageutil
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -15,6 +16,10 @@ type Token struct {
 	Line int
 	// Token text
 	Text string
+}
+
+func (t Token) String() string {
+	return fmt.Sprintf("(%d '%s')", t.Offset, t.Text)
 }
 
 // Tokenizer produces tokens from source code.
