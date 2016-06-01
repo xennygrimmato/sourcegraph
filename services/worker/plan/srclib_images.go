@@ -29,6 +29,9 @@ func versionHash(image string) (string, error) {
 
 func SrclibVersion(lang string) (string, error) {
 	switch lang {
+	case "Bash":
+		// TODO(mate): create a droneSrclibBashImage before enabling in prod
+		return "", nil
 	case "Go":
 		return versionHash(droneSrclibGoImage)
 	case "JavaScript":
