@@ -15,7 +15,7 @@ func TestYAML(testing *testing.T) {
 		{
 			"language: go",
 			"language: go",
-			[]Token{{0, ""}, {0, "language"}, {10, "go"}},
+			[]Token{{0, 1, ""}, {0, 1, "language"}, {10, 1, "go"}},
 		},
 	}
 	tokenizer := &yamlTokenizer{}

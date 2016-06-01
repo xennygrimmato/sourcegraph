@@ -8,6 +8,7 @@ import (
 type yamlTokenizer struct {
 	values     []string
 	startBytes []int
+	line       []int
 	pointer    int
 }
 
@@ -27,6 +28,7 @@ func (s *yamlTokenizer) Init(src []byte) {
 	getLineAndColumn(tokenList, string(src), out)
 	for i, _ := range out.value {
 		start, _, value := findOffsets(string(src), out.line[i], out.column[i], out.value[i])
+		s.line = append(s.line, out.line[i])
 		s.values = append(s.values, value)
 		s.startBytes = append(s.startBytes, start)
 	}
@@ -42,6 +44,7 @@ func (s *yamlTokenizer) Next() *Token {
 	out := &Token{}
 	out.Offset = uint32(s.startBytes[s.pointer])
 	out.Text = s.values[s.pointer]
+	out.Line = s.line[s.pointer]
 	s.pointer++
 	fmt.Println(out)
 
