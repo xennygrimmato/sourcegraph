@@ -312,7 +312,7 @@ func (g *globalRefs) Update(ctx context.Context, op *sourcegraph.DefsRefreshInde
 
 func (g *globalRefs) update(ctx context.Context, tx gorp.SqlExecutor, op *sourcegraph.DefsRefreshIndexOp) error {
 	repo := op.Repo
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalRefs.Update", repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalRefs.Update", 0, repo); err != nil {
 		return err
 	}
 

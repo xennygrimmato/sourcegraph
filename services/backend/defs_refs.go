@@ -40,7 +40,7 @@ func (s *defs) ListRefs(ctx context.Context, op *sourcegraph.DefsListRefsOp) (*s
 	default:
 		return nil, grpc.Errorf(codes.InvalidArgument, "ListRefs: CommitID must be specified")
 	}
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.ListRefs", repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.ListRefs", 0, repo); err != nil {
 		return nil, err
 	}
 

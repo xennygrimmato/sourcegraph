@@ -312,13 +312,13 @@ message ResolvedRev {
 }
 
 message ReceivePackOp {
-	string repo = 1;
+	int32 repo = 1;
 	bytes data = 3;
 	bool advertiseRefs = 4;
 }
 
 message UploadPackOp {
-	string repo = 1;
+	int32 repo = 1;
 	bytes data = 3;
 	bool advertiseRefs = 4;
 }
@@ -411,7 +411,7 @@ message ReposCreateOp {
 // ReposUpdateOp is an operation to update a repository's metadata.
 message ReposUpdateOp {
 	// Repo is the repository to update.
-	string Repo = 1;
+	int32 Repo = 1;
 
 	// Description is the new description of the repository. If empty,
 	// the description is not changed.

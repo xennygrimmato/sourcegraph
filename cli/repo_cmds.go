@@ -300,8 +300,13 @@ type repoUpdateCmd struct {
 func (c *repoUpdateCmd) Execute(args []string) error {
 	cl := cliClient
 
+	repo0, err := cl.Repos.Get(cliContext, &sourcegraph.RepoSpec{URI: c.Args.URI})
+	if err != nil {
+		return err
+	}
+
 	repo, err := cl.Repos.Update(cliContext, &sourcegraph.ReposUpdateOp{
-		Repo:        c.Args.URI,
+		Repo:        repo0.ID,
 		Description: c.Description,
 		Language:    c.Language,
 	})

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"gopkg.in/inconshreveable/log15.v2"
 
 	"github.com/gorilla/mux"
@@ -71,6 +73,10 @@ func trimGitService(name string) string {
 func serveInfoRefs(w http.ResponseWriter, r *http.Request) error {
 	ctx := httpctx.FromRequest(r)
 	repo := routevar.ToRepo(mux.Vars(r))
+	repoID, err := getRepoID(ctx, repo)
+	if err != nil {
+		return err
+	}
 
 	service := trimGitService(r.URL.Query().Get("service"))
 
@@ -84,7 +90,7 @@ func serveInfoRefs(w http.ResponseWriter, r *http.Request) error {
 	case "receive-pack":
 		var err error
 		pkt, err = c.ReceivePack(ctx, &sourcegraph.ReceivePackOp{
-			Repo:          repo,
+			Repo:          repoID,
 			AdvertiseRefs: true,
 		})
 		if err != nil {
@@ -93,7 +99,7 @@ func serveInfoRefs(w http.ResponseWriter, r *http.Request) error {
 	case "upload-pack":
 		var err error
 		pkt, err = c.UploadPack(ctx, &sourcegraph.UploadPackOp{
-			Repo:          repo,
+			Repo:          repoID,
 			AdvertiseRefs: true,
 		})
 		if err != nil {
@@ -116,6 +122,10 @@ func serveReceivePack(w http.ResponseWriter, r *http.Request) error {
 	ctx := httpctx.FromRequest(r)
 
 	repo := routevar.ToRepo(mux.Vars(r))
+	repoID, err := getRepoID(ctx, repo)
+	if err != nil {
+		return err
+	}
 
 	body, err := readBody(r.Body, r.Header.Get("content-encoding"))
 	if err != nil {
@@ -127,7 +137,7 @@ func serveReceivePack(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	pkt, err := c.ReceivePack(ctx, &sourcegraph.ReceivePackOp{
-		Repo: repo,
+		Repo: repoID,
 		Data: body,
 	})
 	if err != nil {
@@ -144,6 +154,10 @@ func serveUploadPack(w http.ResponseWriter, r *http.Request) error {
 	ctx := httpctx.FromRequest(r)
 
 	repo := routevar.ToRepo(mux.Vars(r))
+	repoID, err := getRepoID(ctx, repo)
+	if err != nil {
+		return err
+	}
 
 	body, err := readBody(r.Body, r.Header.Get("content-encoding"))
 	if err != nil {
@@ -155,7 +169,7 @@ func serveUploadPack(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	pkt, err := c.UploadPack(ctx, &sourcegraph.UploadPackOp{
-		Repo: repo,
+		Repo: repoID,
 		Data: body,
 	})
 	if err != nil {
@@ -166,6 +180,18 @@ func serveUploadPack(w http.ResponseWriter, r *http.Request) error {
 	noCache(w)
 	_, err = w.Write(pkt.Data)
 	return err
+}
+
+func getRepoID(ctx context.Context, repoPath string) (int32, error) {
+	c, err := client(ctx)
+	if err != nil {
+		return 0, err
+	}
+	repo, err := c.Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+	if err != nil {
+		return 0, err
+	}
+	return repo.ID, nil
 }
 
 func noCache(w http.ResponseWriter) {

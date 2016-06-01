@@ -1,14 +1,41 @@
 package accesscontrol
 
 import (
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/ext/github"
 )
+
+// getRepoIDAndURI performs the necessary lookups to obtain both the
+// repo URI (string) and ID (int32).
+func getRepoIDAndURI(ctx context.Context, repoID int32, repoURI string) (int32, string, error) {
+	var repoObj *sourcegraph.Repo
+	var err error
+	if repoURI == "" && repoID != 0 {
+		repoObj, err = store.ReposFromContext(ctx).Get(ctx, repoID)
+	} else if repoID == 0 && repoURI != "" {
+		repoObj, err = store.ReposFromContext(ctx).GetByURI(ctx, repoURI)
+	}
+	if err != nil {
+		return 0, "", err
+	}
+	if repoObj != nil {
+		if repoURI == "" {
+			repoURI = repoObj.URI
+		}
+		if repoID == 0 {
+			repoID = repoObj.ID
+		}
+	}
+	return repoID, repoURI, nil
+}
 
 // VerifyUserHasReadAccess checks if the user in the current context
 // is authorized to make write requests to this server.
@@ -17,8 +44,8 @@ import (
 // and returns a non-nil error when access cannot be granted.
 // If the cmdline flag auth.restrict-write-access is set, this method
 // will check if the authenticated user has admin privileges.
-func VerifyUserHasReadAccess(ctx context.Context, method, repo string) error {
-	return VerifyActorHasReadAccess(ctx, auth.ActorFromContext(ctx), method, repo)
+func VerifyUserHasReadAccess(ctx context.Context, method string, repoID int32, repoURI string) error {
+	return VerifyActorHasReadAccess(ctx, auth.ActorFromContext(ctx), method, repoID, repoURI)
 }
 
 // VerifyUserHasWriteAccess checks if the user in the current context
@@ -28,8 +55,8 @@ func VerifyUserHasReadAccess(ctx context.Context, method, repo string) error {
 // and returns a non-nil error when access cannot be granted.
 // If the cmdline flag auth.restrict-write-access is set, this method
 // will check if the authenticated user has admin privileges.
-func VerifyUserHasWriteAccess(ctx context.Context, method, repo string) error {
-	return VerifyActorHasWriteAccess(ctx, auth.ActorFromContext(ctx), method, repo)
+func VerifyUserHasWriteAccess(ctx context.Context, method string, repoID int32, repoURI string) error {
+	return VerifyActorHasWriteAccess(ctx, auth.ActorFromContext(ctx), method, repoID, repoURI)
 }
 
 // VerifyUserHasWriteAccess checks if the user in the current context
@@ -67,14 +94,19 @@ func VerifyClientSelfOrAdmin(ctx context.Context, method string, clientID string
 // all other cases, VerifyUserHasWriteAccess or
 // VerifyUserHasAdminAccess should be used to authorize a user for
 // gRPC operations.
-func VerifyActorHasReadAccess(ctx context.Context, actor auth.Actor, method, repo string) error {
+func VerifyActorHasReadAccess(ctx context.Context, actor auth.Actor, method string, repoID int32, repoURI string) error {
+	repoID, repoURI, err := getRepoIDAndURI(ctx, repoID, repoURI)
+	if err != nil {
+		return err
+	}
+
 	// TODO: move to a security model that is more robust, readable, has better separation
 	// when dealing with multiple configurations, actor types, resource types and actions.
 	//
 	// Delegate permissions check to GitHub for GitHub mirrored repos.
-	if strings.HasPrefix(strings.ToLower(repo), "github.com/") {
-		if !VerifyScopeHasAccess(ctx, actor.Scope, method, repo) {
-			_, err := (&github.Repos{}).Get(ctx, repo)
+	if strings.HasPrefix(strings.ToLower(repoURI), "github.com/") {
+		if !VerifyScopeHasAccess(ctx, actor.Scope, method, repoID) {
+			_, err := (&github.Repos{}).Get(ctx, repoURI)
 			if err != nil {
 				// We don't know if the error is unauthenticated or unauthorized, so return unauthenticated
 				// so that git clients will try again, providing authentication information.
@@ -95,12 +127,17 @@ func VerifyActorHasReadAccess(ctx context.Context, actor auth.Actor, method, rep
 // outside the scope of gRPC requests to verify user permissions. For
 // all other cases, VerifyUserHasWriteAccess should be used to
 // authorize a user for gRPC operations.
-func VerifyActorHasWriteAccess(ctx context.Context, actor auth.Actor, method, repo string) error {
+func VerifyActorHasWriteAccess(ctx context.Context, actor auth.Actor, method string, repoID int32, repoURI string) error {
 	// TODO: redesign the permissions model to avoid short-circuited "return nil"s.
 	// (because it makes modifying authorization logic more error-prone.)
 
+	repoID, repoURI, err := getRepoIDAndURI(ctx, repoID, repoURI)
+	if err != nil {
+		return err
+	}
+
 	if !actor.IsAuthenticated() {
-		if VerifyScopeHasAccess(ctx, actor.Scope, method, repo) {
+		if VerifyScopeHasAccess(ctx, actor.Scope, method, repoID) {
 			return nil
 		}
 		return grpc.Errorf(codes.Unauthenticated, "write operation (%s) denied: not authenticated", method)
@@ -121,9 +158,9 @@ func VerifyActorHasWriteAccess(ctx context.Context, actor auth.Actor, method, re
 	// when dealing with multiple configurations, actor types, resource types and actions.
 	//
 	// Delegate permissions check to GitHub for GitHub mirrored repos.
-	if strings.HasPrefix(strings.ToLower(repo), "github.com/") {
-		if !VerifyScopeHasAccess(ctx, actor.Scope, method, repo) {
-			_, err := (&github.Repos{}).Get(ctx, repo)
+	if strings.HasPrefix(strings.ToLower(repoURI), "github.com/") {
+		if !VerifyScopeHasAccess(ctx, actor.Scope, method, repoID) {
+			_, err := (&github.Repos{}).Get(ctx, repoURI)
 			if err != nil {
 				// We don't know if the error is unauthenticated or unauthorized, so return unauthenticated
 				// so that git clients will try again, providing authentication information.
@@ -145,7 +182,7 @@ func VerifyActorHasWriteAccess(ctx context.Context, actor auth.Actor, method, re
 // authorize a user for gRPC operations.
 func VerifyActorHasAdminAccess(ctx context.Context, actor auth.Actor, method string) error {
 	if !actor.IsAuthenticated() {
-		if VerifyScopeHasAccess(ctx, actor.Scope, method, "") {
+		if VerifyScopeHasAccess(ctx, actor.Scope, method, 0) {
 			return nil
 		}
 		return grpc.Errorf(codes.Unauthenticated, "admin operation (%s) denied: not authenticated", method)
@@ -169,7 +206,7 @@ func VerifyActorHasAdminAccess(ctx context.Context, actor auth.Actor, method str
 // context. To avoid additional latency from expensive public key
 // operations, that check is not repeated here, but be careful
 // about refactoring that check.
-func VerifyScopeHasAccess(ctx context.Context, scopes map[string]bool, method, repoURI string) bool {
+func VerifyScopeHasAccess(ctx context.Context, scopes map[string]bool, method string, repo int32) bool {
 	if scopes == nil {
 		return false
 	}
@@ -183,8 +220,11 @@ func VerifyScopeHasAccess(ctx context.Context, scopes map[string]bool, method, r
 			return true
 
 		case strings.HasPrefix(scope, "repo:"):
-			repo := strings.TrimPrefix(scope, "repo:")
-			if repo == repoURI {
+			scopeRepo, err := strconv.Atoi(strings.TrimPrefix(scope, "repo:"))
+			if err != nil {
+				return false
+			}
+			if repo != 0 && int32(scopeRepo) == repo {
 				return true
 			}
 		}

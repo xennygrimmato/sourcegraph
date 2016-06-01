@@ -20,7 +20,7 @@ var Graph pb.MultiRepoImporterServer = &graph_{}
 type graph_ struct{}
 
 func (s *graph_) Import(ctx context.Context, op *pb.ImportOp) (*pbtypes.Void, error) {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Graph.Import", op.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Graph.Import", 0, op.Repo); err != nil {
 		return nil, err
 	}
 
@@ -77,14 +77,14 @@ func (s *graph_) Import(ctx context.Context, op *pb.ImportOp) (*pbtypes.Void, er
 }
 
 func (s *graph_) Index(ctx context.Context, op *pb.IndexOp) (*pbtypes.Void, error) {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Graph.Index", op.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Graph.Index", 0, op.Repo); err != nil {
 		return nil, err
 	}
 	return pb.Server(store.GraphFromContext(ctx)).Index(ctx, op)
 }
 
 func (s *graph_) CreateVersion(ctx context.Context, op *pb.CreateVersionOp) (*pbtypes.Void, error) {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Graph.CreateVersion", op.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Graph.CreateVersion", 0, op.Repo); err != nil {
 		return nil, err
 	}
 	return pb.Server(store.GraphFromContext(ctx)).CreateVersion(ctx, op)

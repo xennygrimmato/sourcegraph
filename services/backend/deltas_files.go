@@ -17,6 +17,7 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
+	"sourcegraph.com/sourcegraph/sourcegraph/services/svc"
 )
 
 func (s *deltas) ListFiles(ctx context.Context, op *sourcegraph.DeltasListFilesOp) (*sourcegraph.DeltaFiles, error) {
@@ -27,10 +28,10 @@ func (s *deltas) ListFiles(ctx context.Context, op *sourcegraph.DeltasListFilesO
 	// MUST remove the code below that satisfies this request from the
 	// cache, since we can't be sure that the user is authorized to
 	// view the result.
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.ListFiles", ds.Base.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.ListFiles", 0, ds.Base.Repo); err != nil {
 		return nil, err
 	}
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.ListFiles", ds.Head.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.ListFiles", 0, ds.Head.Repo); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +104,12 @@ func (s *deltas) diff(ctx context.Context, ds sourcegraph.DeltaSpec) ([]*diff.Fi
 	}
 	ds = delta.DeltaSpec()
 
-	baseVCSRepo, err := store.RepoVCSFromContext(ctx).Open(ctx, delta.Base.Repo)
+	baseRepo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{URI: ds.Base.Repo})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	baseVCSRepo, err := store.RepoVCSFromContext(ctx).Open(ctx, baseRepo.ID)
 	if err != nil {
 		return nil, nil, err
 	}

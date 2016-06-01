@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 )
 
 func logStr(e *sourcegraph.LogEntries) string { return strings.Join(e.Entries, "\n") }
@@ -31,6 +32,7 @@ func init() {
 
 func TestBuildLogs_Get_noErrorIfNotExist(t *testing.T) {
 	ctx := context.Background()
+	ctx = store.WithRepos(ctx, &repos{})
 
 	s := &buildLogs{}
 	e, err := s.Get(ctx, task, "", time.Time{}, time.Time{})

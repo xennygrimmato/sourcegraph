@@ -50,7 +50,14 @@ func (g *gitHookListener) Start(ctx context.Context) {
 	events.Subscribe(events.GitCreateBranchEvent, inventoryCallback)
 }
 
-func notifyGitEvent(ctx context.Context, id events.EventID, payload events.GitPayload) {
+func notifyGitEvent(ctx context.Context, id events.EventID, _ events.GitPayload) {
+	log15.Info("notifyGitEvent temporarily disabled during repo URI -> ID transition (payload has no URI)")
+	payload := struct {
+		Repo string // dummy
+		events.GitPayload
+	}{}
+	return
+
 	cl, err := sourcegraph.NewClientFromContext(ctx)
 	if err != nil {
 		log15.Warn("postPushHook error", "error", err)
@@ -131,7 +138,14 @@ func notifyGitEvent(ctx context.Context, id events.EventID, payload events.GitPa
 	cl.Notify.GenericEvent(ctx, &notifyEvent)
 }
 
-func buildHook(ctx context.Context, id events.EventID, payload events.GitPayload) {
+func buildHook(ctx context.Context, id events.EventID, _ events.GitPayload) {
+	log15.Info("buildHook temporarily disabled during repo URI -> ID transition (payload has no URI)")
+	payload := struct {
+		Repo string // dummy
+		events.GitPayload
+	}{}
+	return
+
 	cl, err := sourcegraph.NewClientFromContext(ctx)
 	if err != nil {
 		log15.Error("postPushHook: failed to create build", "err", err)
@@ -165,7 +179,14 @@ func buildHook(ctx context.Context, id events.EventID, payload events.GitPayload
 // the repo's Language field for default branch pushes). Then it is
 // available immediately for future callers (which generally expect
 // that operation to be fast).
-func inventoryHook(ctx context.Context, id events.EventID, payload events.GitPayload) {
+func inventoryHook(ctx context.Context, id events.EventID, _ events.GitPayload) {
+	log15.Info("inventoryHook temporarily disabled during repo URI -> ID transition (payload has no URI)")
+	payload := struct {
+		Repo string // dummy
+		events.GitPayload
+	}{}
+	return
+
 	cl, err := sourcegraph.NewClientFromContext(ctx)
 	if err != nil {
 		log15.Error("inventoryHook error", "err", err)
@@ -190,7 +211,7 @@ func inventoryHook(ctx context.Context, id events.EventID, payload events.GitPay
 		}
 		if event.Branch == repo.DefaultBranch {
 			lang := inv.PrimaryProgrammingLanguage()
-			if _, err := cl.Repos.Update(ctx, &sourcegraph.ReposUpdateOp{Repo: repo.URI, Language: lang}); err != nil {
+			if _, err := cl.Repos.Update(ctx, &sourcegraph.ReposUpdateOp{Repo: repo.ID, Language: lang}); err != nil {
 				log15.Warn("inventoryHook: call to Repos.Update to set language failed", "err", err, "repoRev", repoRev, "language", lang)
 			}
 		}

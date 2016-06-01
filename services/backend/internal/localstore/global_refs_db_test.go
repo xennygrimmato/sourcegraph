@@ -40,6 +40,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 	ctx, mocks, done := testContext()
 	defer done()
 
+	(&repos{}).mustCreate(ctx, t, &sourcegraph.Repo{URI: "x/y"}, &sourcegraph.Repo{URI: "a/b"})
 	// TODO(keegancsmith) remove once we don't need to speak to the repo
 	// service https://app.asana.com/0/138665145800110/137848642885286
 	mockReposS := &mock.ReposServer{
@@ -288,7 +289,7 @@ func TestGlobalRefsUpdate(t *testing.T) {
 
 	// Update what the latest commit is, that should cause us to index third
 	genRefs("third")
-	mocks.RepoVCS.Open_ = func(ctx context.Context, repo string) (vcs.Repository, error) {
+	mocks.RepoVCS.Open_ = func(ctx context.Context, repo int32) (vcs.Repository, error) {
 		return sgtest.MockRepository{
 			ResolveRevision_: func(spec string) (vcs.CommitID, error) {
 				return "bbbbb", nil
@@ -467,10 +468,10 @@ func mockRefs(mocks *mocks, allRefs map[string][]*graph.Ref) {
 		}
 		return allRefs[repos[0]], nil
 	}
-	mocks.Repos.Get_ = func(ctx context.Context, repo string) (*sourcegraph.Repo, error) {
+	mocks.Repos.Get_ = func(ctx context.Context, repo int32) (*sourcegraph.Repo, error) {
 		return &sourcegraph.Repo{}, nil
 	}
-	mocks.RepoVCS.Open_ = func(ctx context.Context, repo string) (vcs.Repository, error) {
+	mocks.RepoVCS.Open_ = func(ctx context.Context, repo int32) (vcs.Repository, error) {
 		return sgtest.MockRepository{
 			ResolveRevision_: func(spec string) (vcs.CommitID, error) {
 				return "aaaa", nil

@@ -16,7 +16,6 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/events"
-	"sourcegraph.com/sourcegraph/sourcegraph/services/svc"
 )
 
 // emptyGitCommitID is used in githttp.Event objects in the Last (or
@@ -24,7 +23,7 @@ import (
 const emptyGitCommitID = "0000000000000000000000000000000000000000"
 
 func (s *repos) UploadPack(ctx context.Context, op *sourcegraph.UploadPackOp) (*sourcegraph.Packet, error) {
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "GitTransport.UploadPack", op.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "GitTransport.UploadPack", op.Repo, ""); err != nil {
 		// Ignore the error if it is because the repo didn't exist. This comes
 		// about when we are implicitly mirroring repos and the metadata is
 		// not stored in the database. This is only OK for read access.
@@ -85,24 +84,24 @@ func (s *repos) ReceivePack(ctx context.Context, op *sourcegraph.ReceivePackOp) 
 	return &sourcegraph.Packet{Data: data}, nil
 }
 
-func verifyRepoWriteAccess(ctx context.Context, repoPath string) error {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GitTransport.ReceivePack", repoPath); err != nil {
-		return err
-	}
-	repo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+func verifyRepoWriteAccess(ctx context.Context, repoID int32) error {
+	repo, err := store.ReposFromContext(ctx).Get(ctx, repoID)
 	if err != nil {
 		return err
 	}
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GitTransport.ReceivePack", repo.ID, repo.URI); err != nil {
+		return err
+	}
 	if !repo.IsSystemOfRecord() {
-		return grpc.Errorf(codes.FailedPrecondition, "repo is not writeable %v", repoPath)
+		return grpc.Errorf(codes.FailedPrecondition, "repo is not writeable: %s", repo.URI)
 	}
 	return nil
 }
 
-func updateRepoPushedAt(ctx context.Context, repoPath string) error {
+func updateRepoPushedAt(ctx context.Context, repo int32) error {
 	now := time.Now()
 	return store.ReposFromContext(ctx).Update(ctx, store.RepoUpdate{
-		ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: repoPath},
+		ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: repo},
 		PushedAt:      &now,
 		// Note: No need to update the UpdatedAt field, since it
 		// should track significant updates to repo metadata, not just

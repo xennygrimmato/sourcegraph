@@ -16,7 +16,6 @@ import (
 func init() {
 	AppSchema.Map.AddTableWithName(dbRepoStatus{}, "repo_status").SetKeys(false, "Repo", "Rev", "Context")
 	AppSchema.CreateSQL = append(AppSchema.CreateSQL,
-		`ALTER TABLE repo_status ALTER COLUMN repo TYPE citext;`,
 		`ALTER TABLE repo_status ALTER COLUMN description TYPE text;`,
 		`ALTER TABLE repo_status ALTER COLUMN created_at TYPE timestamp with time zone USING updated_at::timestamp with time zone;`,
 		`ALTER TABLE repo_status ALTER COLUMN updated_at TYPE timestamp with time zone USING updated_at::timestamp with time zone;`,
@@ -25,7 +24,7 @@ func init() {
 
 // dbRepoStatus DB-maps a sourcegraph.RepoStatus object.
 type dbRepoStatus struct {
-	Repo        string
+	Repo        int32 `db:"repo_id"`
 	Rev         string
 	State       string
 	TargetURL   string `db:"target_url"`
@@ -43,7 +42,7 @@ type dbFileCoverage struct {
 }
 
 type dbRepoCoverage struct {
-	Repo          string
+	RepoURI       string `db:"repo_uri"`
 	Rev           string
 	Language      string
 	Files         []*dbFileCoverage
@@ -69,9 +68,9 @@ func (r *dbRepoStatus) toRepoStatus() *sourcegraph.RepoStatus {
 	return r2
 }
 
-func (r *dbRepoStatus) fromRepoStatus(repoRev *sourcegraph.RepoRevSpec, r2 *sourcegraph.RepoStatus) {
-	r.Repo = repoRev.Repo
-	r.Rev = repoRev.CommitID
+func (r *dbRepoStatus) fromRepoStatus(repo int32, commitID string, r2 *sourcegraph.RepoStatus) {
+	r.Repo = repo
+	r.Rev = commitID
 	r.State = r2.State
 	r.TargetURL = r2.TargetURL
 	r.Description = r2.Description
@@ -95,19 +94,18 @@ type repoStatuses struct{}
 
 var _ store.RepoStatuses = (*repoStatuses)(nil)
 
-func (s *repoStatuses) GetCombined(ctx context.Context, repoRev sourcegraph.RepoRevSpec) (*sourcegraph.CombinedStatus, error) {
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "RepoStatuses.GetCombined", repoRev.Repo); err != nil {
+func (s *repoStatuses) GetCombined(ctx context.Context, repo int32, commitID string) (*sourcegraph.CombinedStatus, error) {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "RepoStatuses.GetCombined", repo, ""); err != nil {
 		return nil, err
 	}
-	rev := repoRev.CommitID
 
 	var dbRepoStatuses []*dbRepoStatus
-	if _, err := appDBH(ctx).Select(&dbRepoStatuses, `SELECT * FROM repo_status WHERE repo=$1 AND rev=$2 ORDER BY created_at ASC;`, repoRev.Repo, rev); err != nil {
+	if _, err := appDBH(ctx).Select(&dbRepoStatuses, `SELECT * FROM repo_status WHERE repo_id=$1 AND rev=$2 ORDER BY created_at ASC;`, repo, commitID); err != nil {
 		return nil, err
 	}
 	return &sourcegraph.CombinedStatus{
-		Rev:      repoRev.CommitID,
-		CommitID: repoRev.CommitID,
+		Rev:      commitID,
+		CommitID: commitID,
 		Statuses: toRepoStatuses(dbRepoStatuses),
 	}, nil
 }
@@ -150,20 +148,20 @@ func checkCoverageRegression(prev, next *dbRepoCoverage) {
 		slack.PostMessage(slack.PostOpts{
 			Msg: fmt.Sprintf(`Coverage for %s (lang=%s) has regressed.
 Before: refScore(%d), defScore(%d)
-After: refScore(%d), defScore(%d)`, prev.Repo, prev.Language, refScore(ps), defScore(ps), refScore(ns), defScore(ns)),
+After: refScore(%d), defScore(%d)`, prev.RepoURI, prev.Language, refScore(ps), defScore(ps), refScore(ns), defScore(ns)),
 			IconEmoji: ":warning:",
 			Channel:   "global-graph",
 		})
 	}
 }
 
-func (s *repoStatuses) Create(ctx context.Context, repoRev sourcegraph.RepoRevSpec, status *sourcegraph.RepoStatus) error {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "RepoStatuses.Create", repoRev.Repo); err != nil {
+func (s *repoStatuses) Create(ctx context.Context, repo int32, commitID string, status *sourcegraph.RepoStatus) error {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "RepoStatuses.Create", repo, ""); err != nil {
 		return err
 	}
 
 	var dbrs dbRepoStatus
-	dbrs.fromRepoStatus(&repoRev, status)
+	dbrs.fromRepoStatus(repo, commitID, status)
 	if dbrs.CreatedAt.Unix() == 0 {
 		dbrs.CreatedAt = time.Now()
 	}
@@ -179,7 +177,7 @@ func (s *repoStatuses) Create(ctx context.Context, repoRev sourcegraph.RepoRevSp
 			// (roughly one per day, not guaranteed). If a row already exists, prepend
 			// the next coverage stat to the previous.
 			prevStatus := dbRepoStatus{}
-			if err := appDBH(ctx).SelectOne(&prevStatus, `SELECT * FROM repo_status WHERE repo=$1 AND rev=$2 AND context=$3;`, repoRev.Repo, repoRev.CommitID, "coverage"); err != nil {
+			if err := appDBH(ctx).SelectOne(&prevStatus, `SELECT * FROM repo_status WHERE repo_id=$1 AND rev=$2 AND context=$3;`, repo, commitID, "coverage"); err != nil {
 				return err
 			}
 

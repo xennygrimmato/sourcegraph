@@ -201,7 +201,7 @@ func (g *globalDefs) Search(ctx context.Context, op *store.GlobalDefSearchOp) (*
 	// Critical permissions check. DO NOT REMOVE.
 	var results []*sourcegraph.DefSearchResult
 	for _, d := range dbSearchResults {
-		if err := accesscontrol.VerifyUserHasReadAccess(ctx, "GlobalDefs.Search", d.Repo); err != nil {
+		if err := accesscontrol.VerifyUserHasReadAccess(ctx, "GlobalDefs.Search", 0, d.Repo); err != nil {
 			continue
 		}
 		def := fromDBDef(&d.dbGlobalDef)
@@ -216,7 +216,7 @@ func (g *globalDefs) Search(ctx context.Context, op *store.GlobalDefSearchOp) (*
 
 func (g *globalDefs) Update(ctx context.Context, op store.GlobalDefUpdateOp) error {
 	for _, repoUnit := range op.RepoUnits {
-		if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalDefs.Update", repoUnit.Repo); err != nil {
+		if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalDefs.Update", 0, repoUnit.Repo); err != nil {
 			return err
 		}
 	}
@@ -342,7 +342,7 @@ WHERE NOT EXISTS (SELECT * FROM upsert);`
 
 func (g *globalDefs) RefreshRefCounts(ctx context.Context, op store.GlobalDefUpdateOp) error {
 	for _, r := range op.RepoUnits {
-		if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalDefs.RefreshRefCounts", r.Repo); err != nil {
+		if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalDefs.RefreshRefCounts", 0, r.Repo); err != nil {
 			return err
 		}
 	}
@@ -396,15 +396,15 @@ func (g *globalDefs) resolveUnits(ctx context.Context, repoUnits []store.RepoUni
 }
 
 func resolveRevisionDefaultBranch(ctx context.Context, repo string) (string, error) {
-	r, err := store.ReposFromContext(ctx).Get(ctx, repo)
+	repoObj, err := store.ReposFromContext(ctx).GetByURI(ctx, repo)
 	if err != nil {
 		return "", err
 	}
-	vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, repo)
+	vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, repoObj.ID)
 	if err != nil {
 		return "", err
 	}
-	c, err := vcsrepo.ResolveRevision(r.DefaultBranch)
+	c, err := vcsrepo.ResolveRevision(repoObj.DefaultBranch)
 	if err != nil {
 		return "", err
 	}

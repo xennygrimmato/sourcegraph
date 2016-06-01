@@ -65,7 +65,8 @@ func TestDefsService_ListAuthors(t *testing.T) {
 		DefEnd:   20,
 	}})
 	var calledVCSRepoBlameFile bool
-	mock.stores.RepoVCS.MockOpen(t, "r", vcstesting.MockRepository{
+	mock.servers.Repos.MockGet_Return(t, &sourcegraph.Repo{ID: 1, URI: "r"})
+	mock.stores.RepoVCS.MockOpen(t, 1, vcstesting.MockRepository{
 		BlameFile_: func(path string, opt *vcs.BlameOptions) ([]*vcs.Hunk, error) {
 			calledVCSRepoBlameFile = true
 			return []*vcs.Hunk{

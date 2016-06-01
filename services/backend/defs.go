@@ -29,7 +29,7 @@ var _ sourcegraph.DefsServer = (*defs)(nil)
 func (s *defs) Get(ctx context.Context, op *sourcegraph.DefsGetOp) (*sourcegraph.Def, error) {
 	defSpec := op.Def
 
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.Get", defSpec.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.Get", 0, defSpec.Repo); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +115,7 @@ func (s *defs) List(ctx context.Context, opt *sourcegraph.DefListOptions) (*sour
 		opt = &sourcegraph.DefListOptions{}
 	}
 
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.List", ""); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.List", 0, ""); err != nil {
 		return nil, err
 	}
 

@@ -41,6 +41,7 @@ func TestRepos_List(t *testing.T) {
 	var s repos
 	ctx, _, done := testContext()
 	defer done()
+	ctx = store.WithRepos(ctx, &s)
 
 	want := s.mustCreate(ctx, t, &sourcegraph.Repo{URI: "r"})
 
@@ -66,6 +67,7 @@ func TestRepos_List_type(t *testing.T) {
 	var s repos
 	ctx, _, done := testContext()
 	defer done()
+	ctx = store.WithRepos(ctx, &s)
 
 	s.mustCreate(ctx, t, r1, r2)
 
@@ -109,6 +111,7 @@ func TestRepos_List_query(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	// Add some repos.
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "abc/def", Name: "def", DefaultBranch: "master"}); err != nil {
 		t.Fatal(err)
@@ -152,6 +155,7 @@ func TestRepos_List_URIs(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	// Add some repos.
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "a/b", DefaultBranch: "master"}); err != nil {
 		t.Fatal(err)
@@ -209,6 +213,7 @@ func TestRepos_List_GitHubURIs_PublicRepo(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "a/b", DefaultBranch: "master"}); err != nil {
 		t.Fatal(err)
@@ -250,6 +255,7 @@ func TestRepos_List_GitHubURIs_PrivateRepo(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "github.com/private", DefaultBranch: "master", Mirror: true}); err != nil {
 		t.Fatal(err)
@@ -276,6 +282,7 @@ func TestRepos_List_GithubURIs_UnauthenticatedRepo(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "github.com/private", DefaultBranch: "master", Mirror: true}); err != nil {
 		t.Fatal(err)
@@ -441,6 +448,7 @@ func TestRepos_Create(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	tm := time.Now().Round(time.Second)
 	ts := pbtypes.NewTimestamp(tm)
 
@@ -449,7 +457,7 @@ func TestRepos_Create(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo, err := s.Get(ctx, "a/b")
+	repo, err := s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -471,6 +479,7 @@ func TestRepos_Create_dupe(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	tm := time.Now().Round(time.Second)
 	ts := pbtypes.NewTimestamp(tm)
 
@@ -497,12 +506,13 @@ func TestRepos_Update_Description(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	// Add a repo.
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "a/b", DefaultBranch: "master"}); err != nil {
 		t.Fatal(err)
 	}
 
-	repo, err := s.Get(ctx, "a/b")
+	repo, err := s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -510,11 +520,11 @@ func TestRepos_Update_Description(t *testing.T) {
 		t.Errorf("got description %q, want %q", repo.Description, want)
 	}
 
-	if err := s.Update(ctx, store.RepoUpdate{ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: "a/b", Description: "d"}}); err != nil {
+	if err := s.Update(ctx, store.RepoUpdate{ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: repo.ID, Description: "d"}}); err != nil {
 		t.Fatal(err)
 	}
 
-	repo, err = s.Get(ctx, "a/b")
+	repo, err = s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -533,12 +543,13 @@ func TestRepos_Update_UpdatedAt(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	// Add a repo.
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "a/b", DefaultBranch: "master"}); err != nil {
 		t.Fatal(err)
 	}
 
-	repo, err := s.Get(ctx, "a/b")
+	repo, err := s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -548,11 +559,11 @@ func TestRepos_Update_UpdatedAt(t *testing.T) {
 
 	// Perform any update.
 	newTime := time.Unix(123456, 0)
-	if err := s.Update(ctx, store.RepoUpdate{ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: "a/b"}, UpdatedAt: &newTime}); err != nil {
+	if err := s.Update(ctx, store.RepoUpdate{ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: repo.ID}, UpdatedAt: &newTime}); err != nil {
 		t.Fatal(err)
 	}
 
-	repo, err = s.Get(ctx, "a/b")
+	repo, err = s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -574,12 +585,13 @@ func TestRepos_Update_PushedAt(t *testing.T) {
 	defer done()
 
 	s := &repos{}
+	ctx = store.WithRepos(ctx, s)
 	// Add a repo.
 	if err := s.Create(ctx, &sourcegraph.Repo{URI: "a/b", DefaultBranch: "master"}); err != nil {
 		t.Fatal(err)
 	}
 
-	repo, err := s.Get(ctx, "a/b")
+	repo, err := s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -588,11 +600,11 @@ func TestRepos_Update_PushedAt(t *testing.T) {
 	}
 
 	newTime := time.Unix(123456, 0)
-	if err := s.Update(ctx, store.RepoUpdate{ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: "a/b"}, PushedAt: &newTime}); err != nil {
+	if err := s.Update(ctx, store.RepoUpdate{ReposUpdateOp: &sourcegraph.ReposUpdateOp{Repo: repo.ID}, PushedAt: &newTime}); err != nil {
 		t.Fatal(err)
 	}
 
-	repo, err = s.Get(ctx, "a/b")
+	repo, err = s.GetByURI(ctx, "a/b")
 	if err != nil {
 		t.Fatal(err)
 	}

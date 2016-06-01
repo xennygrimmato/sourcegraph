@@ -27,6 +27,9 @@ type Schema struct {
 	// dropping the DB-mapped tables in this schema.
 	DropSQL []string
 
+	// TableNames is a list of
+	TableNames []string
+
 	// Map is a DbMap without the Db/Dbx set (because a schema can be
 	// used to construct several DB connections).
 	Map *gorp.DbMap

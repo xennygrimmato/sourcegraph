@@ -199,7 +199,7 @@ type builds struct{}
 var _ store.Builds = (*builds)(nil)
 
 func (s *builds) Get(ctx context.Context, buildSpec sourcegraph.BuildSpec) (*sourcegraph.Build, error) {
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.Get", buildSpec.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.Get", 0, buildSpec.Repo); err != nil {
 		return nil, err
 	}
 
@@ -218,7 +218,7 @@ func (s *builds) List(ctx context.Context, opt *sourcegraph.BuildListOptions) ([
 		opt = &sourcegraph.BuildListOptions{}
 	}
 
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.List", opt.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.List", 0, opt.Repo); err != nil {
 		return nil, err
 	}
 
@@ -318,7 +318,7 @@ SELECT b.* FROM builds b
 
 func (s *builds) Create(ctx context.Context, newBuild *sourcegraph.Build) (*sourcegraph.Build, error) {
 	// Allow readers to create builds.
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.Create", newBuild.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.Create", 0, newBuild.Repo); err != nil {
 		return nil, err
 	}
 	var b dbBuild
@@ -347,7 +347,7 @@ func (s *builds) Create(ctx context.Context, newBuild *sourcegraph.Build) (*sour
 }
 
 func (s *builds) Update(ctx context.Context, build sourcegraph.BuildSpec, info sourcegraph.BuildUpdate) error {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Builds.Update", build.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Builds.Update", 0, build.Repo); err != nil {
 		return err
 	}
 	var args []interface{}
@@ -395,7 +395,7 @@ func (s *builds) CreateTasks(ctx context.Context, tasks []*sourcegraph.BuildTask
 	var repo string
 	for _, task := range tasks {
 		if task.Build.Repo != repo {
-			if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Builds.CreateTasks", task.Build.Repo); err != nil {
+			if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Builds.CreateTasks", 0, task.Build.Repo); err != nil {
 				return nil, err
 			}
 			// Cache the last repo URI that was checked for write access.
@@ -429,7 +429,7 @@ func (s *builds) CreateTasks(ctx context.Context, tasks []*sourcegraph.BuildTask
 }
 
 func (s *builds) UpdateTask(ctx context.Context, task sourcegraph.TaskSpec, info sourcegraph.TaskUpdate) error {
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Builds.UpdateTask", task.Build.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "Builds.UpdateTask", 0, task.Build.Repo); err != nil {
 		return err
 	}
 	var args []interface{}
@@ -472,7 +472,7 @@ func (s *builds) UpdateTask(ctx context.Context, task sourcegraph.TaskSpec, info
 }
 
 func (s *builds) ListBuildTasks(ctx context.Context, build sourcegraph.BuildSpec, opt *sourcegraph.BuildTaskListOptions) ([]*sourcegraph.BuildTask, error) {
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.ListBuildTasks", build.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.ListBuildTasks", 0, build.Repo); err != nil {
 		return nil, err
 	}
 	if opt == nil {
@@ -517,20 +517,23 @@ UPDATE repo_build
 SET started_at = clock_timestamp(), ended_at = null, heartbeat_at = null, success = 'f', failure = 'f'
 FROM to_dequeue
 WHERE repo_build.repo = to_dequeue.repo AND repo_build.id = to_dequeue.id
-RETURNING repo_build.*;
+RETURNING repo_build.*, (SELECT id FROM repo WHERE uri=repo_build.repo) AS repo_id;
 `
-	var nextBuild dbBuild
+	var nextBuild struct {
+		dbBuild
+		RepoID int32 `db:"repo_id"`
+	}
 	if err := appDBH(ctx).SelectOne(&nextBuild, query); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
 
-	return newBuildJob(ctx, nextBuild.toBuild())
+	return newBuildJob(ctx, nextBuild.toBuild(), nextBuild.RepoID)
 }
 
-func newBuildJob(ctx context.Context, b *sourcegraph.Build) (*sourcegraph.BuildJob, error) {
-	tok, err := sharedsecret.ShortTokenSource(idkey.FromContext(ctx), "repo:"+b.Repo).Token()
+func newBuildJob(ctx context.Context, b *sourcegraph.Build, repo int32) (*sourcegraph.BuildJob, error) {
+	tok, err := sharedsecret.ShortTokenSource(idkey.FromContext(ctx), fmt.Sprintf("repo:%d", repo)).Token()
 	if err != nil {
 		return nil, err
 	}
@@ -544,7 +547,7 @@ func newBuildJob(ctx context.Context, b *sourcegraph.Build) (*sourcegraph.BuildJ
 }
 
 func (s *builds) GetTask(ctx context.Context, taskSpec sourcegraph.TaskSpec) (*sourcegraph.BuildTask, error) {
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.GetTask", taskSpec.Build.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Builds.GetTask", 0, taskSpec.Build.Repo); err != nil {
 		return nil, err
 	}
 

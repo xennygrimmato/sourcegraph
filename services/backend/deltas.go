@@ -41,10 +41,10 @@ type deltas struct {
 var _ sourcegraph.DeltasServer = (*deltas)(nil)
 
 func (s *deltas) Get(ctx context.Context, ds *sourcegraph.DeltaSpec) (*sourcegraph.Delta, error) {
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.Get", ds.Base.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.Get", 0, ds.Base.Repo); err != nil {
 		return nil, err
 	}
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.Get", ds.Head.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Deltas.Get", 0, ds.Head.Repo); err != nil {
 		return nil, err
 	}
 
@@ -71,6 +71,13 @@ func (s *deltas) fillDelta(ctx context.Context, d *sourcegraph.Delta) (*sourcegr
 		return d, errors.New("base and head repo must be identical")
 	}
 
+	getRepoID := func(repoPath string) (int32, error) {
+		repo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+		if err != nil {
+			return 0, err
+		}
+		return repo.ID, nil
+	}
 	getCommit := func(repoRevSpec *sourcegraph.RepoRevSpec, commit **vcs.Commit) error {
 		var err error
 		*commit, err = svc.Repos(ctx).GetCommit(ctx, repoRevSpec)
@@ -79,6 +86,11 @@ func (s *deltas) fillDelta(ctx context.Context, d *sourcegraph.Delta) (*sourcegr
 		}
 		repoRevSpec.CommitID = string((*commit).ID)
 		return nil
+	}
+
+	baseRepoID, err := getRepoID(d.Base.Repo)
+	if err != nil {
+		return nil, err
 	}
 
 	par := parallel.NewRun(2)
@@ -93,7 +105,7 @@ func (s *deltas) fillDelta(ctx context.Context, d *sourcegraph.Delta) (*sourcegr
 	}
 
 	// Try to compute merge-base.
-	vcsBaseRepo, err := store.RepoVCSFromContext(ctx).Open(ctx, d.Base.Repo)
+	vcsBaseRepo, err := store.RepoVCSFromContext(ctx).Open(ctx, baseRepoID)
 	if err != nil {
 		return d, err
 	}
