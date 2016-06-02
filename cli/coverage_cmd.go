@@ -441,6 +441,10 @@ func getFileCoverage(cl *sourcegraph.Client, ctx context.Context, repoRev *sourc
 			fileCvg.UnresolvedIdents = append(fileCvg.UnresolvedIdents, tok)
 		}
 	}
+	errors := tokenizer.Errors()
+	if len(errors) > 0 {
+		log15.Warn("parse errors", "path", path, "errors", errors)
+	}
 
 	for _, annToken := range refAnnotations {
 		ann := annToken.Annotation
