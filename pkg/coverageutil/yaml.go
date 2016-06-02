@@ -89,7 +89,7 @@ func findOffsets(fileText string, line, column int, token string) (start int, va
 	// we count our current line and column position.
 	currentCol := 0
 	currentLine := 0
-	for offset, ch := range byte[](fileText) {
+	for offset, ch := range fileText {
 		fmt.Println(ch)
 		if currentLine == line && currentCol == column {
 			return offset, token
