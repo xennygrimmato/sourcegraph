@@ -76,20 +76,19 @@ class DefInfo extends Container {
 	}
 
 	_onTranslateDefInfo(val) {
-		let $this = this;
-		let def = $this.state.defObj;
+		let def = this.state.defObj;
 		let apiKey = "AIzaSyCKati7PcEa2fqyuoDDwd1ujXiBVOddwf4";
 		let targetLang = val;
 
-		if ($this.state.translations[targetLang]) {
+		if (this.state.translations[targetLang]) {
 			// Toggle when target language is same as the current one,
 			// otherwise change the current language and force to show the result.
-			if ($this.state.currentLang === targetLang) {
-				$this.setState({showTranslatedString: !$this.state.showTranslatedString});
+			if (this.state.currentLang === targetLang) {
+				this.setState({showTranslatedString: !this.state.showTranslatedString});
 			} else {
-				$this.setState({
+				this.setState({
 					currentLang: targetLang,
-					translatedString: $this.state.translations[targetLang],
+					translatedString: this.state.translations[targetLang],
 					showTranslatedString: true,
 				});
 			}
@@ -98,11 +97,11 @@ class DefInfo extends Container {
 			// Fetch translation result when does not exist with given target language
 			fetch(`https://www.googleapis.com/language/translate/v2?key=${apiKey}&target=${targetLang}&q=${encodeURIComponent(def.DocHTML.__html)}`)
 				.then((response) => response.json())
-				.then(function(json) {
+				.then((json) => {
 					let translation = json.data.translations[0].translatedText;
-					$this.setState({
+					this.setState({
 						currentLang: targetLang,
-						translations: {...$this.state.translations, [targetLang]: translation},
+						translations: {...this.state.translations, [targetLang]: translation},
 						showTranslatedString: true,
 					});
 				});
