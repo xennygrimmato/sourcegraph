@@ -18,7 +18,7 @@ if (typeof window !== "undefined") {
 	};
 
 	window.disableActionLog = function() {
-		Reflect.deleteProperty(window.localStorage, "log-actions");
+		delete window.localStorage["log-actions"];
 		console.log("Action log disabled.");
 	};
 
