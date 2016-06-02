@@ -11,7 +11,7 @@ import styles from "./styles/DefInfo.css";
 import {RefLocsPerPage} from "sourcegraph/def";
 import "whatwg-fetch";
 
-class GlobalRefs extends Container {
+class GlobalRefsContainer extends Container {
 	static propTypes = {
 		repo: React.PropTypes.string,
 		rev: React.PropTypes.string,
@@ -103,4 +103,4 @@ class GlobalRefs extends Container {
 	}
 }
 
-export default CSSModules(GlobalRefs, styles);
+export default CSSModules(GlobalRefsContainer, styles);

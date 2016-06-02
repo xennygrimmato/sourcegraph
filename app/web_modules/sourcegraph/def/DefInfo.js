@@ -6,7 +6,7 @@ import AuthorList from "sourcegraph/def/AuthorList";
 import Container from "sourcegraph/Container";
 import DefStore from "sourcegraph/def/DefStore";
 import DefContainer from "sourcegraph/def/DefContainer";
-import GlobalRefs from "sourcegraph/def/GlobalRefs";
+import GlobalRefsContainer from "sourcegraph/def/GlobalRefsContainer";
 import {Link} from "react-router";
 import "sourcegraph/blob/BlobBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
@@ -181,7 +181,7 @@ class DefInfo extends Container {
 					}
 					{def && !def.Error && <DefContainer {...this.props} />}
 					{def && !def.Error &&
-						<GlobalRefs
+						<GlobalRefsContainer
 							repo={this.props.repo}
 							rev={this.props.rev}
 							commitID={this.props.commitID}
