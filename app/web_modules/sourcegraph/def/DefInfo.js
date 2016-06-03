@@ -122,7 +122,7 @@ class DefInfo extends Container {
 		let refLocs = this.state.refLocations;
 		let authors = this.state.authors;
 		let defInfoUrl = this.state.defObj ? urlToDefInfo(this.state.defObj, this.state.rev) : "";
-		let refsSorting = this.props.location.query.refs || "all";
+		let refsSorting = this.props.location.query.refs || "top";
 
 		if (refLocs && refLocs.Error) {
 			return (
@@ -203,6 +203,15 @@ class DefInfo extends Container {
 								</Link>
 							</div>
 							<hr style={{marginTop: 0, clear: "both"}}/>
+							{refsSorting === "top" &&
+								<RepoRefsContainer
+									repo={this.props.repo}
+									rev={this.props.rev}
+									commitID={this.props.commitID}
+									def={this.props.def}
+									defObj={this.props.defObj}
+									sorting="top" />
+							}
 							{refsSorting === "local" &&
 								<RepoRefsContainer
 									repo={this.props.repo}

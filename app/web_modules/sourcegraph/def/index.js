@@ -66,4 +66,5 @@ export type RefLocationsKey = {
 	page?: number;
 	perPage?: number;
 	repos: Array<string>;
+	sorting?: string;
 }
