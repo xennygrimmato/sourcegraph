@@ -11,14 +11,14 @@ import styles from "./styles/DefInfo.css";
 import {RefLocsPerPage} from "sourcegraph/def";
 import "whatwg-fetch";
 
-class RepoRefsContainer extends Container {
+class GlobalRefsContainer extends Container {
 	static propTypes = {
 		repo: React.PropTypes.string,
 		rev: React.PropTypes.string,
 		commitID: React.PropTypes.string,
 		def: React.PropTypes.string,
 		defObj: React.PropTypes.object,
-		refLocations: React.PropTypes.object,
+		defRepos: React.PropTypes.array,
 	};
 
 	constructor(props) {
@@ -39,8 +39,9 @@ class RepoRefsContainer extends Container {
 		state.rev = props.rev || null;
 		state.def = props.def || null;
 		state.defObj = props.defObj || null;
+		state.defRepos = props.defRepos || [];
 		state.refLocations = state.def ? DefStore.getRefLocations({
-			repo: state.repo, commitID: state.commitID, def: state.def, repos: [],
+			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos,
 		}) : null;
 		if (this.props.refLocations && this.props.refLocations.PagesFetched >= this.state.currPage) {
 			state.nextPageLoading = false;
@@ -50,7 +51,7 @@ class RepoRefsContainer extends Container {
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
-				repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: [], page: nextState.currPage,
+				repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage,
 			}));
 		}
 	}
@@ -103,4 +104,4 @@ class RepoRefsContainer extends Container {
 	}
 }
 
-export default CSSModules(RepoRefsContainer, styles);
+export default CSSModules(GlobalRefsContainer, styles);

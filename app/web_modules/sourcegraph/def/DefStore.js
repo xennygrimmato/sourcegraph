@@ -25,7 +25,7 @@ function refsKeyFor(repo: string, rev: ?string, def: string, refRepo: string, re
 }
 
 function refLocationsKeyFor(r: RefLocationsKey): string {
-	let opts: {Query?: Array<string>, Page?: number, PerPage?: number} = {Query: r.repos};
+	let opts: {Query?: Array<string>, Page?: number, PerPage?: number} = {Repos: r.repos};
 	if (r.page) {
 		opts.Page = r.page;
 	}
