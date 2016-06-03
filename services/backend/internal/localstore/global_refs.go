@@ -121,23 +121,6 @@ func (g *globalRefs) Get(ctx context.Context, op *sourcegraph.DefsListRefLocatio
 		Count     int
 	}
 
-	// Force op.Def.Repo results to be first on the first page
-	var dbRefResult []*dbRefLocationsResult
-	dbRefResultDone := make(chan error, 1)
-	if opt.PageOrDefault() == 1 && len(opt.Repos) == 0 {
-		go func() {
-			start = time.Now()
-			args := []interface{}{defKeyID, defRepoPath, opt.PerPageOrDefault()}
-			inner := "SELECT repo, file, count FROM global_refs_new WHERE def_key_id=$1 AND repo=$2 LIMIT $3"
-			sql := "SELECT repo, SUM(count) OVER(PARTITION BY repo) AS repo_count, file, count FROM (" + inner + ") res ORDER BY count DESC"
-			_, err := graphDBH(ctx).Select(&dbRefResult, sql, args...)
-			observe("locationsrepo", start)
-			dbRefResultDone <- err
-		}()
-	} else {
-		dbRefResultDone <- nil
-	}
-
 	var args []interface{}
 	arg := func(a interface{}) string {
 		v := gorp.PostgresDialect{}.BindVar(len(args))
@@ -146,7 +129,7 @@ func (g *globalRefs) Get(ctx context.Context, op *sourcegraph.DefsListRefLocatio
 	}
 
 	innerSelectSQL := `SELECT repo, file, count FROM global_refs_new`
-	innerSelectSQL += ` WHERE def_key_id=` + arg(defKeyID) + ` AND repo != ` + arg(defRepoPath)
+	innerSelectSQL += ` WHERE def_key_id=` + arg(defKeyID)
 	if len(opt.Repos) > 0 {
 		repoBindVars := make([]string, len(opt.Repos))
 		for i, r := range opt.Repos {
@@ -162,18 +145,12 @@ func (g *globalRefs) Get(ctx context.Context, op *sourcegraph.DefsListRefLocatio
 
 	sql := "SELECT repo, SUM(count) OVER(PARTITION BY repo) AS repo_count, file, count FROM (" + innerSelectSQL + ") res"
 	orderBySQL := " ORDER BY repo_count DESC, count DESC"
-
 	sql += orderBySQL
 
-	var dbRefResultMore []*dbRefLocationsResult
-	if _, err := graphDBH(ctx).Select(&dbRefResultMore, sql, args...); err != nil {
+	var dbRefResult []*dbRefLocationsResult
+	if _, err := graphDBH(ctx).Select(&dbRefResult, sql, args...); err != nil {
 		return nil, err
 	}
-	err = <-dbRefResultDone
-	if err != nil {
-		return nil, err
-	}
-	dbRefResult = append(dbRefResult, dbRefResultMore...)
 
 	// repoRefs holds the ordered list of repos referencing this def. The list is sorted by
 	// decreasing ref counts per repo, and the file list in each individual DefRepoRef is
