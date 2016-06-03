@@ -11,7 +11,7 @@ import {Link} from "react-router";
 import "sourcegraph/blob/BlobBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
 import * as DefActions from "sourcegraph/def/DefActions";
-import {urlToDef} from "sourcegraph/def/routes";
+import {urlToDef, urlToDefInfo} from "sourcegraph/def/routes";
 import CSSModules from "react-css-modules";
 import styles from "./styles/DefInfo.css";
 import {qualifiedNameAndType} from "sourcegraph/def/Formatter";
@@ -21,7 +21,9 @@ import {trimRepo} from "sourcegraph/repo";
 import {defTitle, defTitleOK} from "sourcegraph/def/Formatter";
 import "whatwg-fetch";
 import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
-import {Dropdown} from "sourcegraph/components";
+import {Dropdown, TabItem} from "sourcegraph/components";
+
+// type refSorting = "top" | "local" | "all";
 
 class DefInfo extends Container {
 	static contextTypes = {
@@ -45,6 +47,7 @@ class DefInfo extends Container {
 			translations: {},
 		};
 		this._onTranslateDefInfo = this._onTranslateDefInfo.bind(this);
+		this._mergeQuery = this._mergeQuery.bind(this);
 	}
 
 	stores() {
@@ -73,6 +76,10 @@ class DefInfo extends Container {
 				Dispatcher.Backends.dispatch(new DefActions.WantDefAuthors(nextState.repo, nextState.defCommitID, nextState.def));
 			}
 		}
+	}
+
+	_mergeQuery(param: string, value: any) {
+		return Object.assign({}, this.props.location.query, {[param]: value});
 	}
 
 	_onTranslateDefInfo(val) {
@@ -114,6 +121,9 @@ class DefInfo extends Container {
 		let def = this.state.defObj;
 		let refLocs = this.state.refLocations;
 		let authors = this.state.authors;
+		let defInfoUrl = this.state.defObj ? urlToDefInfo(this.state.defObj, this.state.rev) : "";
+		let refsSorting = this.props.location.query.refs || "all";
+
 		if (refLocs && refLocs.Error) {
 			return (
 				<Header
@@ -169,7 +179,6 @@ class DefInfo extends Container {
 								onItemClick={(val) => this._onTranslateDefInfo(val)}
 								items={[
 									{name: "English", value: "en"},
-									{name: "简体中文", value: "zh-CN"},
 									{name: "繁體中文", value: "zh-TW"},
 									{name: "日本語", value: "ja"},
 									{name: "Français", value: "fr"},
@@ -200,12 +209,28 @@ class DefInfo extends Container {
 					}
 					{def && !def.Error && <DefContainer {...this.props} />}
 					{def && !def.Error &&
-						<GlobalRefsContainer
-							repo={this.props.repo}
-							rev={this.props.rev}
-							commitID={this.props.commitID}
-							def={this.props.def}
-							defObj={this.props.defObj} />
+						<div>
+							<div style={{float: "right"}}>
+								<Link to={{pathname: defInfoUrl, query: this._mergeQuery("refs", "top")}}>
+									<TabItem active={refsSorting === "top"}>Top</TabItem>
+								</Link>
+								<Link to={{pathname: defInfoUrl, query: this._mergeQuery("refs", "local")}}>
+									<TabItem active={refsSorting === "local"}>Local</TabItem>
+								</Link>
+								<Link to={{pathname: defInfoUrl, query: this._mergeQuery("refs", "all")}}>
+									<TabItem active={refsSorting === "all"}>All</TabItem>
+								</Link>
+							</div>
+							<hr style={{marginTop: 0, clear: "both"}}/>
+							{refsSorting === "all" &&
+								<GlobalRefsContainer
+									repo={this.props.repo}
+									rev={this.props.rev}
+									commitID={this.props.commitID}
+									def={this.props.def}
+									defObj={this.props.defObj} />
+							}
+						</div>
 					}
 				</div>
 			</div>
