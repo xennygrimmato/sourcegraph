@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"sort"
 
-	"gopkg.in/inconshreveable/log15.v2"
-
 	"github.com/gorilla/mux"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/handlerutil"
@@ -108,55 +106,6 @@ func serveDefRefLocations(w http.ResponseWriter, r *http.Request) error {
 	})
 	if err != nil {
 		return err
-	}
-
-	// TEMPORARY FIX: refs are not available for the current repo because the HEAD commit
-	// of the default branch of the repo hasn't been built yet after the switch to pgsql
-	// global refs store. Fallback to fetching local repo refs from graph store.
-	//
-	// TODO(slimsag): remove this kludge after migration is complete for all existing repos.
-	containsDefRepo := false
-	for _, refs := range refLocations.RepoRefs {
-		if refs.Repo == def.Repo {
-			containsDefRepo = true
-			break
-		}
-	}
-	if (len(refLocations.RepoRefs) == 0 || !containsDefRepo) && opt.PageOrDefault() == 1 {
-		log15.Debug("Missing local refs on DefInfo", "def", defSpec.String(), "lenRepoRefs", len(refLocations.RepoRefs))
-		// Scope the local repo ref search to the def's commit ID.
-		defSpec.CommitID = def.CommitID
-		refs, err := cl.Defs.ListRefs(ctx, &sourcegraph.DefsListRefsOp{
-			Def: defSpec,
-			Opt: &sourcegraph.DefListRefsOptions{
-				Repo:        defSpec.Repo,
-				ListOptions: opt.ListOptions,
-			},
-		})
-		if err != nil {
-			return err
-		}
-
-		refsPerFile := make(map[string]int32)
-		totalCount := int32(0)
-		for _, ref := range refs.Refs {
-			refsPerFile[ref.File]++
-			totalCount++
-		}
-
-		if totalCount > 0 {
-			fl := sortByRefCount(refsPerFile)
-
-			localRefs := &sourcegraph.DefRepoRef{
-				Repo:  defSpec.Repo,
-				Count: totalCount,
-				Files: fl,
-			}
-
-			refLocations.RepoRefs = append(refLocations.RepoRefs, localRefs)
-			lastIdx := len(refLocations.RepoRefs) - 1
-			refLocations.RepoRefs[0], refLocations.RepoRefs[lastIdx] = refLocations.RepoRefs[lastIdx], refLocations.RepoRefs[0]
-		}
 	}
 
 	return json.NewEncoder(w).Encode(refLocations)
