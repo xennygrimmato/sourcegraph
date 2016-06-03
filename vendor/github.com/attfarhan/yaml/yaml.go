@@ -97,14 +97,6 @@ type Marshaler interface {
 // }
 //go:generate stringer -type=[]*Node
 
-func Explore(node *Node, x []*Node) []*Node {
-	for _, child := range node.Children {
-		x = append(x, child)
-		Explore(child, x)
-	}
-	return x
-}
-
 func Unmarshal(in []byte, out interface{}) (err error) {
 	defer handleErr(&err)
 	d := newDecoder()
@@ -122,6 +114,19 @@ func Unmarshal(in []byte, out interface{}) (err error) {
 		return &TypeError{d.terrors}
 	}
 	return nil
+}
+
+// Explore goes through a file's tree.  The argument node is the root node
+// of the tree, and we traverse and return a list of all the nodes.
+func Explore(fileString string, node *Node) []*Node {
+	out := []*Node{node}
+	for _, child := range node.Children {
+		start, end := getByteOffsets(fileString, child.Line, child.Column, child.Value)
+		child.StartByte = start
+		child.EndByte = end
+		out = append(out, Explore(fileString, child)...)
+	}
+	return out
 }
 
 // Marshal serializes the value provided into a YAML document. The structure

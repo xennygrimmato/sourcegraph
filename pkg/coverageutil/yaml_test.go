@@ -35,7 +35,7 @@ func TestYAML(testing *testing.T) {
 		}
 		for i, tok := range actual {
 			if tok.Offset != t.expected[i].Offset || tok.Text != t.expected[i].Text {
-				testing.Errorf("%s: Expected %d (%s), got %d (%s) instead", t.name, t.expected[i].Offset, t.expected[i].Text, tok.Offset, tok.Text)
+				testing.Errorf("%s: Expected %d (%s), got %d (%s) instead", t.name, t.expected[i].Offset, t.expected[i].Line, t.expected[i].Text, tok.Offset, tok.Text)
 			}
 		}
 	}

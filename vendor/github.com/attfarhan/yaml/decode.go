@@ -26,6 +26,8 @@ type Node struct {
 	implicit     bool
 	Children     []*Node
 	anchors      map[string]*Node
+	StartByte    int
+	EndByte      int
 }
 
 // ----------------------------------------------------------------------------
@@ -35,6 +37,28 @@ type parser struct {
 	parser yaml_parser_t
 	event  yaml_event_t
 	doc    *Node
+}
+
+func getByteOffsets(fileText string, line, column int, token string) (start, end int) {
+	// we count our current line and column position.
+	currentCol := 0
+	currentLine := 0
+	for offset, ch := range fileText {
+		// see if we found where we wanted to go to.
+		if currentLine == line && currentCol == column {
+			end = offset + len([]byte(token))
+			return offset, end
+		}
+
+		// line break - increment the line counter and reset the column.
+		if ch == '\n' {
+			currentLine++
+			currentCol = 0
+		} else {
+			currentCol++
+		}
+	}
+	return -1, -1 // not found.
 }
 
 func NewParser(b []byte) *parser {
