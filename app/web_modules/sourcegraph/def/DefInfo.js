@@ -6,7 +6,7 @@ import AuthorList from "sourcegraph/def/AuthorList";
 import Container from "sourcegraph/Container";
 import DefStore from "sourcegraph/def/DefStore";
 import DefContainer from "sourcegraph/def/DefContainer";
-import GlobalRefsContainer from "sourcegraph/def/GlobalRefsContainer";
+import RepoRefsContainer from "sourcegraph/def/RepoRefsContainer";
 import {Link} from "react-router";
 import "sourcegraph/blob/BlobBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
@@ -222,8 +222,17 @@ class DefInfo extends Container {
 								</Link>
 							</div>
 							<hr style={{marginTop: 0, clear: "both"}}/>
+							{refsSorting === "local" &&
+								<RepoRefsContainer
+									repo={this.props.repo}
+									rev={this.props.rev}
+									commitID={this.props.commitID}
+									def={this.props.def}
+									defObj={this.props.defObj}
+									defRepos={[this.props.repo]} />
+							}
 							{refsSorting === "all" &&
-								<GlobalRefsContainer
+								<RepoRefsContainer
 									repo={this.props.repo}
 									rev={this.props.rev}
 									commitID={this.props.commitID}
