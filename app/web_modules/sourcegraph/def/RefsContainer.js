@@ -39,6 +39,7 @@ export default class RefsContainer extends Container {
 		refetch: React.PropTypes.bool,
 		initNumSnippets: React.PropTypes.number, // number of snippets to initially expand
 		fileCollapseThreshold: React.PropTypes.number, // number of files to show before "and X more..."-style paginator
+		rangeLimit: React.PropTypes.number,
 	};
 
 	static contextTypes = {
@@ -180,12 +181,8 @@ export default class RefsContainer extends Container {
 	}
 
 	onStateTransition(prevState, nextState) {
-		// optimization: since multiple RefContainers may be shown on a page, fetching refs for every container
-		// when the component is mounted will cause unnecessary re-render cycles across components.
-		// Instead, lazily fetch ref data on mouseover.
 		const refPropsUpdated = prevState.repo !== nextState.repo || prevState.rev !== nextState.rev || prevState.def !== nextState.def || prevState.refRepo !== nextState.refRepo;
-		const initialLoad = !prevState.repo && !prevState.rev && !prevState.commitID && !prevState.def && !prevState.refRepo;
-		if ((initialLoad && nextState.prefetch) || (refPropsUpdated && !initialLoad) || (nextState.mouseover && !prevState.mouseover)) {
+		if (refPropsUpdated) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefs(nextState.repo, nextState.rev, nextState.def, nextState.refRepo));
 		}
 
@@ -288,6 +285,16 @@ export default class RefsContainer extends Container {
 								}
 								return <div key={i}>{this.renderFileHeader(this.state.refRepo, this.state.refRev, loc.Path, loc.Count, i)}<p className={styles.fileError}>{msg}</p></div>;
 							}
+
+							let ranges = this.ranges[loc.Path];
+							if (this.state.rangeLimit) {
+								console.log("RANGING");
+								ranges = ranges.slice(0, this.state.rangeLimit);
+								console.log("BEFORE", ranges);
+								ranges.map((r) => [r[0], Math.min(r[0] + 10, r[1])]);
+								console.log(ranges);
+							}
+
 							return (
 								<div key={i}>
 									{this.renderFileHeader(this.state.refRepo, this.state.refRev, loc.Path, loc.Count, i)}
@@ -301,7 +308,7 @@ export default class RefsContainer extends Container {
 										activeDefRepo={this.state.repo}
 										activeDef={this.state.def}
 										lineNumbers={true}
-										displayRanges={this.ranges[loc.Path] || null}
+										displayRanges={ranges || null}
 										highlightedDef={this.state.highlightedDef || null}
 										highlightedDefObj={this.state.highlightedDefObj || null} />
 								</div>

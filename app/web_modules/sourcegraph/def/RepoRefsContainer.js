@@ -19,6 +19,7 @@ class GlobalRefsContainer extends Container {
 		def: React.PropTypes.string,
 		defObj: React.PropTypes.object,
 		defRepos: React.PropTypes.array,
+		sorting: React.PropTypes.string,
 	};
 
 	constructor(props) {
@@ -40,8 +41,9 @@ class GlobalRefsContainer extends Container {
 		state.def = props.def || null;
 		state.defObj = props.defObj || null;
 		state.defRepos = props.defRepos || [];
+		state.sorting = props.sorting || null;
 		state.refLocations = state.def ? DefStore.getRefLocations({
-			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos,
+			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos, sorting: state.sorting,
 		}) : null;
 		if (this.props.refLocations && this.props.refLocations.PagesFetched >= this.state.currPage) {
 			state.nextPageLoading = false;
@@ -51,7 +53,7 @@ class GlobalRefsContainer extends Container {
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
-				repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage,
+				repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage, sorting: nextState.sorting,
 			}));
 		}
 	}
@@ -59,7 +61,7 @@ class GlobalRefsContainer extends Container {
 	_onNextPage() {
 		let nextPage = this.state.currPage + 1;
 		this.setState({currPage: nextPage, nextPageLoading: true});
-		this.context.eventLogger.logEvent("RefsPaginatorClicked", {page: nextPage});
+		if (this.context.eventLogger) this.context.eventLogger.logEvent("RefsPaginatorClicked", {page: nextPage});
 	}
 
 	render() {
@@ -67,6 +69,8 @@ class GlobalRefsContainer extends Container {
 		let fileCount = refLocs && refLocs.RepoRefs ?
 			refLocs.RepoRefs.reduce((total, refs) => total + refs.Files.length, refLocs.RepoRefs[0].Files.length) : 0;
 
+		// TODO Kill this:
+		let expand = this.props.sorting === "top" ? 3 : null;
 		return (
 			<div>
 				{!refLocs && <i>Loading...</i>}
@@ -89,10 +93,11 @@ class GlobalRefsContainer extends Container {
 					defObj={this.props.defObj}
 					repoRefs={repoRefs}
 					prefetch={i === 0}
-					initNumSnippets={i === 0 ? 1 : 0}
+					initNumSnippets={expand || (i === 0 ? 1 : 0)}
+					rangeLimit={this.props.sorting === "top" ? 1 : null}
 					fileCollapseThreshold={5} />)}
 				{/* Display the paginator if we have more files repos or repos to show. */}
-				{refLocs && refLocs.RepoRefs &&
+				{refLocs && refLocs.RepoRefs && this.props.sorting !== "top" &&
 					(fileCount >= RefLocsPerPage || refLocs.TotalRepos > refLocs.RepoRefs.length || !refLocs.TotalRepos) &&
 					!refLocs.StreamTerminated &&
 					<div styleName="pagination">
