@@ -1,7 +1,6 @@
 package coverageutil
 
 import (
-	"fmt"
 	"github.com/attfarhan/yaml"
 )
 
@@ -61,7 +60,6 @@ func (s *yamlTokenizer) Next() *Token {
 	out.Text = s.values[s.pointer]
 	out.Line = s.line[s.pointer]
 	s.pointer++
-	fmt.Println(out)
 
 	return out
 }
@@ -90,7 +88,6 @@ func findOffsets(fileText string, line, column int, token string) (start int, va
 	currentCol := 0
 	currentLine := 0
 	for offset, ch := range fileText {
-		fmt.Println(ch)
 		if currentLine == line && currentCol == column {
 			return offset, token
 		}

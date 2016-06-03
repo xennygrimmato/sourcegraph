@@ -1126,5 +1126,10 @@ var langRepos_ = map[string][]string{
 	},
 	"YAML": []string{
 		"github.com/attfarhan/yaml-test",
+		"github.com/shurcooL/Go-Package-Store",
+		"github.com/sourcegraph/srclib-python",
+		"github.com/sourcegraph/srclib-go",
+		"github.com/square/retrofit",
+		"github.com/gorilla/mux",
 	},
 }
