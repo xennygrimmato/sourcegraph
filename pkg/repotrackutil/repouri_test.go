@@ -2,7 +2,7 @@ package repotrackutil
 
 import "testing"
 
-func TestGetTrackedRepo(t *testing.T) {
+func TestGetTrackedRepoPath(t *testing.T) {
 	cases := []struct {
 		Path        string
 		TrackedRepo string
@@ -23,14 +23,14 @@ func TestGetTrackedRepo(t *testing.T) {
 		{"", "unknown"}, {"/", "unknown"},
 	}
 	for _, c := range cases {
-		got := GetTrackedRepo(c.Path)
+		got := GetTrackedRepoPath(c.Path)
 		if got != c.TrackedRepo {
-			t.Errorf("getTrackedRepo(%#v) == %#v != %#v", c.Path, got, c.TrackedRepo)
+			t.Errorf("GetTrackedRepoPath(%#v) == %#v != %#v", c.Path, got, c.TrackedRepo)
 		}
 	}
 	// a trackedRepo must always be tracked
 	for _, r := range trackedRepo {
-		if GetTrackedRepo(r) != r {
+		if GetTrackedRepoPath(r) != r {
 			t.Errorf("Repo should be tracked: %v", r)
 		}
 	}

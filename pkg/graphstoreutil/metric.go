@@ -90,7 +90,7 @@ func (s *instrumentedGraphStore) opObserve(method, repo string, start time.Time,
 		isError = "true"
 	}
 	if repo != "" {
-		repo = repotrackutil.GetTrackedRepo(repo)
+		repo = repotrackutil.GetTrackedRepoPath(repo)
 	}
 	opDuration.WithLabelValues(s.name, method, repo, isError).Observe(time.Since(start).Seconds())
 }

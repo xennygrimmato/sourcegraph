@@ -3,6 +3,9 @@ package httpapi
 import (
 	"net/http"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"golang.org/x/net/context"
 
 	"github.com/gorilla/mux"
@@ -20,7 +23,7 @@ func serveDef(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	def, err := handlerutil.GetDefCommon(ctx, mux.Vars(r), &opt)
+	def, _, err := handlerutil.GetDefCommon(ctx, mux.Vars(r), &opt)
 	if err != nil {
 		return err
 	}
@@ -57,13 +60,21 @@ func resolveDef(ctx context.Context, def routevar.DefAtRev) (*sourcegraph.DefSpe
 	if err != nil {
 		return nil, err
 	}
-	res, err := cl.Repos.ResolveRev(ctx, &sourcegraph.ReposResolveRevOp{Repo: def.Repo, Rev: def.Rev})
+	res, err := cl.Repos.Resolve(ctx, &sourcegraph.RepoResolveOp{Path: def.Repo})
+	if err != nil {
+		return nil, err
+	}
+	if res.GetRepo() == 0 {
+		return nil, grpc.Errorf(codes.NotFound, "repo not found (resolving def): %v", def)
+	}
+	repoID := res.GetRepo()
+	rev, err := cl.Repos.ResolveRev(ctx, &sourcegraph.ReposResolveRevOp{Repo: repoID, Rev: def.Rev})
 	if err != nil {
 		return nil, err
 	}
 	return &sourcegraph.DefSpec{
-		Repo:     def.Repo,
-		CommitID: res.CommitID,
+		Repo:     repoID,
+		CommitID: rev.CommitID,
 		UnitType: def.UnitType,
 		Unit:     def.Unit,
 		Path:     def.Path,

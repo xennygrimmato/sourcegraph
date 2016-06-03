@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"gopkg.in/inconshreveable/log15.v2"
+
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/errcode"
@@ -73,7 +75,14 @@ func SourcegraphComGoGetHandler(next http.Handler) http.Handler {
 		for i := 1; i <= len(pathElements); i++ {
 			repoPath := strings.Join(pathElements[:i], "/")
 
-			repo, err := cl.Repos.Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+			res, err := cl.Repos.Resolve(ctx, &sourcegraph.RepoResolveOp{Path: repoPath})
+			if err != nil || res.GetRepo() == 0 {
+				log15.Debug("Failed to resolve repository.", "repo", repoPath, "err", err)
+				http.Error(w, "", http.StatusInternalServerError)
+				return
+			}
+
+			repo, err := cl.Repos.Get(ctx, &sourcegraph.RepoSpec{ID: res.GetRepo()})
 			if err == nil && repo.Mirror {
 				continue
 			} else if errcode.HTTP(err) == http.StatusNotFound {

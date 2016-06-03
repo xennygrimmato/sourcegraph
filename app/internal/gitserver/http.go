@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"strings"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"golang.org/x/net/context"
 
 	"gopkg.in/inconshreveable/log15.v2"
@@ -187,11 +190,15 @@ func getRepoID(ctx context.Context, repoPath string) (int32, error) {
 	if err != nil {
 		return 0, err
 	}
-	repo, err := c.Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+
+	res, err := c.Resolve(ctx, &sourcegraph.RepoResolveOp{Path: repoPath})
 	if err != nil {
 		return 0, err
 	}
-	return repo.ID, nil
+	if repoID := res.GetRepo(); repoID != 0 {
+		return repoID, nil
+	}
+	return 0, grpc.Errorf(codes.NotFound, "repo not found (no resolution): %s", repoPath)
 }
 
 func noCache(w http.ResponseWriter) {

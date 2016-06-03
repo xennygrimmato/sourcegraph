@@ -149,7 +149,7 @@ func (s *repos) Create(ctx context.Context, op *sourcegraph.ReposCreateOp) (repo
 		return nil, err
 	}
 
-	repo, err = s.Get(ctx, &sourcegraph.RepoSpec{URI: repo.URI})
+	repo, err = s.Get(ctx, &sourcegraph.RepoSpec{ID: repo.ID})
 	if err != nil {
 		return
 	}
@@ -276,7 +276,7 @@ func (s *repos) GetConfig(ctx context.Context, repo *sourcegraph.RepoSpec) (*sou
 }
 
 func (s *repos) ConfigureApp(ctx context.Context, op *sourcegraph.RepoConfigureAppOp) (*pbtypes.Void, error) {
-	repoObj, err := s.Get(ctx, &sourcegraph.RepoSpec{URI: op.Repo})
+	repoObj, err := s.Get(ctx, &sourcegraph.RepoSpec{ID: op.Repo})
 	if err != nil {
 		return nil, err
 	}

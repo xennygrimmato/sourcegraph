@@ -48,9 +48,9 @@ func GetRepoAndRevCommon(ctx context.Context, vars map[string]string) (rc *RepoC
 	}
 
 	vc = &RepoRevCommon{}
-	vc.RepoRevSpec.Repo = rc.Repo.URI
+	vc.RepoRevSpec.Repo = rc.Repo.ID
 
-	vc.RepoRevSpec, err = getRepoRev(ctx, vars, rc.Repo.DefaultBranch)
+	vc.RepoRevSpec, err = getRepoRev(ctx, vars, rc.Repo.ID, rc.Repo.DefaultBranch)
 	if err != nil {
 		cloneInProgress := grpc.Code(err) == codes.Unavailable && grpc.ErrorDesc(err) == vcs.RepoNotExistError{CloneInProgress: true}.Error()
 		if noVCSData := grpc.Code(err) == codes.NotFound ||
@@ -81,44 +81,50 @@ func GetRepoCommon(ctx context.Context, vars map[string]string) (rc *RepoCommon,
 	}
 
 	rc = &RepoCommon{}
-	rc.Repo, _, err = GetRepo(ctx, vars)
+	rc.Repo, err = GetRepo(ctx, vars)
 	if err != nil {
 		return
 	}
 
-	rc.RepoConfig, err = cl.Repos.GetConfig(ctx, &sourcegraph.RepoSpec{URI: rc.Repo.URI})
+	rc.RepoConfig, err = cl.Repos.GetConfig(ctx, &sourcegraph.RepoSpec{ID: rc.Repo.ID})
 	return
 }
 
 // GetRepo gets the repo (from the reposSvc) specified in the URL's
 // RepoSpec route param. Callers should ideally check for a return error of type
 // URLMovedError and handle this scenario by warning or redirecting the user.
-func GetRepo(ctx context.Context, vars map[string]string) (repo *sourcegraph.Repo, repoPath string, err error) {
-	origRepoPath := routevar.ToRepo(vars)
+func GetRepo(ctx context.Context, vars map[string]string) (repo *sourcegraph.Repo, err error) {
+	origRepo := routevar.ToRepo(vars)
 	cl, err := sourcegraph.NewClientFromContext(ctx)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	repoPath = origRepoPath
-	repo, err = cl.Repos.Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+	res, err := cl.Repos.Resolve(ctx, &sourcegraph.RepoResolveOp{Path: origRepo})
 	if err != nil {
-		return nil, origRepoPath, err
-	}
-	repoPath = repo.URI
-
-	// Check for redirect.
-	if origRepoPath != "" && origRepoPath != repoPath {
-		return nil, repoPath, &URLMovedError{repoPath}
+		return nil, err
 	}
 
-	return repo, repoPath, nil
+	if repoID := res.GetRepo(); repoID != 0 {
+		repo, err = cl.Repos.Get(ctx, &sourcegraph.RepoSpec{ID: repoID})
+		if err != nil {
+			return nil, err
+		}
+
+		// Check for redirect.
+		if origRepo != "" && origRepo != repo.URI {
+			return nil, &URLMovedError{repo.URI}
+		}
+
+		return repo, nil
+	}
+	return nil, grpc.Errorf(codes.NotFound, "repo not found (might be a remote repo not yet mirrored on this server): %s", origRepo)
 }
 
 // getRepoRev resolves the RepoRevSpec and commit specified in the
 // route vars. The provided defaultBranch is used if no rev is
 // specified in the URL.
-func getRepoRev(ctx context.Context, vars map[string]string, defaultRev string) (sourcegraph.RepoRevSpec, error) {
+func getRepoRev(ctx context.Context, vars map[string]string, repoID int32, defaultRev string) (sourcegraph.RepoRevSpec, error) {
 	repoRev := routevar.ToRepoRev(vars)
 	if repoRev.Rev == "" {
 		repoRev.Rev = defaultRev
@@ -134,28 +140,27 @@ func getRepoRev(ctx context.Context, vars map[string]string, defaultRev string) 
 	}
 
 	res, err := cl.Repos.ResolveRev(ctx, &sourcegraph.ReposResolveRevOp{
-		Repo: repoRev.Repo,
+		Repo: repoID,
 		Rev:  repoRev.Rev,
 	})
 	if err != nil {
 		return sourcegraph.RepoRevSpec{}, err
 	}
 
-	return sourcegraph.RepoRevSpec{Repo: repoRev.Repo, CommitID: res.CommitID}, nil
+	return sourcegraph.RepoRevSpec{Repo: repoID, CommitID: res.CommitID}, nil
 }
 
 // GetRepoAndRev returns the Repo and the RepoRevSpec for a repository. It may
 // also return custom error URLMovedError to allow special handling of this case,
 // such as for example redirecting the user.
 func GetRepoAndRev(ctx context.Context, vars map[string]string) (repo *sourcegraph.Repo, repoRevSpec sourcegraph.RepoRevSpec, err error) {
-	var repoPath string
-	repo, repoPath, err = GetRepo(ctx, vars)
+	repo, err = GetRepo(ctx, vars)
 	if err != nil {
 		return repo, repoRevSpec, err
 	}
-	repoRevSpec.Repo = repoPath
+	repoRevSpec.Repo = repo.ID
 
-	repoRevSpec, err = getRepoRev(ctx, vars, repo.DefaultBranch)
+	repoRevSpec, err = getRepoRev(ctx, vars, repo.ID, repo.DefaultBranch)
 	return repo, repoRevSpec, err
 }
 
@@ -210,7 +215,12 @@ func ResolveSrclibDataVersion(ctx context.Context, entry sourcegraph.TreeEntrySp
 //
 // dc.Def.DefKey will be set to the def specification based on the
 // request when getting actual def fails.
-func GetDefCommon(ctx context.Context, vars map[string]string, opt *sourcegraph.DefGetOptions) (dc *sourcegraph.Def, err error) {
+func GetDefCommon(ctx context.Context, vars map[string]string, opt *sourcegraph.DefGetOptions) (dc *sourcegraph.Def, repo *sourcegraph.Repo, err error) {
+	repo, err = GetRepo(ctx, vars)
+	if err != nil {
+		return
+	}
+
 	repoRev := routevar.ToRepoRev(vars)
 	defSpec := routevar.ToDefAtRev(vars)
 
@@ -232,29 +242,29 @@ func GetDefCommon(ctx context.Context, vars map[string]string, opt *sourcegraph.
 	}
 
 	res, err := cl.Repos.ResolveRev(ctx, &sourcegraph.ReposResolveRevOp{
-		Repo: repoRev.Repo,
+		Repo: repo.ID,
 		Rev:  repoRev.Rev,
 	})
 	if err != nil {
 		return
 	}
 	absRepoRev := sourcegraph.RepoRevSpec{
-		Repo:     repoRev.Repo,
+		Repo:     repo.ID,
 		CommitID: res.CommitID,
 	}
 
 	resolvedRev, _, err := ResolveSrclibDataVersion(ctx, sourcegraph.TreeEntrySpec{RepoRev: absRepoRev}, repoRev.Rev)
 	if err != nil {
-		return dc, err
+		return
 	}
 	dc.Def.DefKey.CommitID = resolvedRev.CommitID
 
 	dc, err = cl.Defs.Get(ctx, &sourcegraph.DefsGetOp{
-		Def: sourcegraph.NewDefSpecFromDefKey(dc.Def.DefKey),
+		Def: sourcegraph.NewDefSpecFromDefKey(dc.Def.DefKey, repo.ID),
 		Opt: opt,
 	})
 	if err != nil {
-		return dc, err
+		return
 	}
 
 	if repoRev.Rev != "" {
@@ -283,10 +293,10 @@ func GetDefCommon(ctx context.Context, vars map[string]string, opt *sourcegraph.
 			Path:    dc.File,
 		})
 		if err != nil {
-			return dc, err
+			return dc, repo, err
 		}
 		if defResolvedRev.CommitID != resolvedRev.CommitID {
-			return dc, &errcode.HTTPErr{
+			return dc, repo, &errcode.HTTPErr{
 				Status: http.StatusNotFound,
 				Err:    fmt.Errorf("no srclib data for def %v (file %s was modified between last srclib analysis version %s and rev %s)", defSpec, dc.File, resolvedRev.CommitID, repoRev.Rev),
 			}
@@ -311,5 +321,5 @@ func GetDefCommon(ctx context.Context, vars map[string]string, opt *sourcegraph.
 		}
 		dc.DocHTML = htmlutil.SanitizeForPB(docHTML)
 	}
-	return dc, nil
+	return
 }

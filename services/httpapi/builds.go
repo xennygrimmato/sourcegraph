@@ -7,16 +7,18 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+
+	"golang.org/x/net/context"
+
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/errcode"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/handlerutil"
-	"sourcegraph.com/sourcegraph/sourcegraph/pkg/routevar"
 )
 
 func serveBuildTasks(w http.ResponseWriter, r *http.Request) error {
 	ctx, cl := handlerutil.Client(r)
 
-	buildSpec, err := getBuildSpec(r)
+	buildSpec, err := getBuildSpec(ctx, mux.Vars(r))
 	if err != nil {
 		return err
 	}
@@ -66,12 +68,12 @@ func serveBuildTaskLog(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	taskSpec, err := getBuildTaskSpec(r)
+	taskSpec, err := getBuildTaskSpec(ctx, mux.Vars(r))
 	if err != nil {
 		return err
 	}
 
-	entries, err := cl.Builds.GetTaskLog(ctx, &sourcegraph.BuildsGetTaskLogOp{Task: taskSpec, Opt: &opt})
+	entries, err := cl.Builds.GetTaskLog(ctx, &sourcegraph.BuildsGetTaskLogOp{Task: *taskSpec, Opt: &opt})
 	if err != nil {
 		return err
 	}
@@ -79,30 +81,29 @@ func serveBuildTaskLog(w http.ResponseWriter, r *http.Request) error {
 	return writePlainLogEntries(w, entries)
 }
 
-func getBuildSpec(r *http.Request) (*sourcegraph.BuildSpec, error) {
-	v := mux.Vars(r)
-	build, err := strconv.ParseUint(v["Build"], 10, 64)
+func getBuildSpec(ctx context.Context, vars map[string]string) (*sourcegraph.BuildSpec, error) {
+	repo, err := handlerutil.GetRepo(ctx, vars)
+	if err != nil {
+		return nil, err
+	}
+	build, err := strconv.ParseUint(vars["Build"], 10, 64)
 	if err != nil {
 		return nil, &errcode.HTTPErr{Status: http.StatusBadRequest, Err: err}
 	}
-	return &sourcegraph.BuildSpec{
-		Repo: routevar.ToRepo(mux.Vars(r)),
-		ID:   build,
-	}, nil
+	return &sourcegraph.BuildSpec{Repo: repo.ID, ID: build}, nil
 }
 
-func getBuildTaskSpec(r *http.Request) (sourcegraph.TaskSpec, error) {
-	buildSpec, err := getBuildSpec(r)
+func getBuildTaskSpec(ctx context.Context, vars map[string]string) (*sourcegraph.TaskSpec, error) {
+	buildSpec, err := getBuildSpec(ctx, vars)
 	if err != nil {
-		return sourcegraph.TaskSpec{}, err
+		return nil, err
 	}
 
-	v := mux.Vars(r)
-	taskID, err := strconv.ParseUint(v["Task"], 10, 64)
+	taskID, err := strconv.ParseUint(vars["Task"], 10, 64)
 	if err != nil {
-		return sourcegraph.TaskSpec{}, &errcode.HTTPErr{Status: http.StatusBadRequest, Err: err}
+		return nil, &errcode.HTTPErr{Status: http.StatusBadRequest, Err: err}
 	}
-	return sourcegraph.TaskSpec{Build: *buildSpec, ID: taskID}, nil
+	return &sourcegraph.TaskSpec{Build: *buildSpec, ID: taskID}, nil
 }
 
 func writePlainLogEntries(w http.ResponseWriter, entries *sourcegraph.LogEntries) error {

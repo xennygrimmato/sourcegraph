@@ -78,7 +78,7 @@ func (s *repos) GetCommit(ctx context.Context, repoRev *sourcegraph.RepoRevSpec)
 func (s *repos) ListCommits(ctx context.Context, op *sourcegraph.ReposListCommitsOp) (*sourcegraph.CommitList, error) {
 	log15.Debug("svc.local.repos.ListCommits", "op", op)
 
-	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{URI: op.Repo})
+	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{ID: op.Repo})
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *repos) ListCommits(ctx context.Context, op *sourcegraph.ReposListCommit
 }
 
 func (s *repos) ListBranches(ctx context.Context, op *sourcegraph.ReposListBranchesOp) (*sourcegraph.BranchList, error) {
-	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{URI: op.Repo})
+	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{ID: op.Repo})
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (s *repos) ListBranches(ctx context.Context, op *sourcegraph.ReposListBranc
 }
 
 func (s *repos) ListTags(ctx context.Context, op *sourcegraph.ReposListTagsOp) (*sourcegraph.TagList, error) {
-	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{URI: op.Repo})
+	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{ID: op.Repo})
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (s *repos) ListTags(ctx context.Context, op *sourcegraph.ReposListTagsOp) (
 }
 
 func (s *repos) ListCommitters(ctx context.Context, op *sourcegraph.ReposListCommittersOp) (*sourcegraph.CommitterList, error) {
-	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{URI: op.Repo})
+	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{ID: op.Repo})
 	if err != nil {
 		return nil, err
 	}

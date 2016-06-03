@@ -10,7 +10,7 @@ import (
 func TestRepoResolution_JSON(t *testing.T) {
 	tests := []*RepoResolution{
 		{Result: &RepoResolution_Repo{
-			Repo: "r",
+			Repo: 1,
 		}},
 		{Result: &RepoResolution_RemoteRepo{
 			RemoteRepo: &RemoteRepo{GitHubID: 123},

@@ -11,15 +11,15 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
 )
 
-func (s *ReposServer) MockGet(t *testing.T, wantRepo string) (called *bool) {
+func (s *ReposServer) MockGet(t *testing.T, wantRepo int32) (called *bool) {
 	called = new(bool)
 	s.Get_ = func(ctx context.Context, repo *sourcegraph.RepoSpec) (*sourcegraph.Repo, error) {
 		*called = true
-		if repo.URI != wantRepo {
-			t.Errorf("got repo %q, want %q", repo.URI, wantRepo)
+		if repo.ID != wantRepo {
+			t.Errorf("got repo %d, want %d", repo.ID, wantRepo)
 			return nil, grpc.Errorf(codes.NotFound, "repo %s not found", wantRepo)
 		}
-		return &sourcegraph.Repo{URI: repo.URI}, nil
+		return &sourcegraph.Repo{ID: repo.ID}, nil
 	}
 	return
 }
@@ -28,9 +28,9 @@ func (s *ReposServer) MockGet_Return(t *testing.T, returns *sourcegraph.Repo) (c
 	called = new(bool)
 	s.Get_ = func(ctx context.Context, repo *sourcegraph.RepoSpec) (*sourcegraph.Repo, error) {
 		*called = true
-		if repo.URI != returns.URI {
-			t.Errorf("got repo %q, want %q", repo.URI, returns.URI)
-			return nil, grpc.Errorf(codes.NotFound, "repo %s not found", returns.URI)
+		if repo.ID != returns.ID {
+			t.Errorf("got repo %d, want %d", repo.ID, returns.ID)
+			return nil, grpc.Errorf(codes.NotFound, "repo %d not found", returns.ID)
 		}
 		return returns, nil
 	}
@@ -46,7 +46,7 @@ func (s *ReposServer) MockResolve_Local(t *testing.T, wantPath string) (called *
 			return nil, grpc.Errorf(codes.NotFound, "repo path %s resolution failed", wantPath)
 		}
 		return &sourcegraph.RepoResolution{
-			Result: &sourcegraph.RepoResolution_Repo{Repo: op.Path},
+			Result: &sourcegraph.RepoResolution_Repo{},
 		}, nil
 	}
 	return

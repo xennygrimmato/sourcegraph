@@ -26,10 +26,9 @@ import (
 )
 
 func serveRepo(w http.ResponseWriter, r *http.Request) error {
-	ctx, cl := handlerutil.Client(r)
+	ctx, _ := handlerutil.Client(r)
 
-	repoPath := routevar.ToRepo(mux.Vars(r))
-	repo, err := cl.Repos.Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+	repo, err := handlerutil.GetRepo(ctx, mux.Vars(r))
 	if err != nil {
 		return err
 	}
@@ -65,12 +64,12 @@ func serveRepoResolve(w http.ResponseWriter, r *http.Request) error {
 	// if the operation resolved to a local repo. Clients will almost
 	// always need the local repo in this case, so including it saves
 	// a round-trip.
-	if repoPath := res0.GetRepo(); repoPath != "" {
-		repo, err := cl.Repos.Get(ctx, &sourcegraph.RepoSpec{URI: repoPath})
+	if repoID := res0.GetRepo(); repoID != 0 {
+		repo, err := cl.Repos.Get(ctx, &sourcegraph.RepoSpec{ID: repoID})
 		if err == nil {
 			res.IncludedRepo = repo
 		} else {
-			log15.Warn("Error optimistically including repo in serveRepoResolve", "repo", repoPath, "err", err)
+			log15.Warn("Error optimistically including repo in serveRepoResolve", "repo", repoID, "err", err)
 		}
 	}
 
@@ -80,7 +79,7 @@ func serveRepoResolve(w http.ResponseWriter, r *http.Request) error {
 func serveRepoInventory(w http.ResponseWriter, r *http.Request) error {
 	ctx, cl := handlerutil.Client(r)
 
-	repoRev, err := resolveRepoRev(ctx, routevar.ToRepoRev(mux.Vars(r)))
+	repoRev, err := resolveLocalRepoRev(ctx, routevar.ToRepoRev(mux.Vars(r)))
 	if err != nil {
 		return err
 	}
@@ -187,15 +186,20 @@ func serveRemoteRepos(w http.ResponseWriter, r *http.Request) error {
 // specified repository and commitID. For performance reasons, commitID is
 // assumed to be canonical (and is not resolved); if not 40 characters, an error is
 // returned.
-func getRepoLastBuildTime(r *http.Request, repo, commitID string) (time.Time, error) {
+func getRepoLastBuildTime(r *http.Request, repoPath string, commitID string) (time.Time, error) {
 	if len(commitID) != 40 {
 		return time.Time{}, errors.New("refusing (for performance reasons) to get the last build time for non-canonical repository commit ID")
 	}
 
 	ctx, cl := handlerutil.Client(r)
 
+	res, err := cl.Repos.Resolve(ctx, &sourcegraph.RepoResolveOp{Path: repoPath})
+	if err != nil || res.GetRepo() == 0 {
+		return time.Time{}, err
+	}
+
 	builds, err := cl.Builds.List(ctx, &sourcegraph.BuildListOptions{
-		Repo:        repo,
+		Repo:        res.GetRepo(),
 		CommitID:    commitID,
 		Ended:       true,
 		Succeeded:   true,
@@ -213,17 +217,48 @@ func getRepoLastBuildTime(r *http.Request, repo, commitID string) (time.Time, er
 	return time.Time{}, nil
 }
 
-func resolveRepoRev(ctx context.Context, repoRev routevar.RepoRev) (*sourcegraph.RepoRevSpec, error) {
+func resolveLocalRepo(ctx context.Context, repoPath string) (int32, error) {
+	cl, err := sourcegraph.NewClientFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	res, err := cl.Repos.Resolve(ctx, &sourcegraph.RepoResolveOp{Path: repoPath})
+	if err != nil {
+		return 0, err
+	}
+	if repo := res.GetRepo(); repo != 0 {
+		return repo, nil
+	}
+	return 0, &errcode.HTTPErr{Status: http.StatusNotFound, Err: errors.New("repo must exist locally (found remotely)")}
+}
+
+func resolveLocalRepoRev(ctx context.Context, repoRev routevar.RepoRev) (*sourcegraph.RepoRevSpec, error) {
 	cl, err := sourcegraph.NewClientFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	res, err := cl.Repos.ResolveRev(ctx, &sourcegraph.ReposResolveRevOp{Repo: repoRev.Repo, Rev: repoRev.Rev})
+	repo, err := resolveLocalRepo(ctx, repoRev.Repo)
+	if err != nil {
+		return nil, err
+	}
+	res, err := cl.Repos.ResolveRev(ctx, &sourcegraph.ReposResolveRevOp{Repo: repo, Rev: repoRev.Rev})
 	if err != nil {
 		return nil, err
 	}
 	return &sourcegraph.RepoRevSpec{
-		Repo:     repoRev.Repo,
+		Repo:     repo,
 		CommitID: res.CommitID,
 	}, nil
+}
+
+func resolveLocalRepos(ctx context.Context, repoPaths []string) ([]int32, error) {
+	repoIDs := make([]int32, 0, len(repoPaths))
+	for _, repoPath := range repoPaths {
+		repoID, err := resolveLocalRepo(ctx, repoPath)
+		if err != nil {
+			return nil, err
+		}
+		repoIDs = append(repoIDs, repoID)
+	}
+	return repoIDs, nil
 }

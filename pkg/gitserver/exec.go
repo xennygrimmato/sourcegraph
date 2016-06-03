@@ -172,7 +172,7 @@ func init() {
 }
 
 func observeExec(req *execRequest, start time.Time, status string) {
-	repo := repotrackutil.GetTrackedRepo(req.Repo)
+	repo := repotrackutil.GetTrackedRepoPath(req.Repo)
 	cmd := ""
 	if len(req.Args) > 0 {
 		cmd = req.Args[0]

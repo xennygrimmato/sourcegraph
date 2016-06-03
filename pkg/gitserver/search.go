@@ -226,6 +226,6 @@ func init() {
 }
 
 func observeSearch(req *searchRequest, start time.Time, status string) {
-	repo := repotrackutil.GetTrackedRepo(req.Repo)
+	repo := repotrackutil.GetTrackedRepoPath(req.Repo)
 	searchDuration.WithLabelValues(req.Opt.QueryType, repo, status).Observe(time.Since(start).Seconds())
 }

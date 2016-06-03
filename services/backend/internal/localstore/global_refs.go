@@ -70,7 +70,12 @@ func init() {
 type globalRefs struct{}
 
 func (g *globalRefs) Get(ctx context.Context, op *sourcegraph.DefsListRefLocationsOp) (*sourcegraph.RefLocationsList, error) {
-	trackedRepo := repotrackutil.GetTrackedRepo(op.Def.Repo)
+	defRepo, err := (&repos{}).Get(ctx, op.Def.Repo)
+	if err != nil {
+		return nil, err
+	}
+
+	trackedRepo := repotrackutil.GetTrackedRepoPath(defRepo.URI)
 	observe := func(part string, start time.Time) {
 		globalRefsDuration.WithLabelValues(trackedRepo, part).Observe(time.Since(start).Seconds())
 	}
@@ -180,7 +185,7 @@ func (g *globalRefs) Get(ctx context.Context, op *sourcegraph.DefsListRefLocatio
 			}
 			repoRefs = append(repoRefs, refsByRepo[r.Repo])
 			// Note the position of the def's own repo in the slice.
-			if op.Def.Repo == r.Repo {
+			if defRepo.URI == r.Repo {
 				defRepoIdx = len(repoRefs) - 1
 			}
 		}
@@ -242,11 +247,14 @@ func filterVisibleRepos(ctx context.Context, repoRefs []*sourcegraph.DefRepoRef)
 			// global_refs, we should just check
 			// accesscontrol.VerifyUserHasReadAccess
 			// https://app.asana.com/0/138665145800110/137848642885286
-			repo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{URI: r.Repo})
-			if err == nil && !repo.Fork {
-				mu.Lock()
-				hasAccess[i] = true
-				mu.Unlock()
+			res, err := svc.Repos(ctx).Resolve(ctx, &sourcegraph.RepoResolveOp{Path: r.Repo})
+			if err == nil && res.GetRepo() != 0 {
+				repo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{ID: res.GetRepo()})
+				if err == nil && !repo.Fork {
+					mu.Lock()
+					hasAccess[i] = true
+					mu.Unlock()
+				}
 			}
 			return nil
 		})
@@ -312,11 +320,11 @@ func (g *globalRefs) Update(ctx context.Context, op *sourcegraph.DefsRefreshInde
 
 func (g *globalRefs) update(ctx context.Context, tx gorp.SqlExecutor, op *sourcegraph.DefsRefreshIndexOp) error {
 	repo := op.Repo
-	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalRefs.Update", 0, repo); err != nil {
+	if err := accesscontrol.VerifyUserHasWriteAccess(ctx, "GlobalRefs.Update", repo, ""); err != nil {
 		return err
 	}
 
-	commitID, err := resolveRevisionDefaultBranch(ctx, repo)
+	repoPath, commitID, err := resolveRevisionDefaultBranch(ctx, repo)
 	if err != nil {
 		return err
 	}
@@ -338,7 +346,7 @@ func (g *globalRefs) update(ctx context.Context, tx gorp.SqlExecutor, op *source
 	}
 
 	allRefs, err := store.GraphFromContext(ctx).Refs(
-		sstore.ByRepoCommitIDs(sstore.Version{Repo: repo, CommitID: commitID}),
+		sstore.ByRepoCommitIDs(sstore.Version{Repo: repoPath, CommitID: commitID}),
 	)
 	if err != nil {
 		return err
@@ -358,7 +366,7 @@ func (g *globalRefs) update(ctx context.Context, tx gorp.SqlExecutor, op *source
 		// stage. Rather not index at all. Alerting on this error
 		// should be handled upstream.
 		if r.DefRepo == "" || r.DefUnit == "" || r.DefUnitType == "" || r.DefPath == "" {
-			return fmt.Errorf("graphstore contains invalid reference: repo=%s commit=%s ref=%+v", repo, commitID, r)
+			return fmt.Errorf("graphstore contains invalid reference: repo=%s commit=%s ref=%+v", repoPath, commitID, r)
 		}
 		// Ignore ref to builtin defs of golang/go repo (string, int, bool, etc) as this
 		// doesn't add significant value; yet it adds up to a lot of space in the db,
@@ -468,14 +476,14 @@ ON COMMIT DROP;`
 }
 
 // version returns the commit_id that global_refs has indexed for repo
-func (g *globalRefs) version(tx gorp.SqlExecutor, repo string) (string, error) {
-	commitID, err := tx.SelectNullStr("SELECT commit_id FROM global_refs_version WHERE repo=$1 FOR UPDATE", repo)
+func (g *globalRefs) version(tx gorp.SqlExecutor, repo int32) (string, error) {
+	commitID, err := tx.SelectNullStr("SELECT commit_id FROM global_refs_version WHERE repo=(SELECT uri FROM repo WHERE id=$1) FOR UPDATE", repo)
 	if err != nil {
 		return "", err
 	}
 	// Insert a value into the table so we just have to run an UPDATE + can lock the row.
 	if !commitID.Valid {
-		_, err = tx.Exec("INSERT INTO global_refs_version VALUES ($1, '', now())", repo)
+		_, err = tx.Exec("INSERT INTO global_refs_version VALUES ((SELECT uri FROM repo WHERE id=$1), '', now())", repo)
 		if err != nil {
 			return "", err
 		}
@@ -484,8 +492,8 @@ func (g *globalRefs) version(tx gorp.SqlExecutor, repo string) (string, error) {
 }
 
 // versionUpdate will update the version for repo to commitID in the transaction tx
-func (g *globalRefs) versionUpdate(tx gorp.SqlExecutor, repo, commitID string) error {
-	_, err := tx.Exec("UPDATE global_refs_version SET commit_id=$1, updated_at=now() WHERE repo=$2;", commitID, repo)
+func (g *globalRefs) versionUpdate(tx gorp.SqlExecutor, repo int32, commitID string) error {
+	_, err := tx.Exec("UPDATE global_refs_version SET commit_id=$1, updated_at=now() WHERE repo=(SELECT uri FROM repo WHERE id=$2);", commitID, repo)
 	return err
 }
 

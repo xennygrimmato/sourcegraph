@@ -29,7 +29,7 @@ var _ sourcegraph.DefsServer = (*defs)(nil)
 func (s *defs) Get(ctx context.Context, op *sourcegraph.DefsGetOp) (*sourcegraph.Def, error) {
 	defSpec := op.Def
 
-	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.Get", 0, defSpec.Repo); err != nil {
+	if err := accesscontrol.VerifyUserHasReadAccess(ctx, "Defs.Get", defSpec.Repo, ""); err != nil {
 		return nil, err
 	}
 
@@ -54,8 +54,7 @@ func (s *defs) Get(ctx context.Context, op *sourcegraph.DefsGetOp) (*sourcegraph
 	if op.Opt.ComputeLineRange {
 		startLine, endLine, err := computeLineRange(ctx, sourcegraph.TreeEntrySpec{
 			RepoRev: sourcegraph.RepoRevSpec{Repo: defSpec.Repo, CommitID: defSpec.CommitID},
-
-			Path: def.File,
+			Path:    def.File,
 		}, def.DefStart, def.DefEnd)
 		if err != nil {
 			log15.Warn("Defs.Get: failed to compute line range.", "err", err, "repo", defSpec.Repo, "commitID", defSpec.CommitID, "file", def.File)

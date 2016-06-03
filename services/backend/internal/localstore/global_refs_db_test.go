@@ -40,7 +40,9 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 	ctx, mocks, done := testContext()
 	defer done()
 
-	(&repos{}).mustCreate(ctx, t, &sourcegraph.Repo{URI: "x/y"}, &sourcegraph.Repo{URI: "a/b"})
+	repos := (&repos{}).mustCreate(ctx, t, &sourcegraph.Repo{URI: "x/y"}, &sourcegraph.Repo{URI: "a/b"})
+	xyRepoID := repos[0].ID
+	abRepoID := repos[1].ID
 	// TODO(keegancsmith) remove once we don't need to speak to the repo
 	// service https://app.asana.com/0/138665145800110/137848642885286
 	mockReposS := &mock.ReposServer{
@@ -105,7 +107,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 		}
 	}
 	// Updates should be idempotent.
-	err := g.Update(ctx, &sourcegraph.DefsRefreshIndexOp{Repo: "a/b"})
+	err := g.Update(ctx, &sourcegraph.DefsRefreshIndexOp{Repo: abRepoID})
 	if err != nil {
 		t.Fatalf("could not idempotent update a/b: %s", err)
 	}
@@ -116,7 +118,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 	}{
 		"simple1": {
 			&sourcegraph.DefsListRefLocationsOp{
-				Def: sourcegraph.DefSpec{Repo: "a/b", Unit: "a/b/u", UnitType: "t", Path: "A/R"},
+				Def: sourcegraph.DefSpec{Repo: abRepoID, Unit: "a/b/u", UnitType: "t", Path: "A/R"},
 			},
 			[]*sourcegraph.DefRepoRef{
 				{Repo: "a/b", Count: 3, Files: []*sourcegraph.DefFileRef{{Path: "a/b/u/s.go", Count: 2}, {Path: "a/b/p/t.go", Count: 1}}},
@@ -124,7 +126,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 		},
 		"simple2": {
 			&sourcegraph.DefsListRefLocationsOp{
-				Def: sourcegraph.DefSpec{Repo: "x/y", Unit: "x/y/c", UnitType: "t", Path: "A/R"},
+				Def: sourcegraph.DefSpec{Repo: xyRepoID, Unit: "x/y/c", UnitType: "t", Path: "A/R"},
 			},
 			[]*sourcegraph.DefRepoRef{
 				{Repo: "x/y", Count: 1, Files: []*sourcegraph.DefFileRef{{Path: "x/y/c/v.go", Count: 1}}},
@@ -133,9 +135,9 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 		},
 		"repo": {
 			&sourcegraph.DefsListRefLocationsOp{
-				Def: sourcegraph.DefSpec{Repo: "x/y", Unit: "x/y/c", UnitType: "t", Path: "A/R"},
+				Def: sourcegraph.DefSpec{Repo: xyRepoID, Unit: "x/y/c", UnitType: "t", Path: "A/R"},
 				Opt: &sourcegraph.DefListRefLocationsOptions{
-					Repos: []string{"a/b"},
+					Repos: []int32{abRepoID},
 				},
 			},
 			[]*sourcegraph.DefRepoRef{
@@ -144,7 +146,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 		},
 		"pagination_first": {
 			&sourcegraph.DefsListRefLocationsOp{
-				Def: sourcegraph.DefSpec{Repo: "x/y", Unit: "x/y/c", UnitType: "t", Path: "A/R"},
+				Def: sourcegraph.DefSpec{Repo: xyRepoID, Unit: "x/y/c", UnitType: "t", Path: "A/R"},
 				Opt: &sourcegraph.DefListRefLocationsOptions{
 					ListOptions: sourcegraph.ListOptions{
 						Page: 1,
@@ -158,7 +160,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 		},
 		"pagination_empty": {
 			&sourcegraph.DefsListRefLocationsOp{
-				Def: sourcegraph.DefSpec{Repo: "x/y", Unit: "x/y/c", UnitType: "t", Path: "A/R"},
+				Def: sourcegraph.DefSpec{Repo: xyRepoID, Unit: "x/y/c", UnitType: "t", Path: "A/R"},
 				Opt: &sourcegraph.DefListRefLocationsOptions{
 					ListOptions: sourcegraph.ListOptions{
 						Page: 100,
@@ -170,7 +172,7 @@ func testGlobalRefs(t *testing.T, g store.GlobalRefs) {
 		// Missing defspec should not return an error
 		"empty": {
 			&sourcegraph.DefsListRefLocationsOp{
-				Def: sourcegraph.DefSpec{Repo: "x/y", Unit: "x/y/c", UnitType: "t", Path: "A/R/D"},
+				Def: sourcegraph.DefSpec{Repo: xyRepoID, Unit: "x/y/c", UnitType: "t", Path: "A/R/D"},
 			},
 			[]*sourcegraph.DefRepoRef{},
 		},

@@ -63,7 +63,7 @@ func (s *mirrorRepos) RefreshVCS(ctx context.Context, op *sourcegraph.MirrorRepo
 		}
 	}
 
-	repo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{URI: op.Repo})
+	repo, err := svc.Repos(ctx).Get(ctx, &sourcegraph.RepoSpec{ID: op.Repo})
 	if err != nil {
 		log15.Error("RefreshVCS: failed to get repo", "error", err, "repo", op.Repo)
 		return nil, err

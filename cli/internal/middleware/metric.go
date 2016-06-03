@@ -56,7 +56,7 @@ func Metrics(next http.Handler) http.Handler {
 			"route":  name,
 			"method": strings.ToLower(r.Method),
 			"code":   strconv.Itoa(code),
-			"repo":   repotrackutil.GetTrackedRepo(r.URL.Path),
+			"repo":   repotrackutil.GetTrackedRepoPath(r.URL.Path),
 		}
 		requestDuration.With(labels).Observe(duration.Seconds())
 		requestHeartbeat.With(labels).Set(float64(time.Now().Unix()))

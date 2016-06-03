@@ -25,8 +25,15 @@ var trackedRepoRe = regexp.MustCompile(`\b(` + strings.Join(trackedRepo, "|") + 
 
 // GetTrackedRepo guesses which repo a request URL path is for. It only looks
 // at a certain subset of repos for its guess.
-func GetTrackedRepo(path string) string {
-	m := trackedRepoRe.FindStringSubmatch(path)
+func GetTrackedRepo(repo int32) string {
+	/// TODO(sqs): make this filter to the repos listed in trackedRepo
+	/// and look up the repo ID in the DB to see if this repo is in
+	/// the list.
+	return "unknown"
+}
+
+func GetTrackedRepoPath(repoPath string) string {
+	m := trackedRepoRe.FindStringSubmatch(repoPath)
 	if len(m) == 0 {
 		return "unknown"
 	}

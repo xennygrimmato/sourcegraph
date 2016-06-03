@@ -73,7 +73,7 @@ func serveSrclibImport(w http.ResponseWriter, r *http.Request) (err error) {
 	if _, err := f.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
-	importSizeBytes.WithLabelValues(repotrackutil.GetTrackedRepo(repo.URI)).Observe(float64(contentLength))
+	importSizeBytes.WithLabelValues(repotrackutil.GetTrackedRepoPath(repo.URI)).Observe(float64(contentLength))
 
 	if contentLength == 0 {
 		return &errcode.HTTPErr{Status: http.StatusBadRequest, Err: errors.New("no data in request body")}
@@ -95,7 +95,7 @@ func serveSrclibImport(w http.ResponseWriter, r *http.Request) (err error) {
 	remoteStore := newSrclibStoreClient(ctx, pb.NewMultiRepoImporterClient(cl.Conn))
 
 	importOpt := srclib.ImportOpt{
-		Repo:     repoRev.Repo,
+		Repo:     repo.URI,
 		CommitID: repoRev.CommitID,
 	}
 	if err := srclib.Import(fs, remoteStore, importOpt); err != nil {
@@ -122,7 +122,7 @@ func serveSrclibImport(w http.ResponseWriter, r *http.Request) (err error) {
 		}
 
 		_, err = cl.Search.RefreshIndex(ctx, &sourcegraph.SearchRefreshIndexOp{
-			Repos:         []string{repoRev.Repo},
+			Repos:         []int32{repoRev.Repo},
 			RefreshCounts: true,
 			RefreshSearch: true,
 		})
