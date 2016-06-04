@@ -2,54 +2,54 @@ package coverageutil
 
 import (
 	"github.com/attfarhan/yaml"
-	// "log"
 )
 
 type yamlTokenizer struct {
-	// String values of tokens in the tokenizer
+	// values are the tokens returned by the tokenizer
 	values     []string
 	startBytes []int
-	line       []int
-	// Pointer represents the index in each
-	// field as we traverse each field.
+	lines      []int
+	// pointer is the index we're currently viewing in each of the arrays
 	pointer int
 }
 
-// Initializes text scanner that extracts only idents
 func (s *yamlTokenizer) Init(src []byte) {
-	// construct a new parser
 	p := yaml.NewParser(src)
 	// node is the tree of tokens returned by the parser.
 	node := p.Parse()
 
 	fileString := string(src)
 
-	// List of nodes representing tokens.  Remove the first because YAML
-	// always starts with an empty token, and begins any sequence with
+	// List of nodes representing tokens.  Remove the first element because YAML
+	// always starts with an empty token representing the start of a document,
+	// and begins any collection (sequence, mapping, any section of text) with
 	// an empty token (both considered starting at byte 0). If we don't remove
 	// it, we will get a duplicate ref key make failure for every file.
-	tokenList := yaml.Explore(fileString, node)[1:]
+	tokenList := []*yaml.Node{}
+	if node == nil {
+		tokenList = []*yaml.Node{}
+	} else {
+		tokenList = yaml.Explore(fileString, node)[1:]
+	}
 
 	for _, token := range tokenList {
-		s.line = append(s.line, token.Line)
+		s.lines = append(s.lines, token.Line)
 		s.values = append(s.values, token.Value)
 		s.startBytes = append(s.startBytes, token.StartByte)
 	}
 	s.pointer = 0
 }
 
-// Next returns YAML idents
 func (s *yamlTokenizer) Next() *Token {
+	defer func() { s.pointer++ }()
 	if s.pointer >= len(s.values) {
 		return nil
 	}
-	out := &Token{}
-	out.Offset = uint32(s.startBytes[s.pointer])
-	out.Text = s.values[s.pointer]
-	out.Line = s.line[s.pointer]
-	s.pointer++
-
-	return out
+	return &Token{
+		Offset: uint32(s.startBytes[s.pointer]),
+		Text:   s.values[s.pointer],
+		Line:   s.lines[s.pointer],
+	}
 }
 
 func (s *yamlTokenizer) Done() {}
