@@ -10,8 +10,7 @@ type yamlTokenizer struct {
 	startBytes []int
 	lines      []int
 	errors     []string
-
-	// pointer is the index we're currently viewing in each of the arrays
+	// pointer is the index in each of the above arrays when we iterate through them
 	pointer int
 }
 
