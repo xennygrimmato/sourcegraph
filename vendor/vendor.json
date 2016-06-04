@@ -44,8 +44,8 @@
 		{
 			"checksumSHA1": "JzPu9HkYWtpOFBfTM95+Ey8tJ7I=",
 			"path": "github.com/attfarhan/yaml",
-			"revision": "8ea8915dff8a90378e3739926de93613c7d864ff",
-			"revisionTime": "2016-06-03T03:12:52Z"
+			"revision": "b712a53f5d0f1a457baca1b55b9014979b19377e",
+			"revisionTime": "2016-06-03T05:41:56Z"
 		},
 		{
 			"path": "github.com/beorn7/perks/quantile",
