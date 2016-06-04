@@ -9,6 +9,8 @@ type yamlTokenizer struct {
 	values     []string
 	startBytes []int
 	lines      []int
+	errors     []string
+
 	// pointer is the index we're currently viewing in each of the arrays
 	pointer int
 }
@@ -53,6 +55,9 @@ func (s *yamlTokenizer) Next() *Token {
 }
 
 func (s *yamlTokenizer) Done() {}
+func (s *yamlTokenizer) Errors() []string {
+	return s.errors
+}
 
 func init() {
 	factory := func() Tokenizer {
