@@ -73,17 +73,19 @@ class GlobalRefsContainer extends Container {
 		let expand = this.props.sorting === "top" ? 3 : null;
 		return (
 			<div>
+				<div styleName="section-label">
+					{this.props.sorting === "top" &&
+						`Usage examples`
+					}
+					{this.props.sorting !== "top" && refLocs && refLocs.TotalRepos &&
+						`Used in ${refLocs.TotalRepos} repositor${refLocs.TotalRepos === 1 ? "y" : "ies"}`
+					}
+					{this.props.sorting !== "top" && refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
+						`Used in ${refLocs.RepoRefs.length}+ repositories`
+					}
+				</div>
+				<hr style={{marginTop: 0, clear: "both"}}/>
 				{!refLocs && <i>Loading...</i>}
-				{refLocs && refLocs.TotalRepos &&
-					<div styleName="section-label">
-						Used in {refLocs.TotalRepos} repositor{refLocs.TotalRepos === 1 ? "y" : "ies"}
-					</div>
-				}
-				{refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
-					<div styleName="section-label">
-						Used in {refLocs.RepoRefs.length}+ repositories
-					</div>
-				}
 				{refLocs && refLocs.RepoRefs && refLocs.RepoRefs.map((repoRefs, i) => <RefsContainer
 					key={i}
 					repo={this.props.repo}
