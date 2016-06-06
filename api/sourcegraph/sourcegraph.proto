@@ -1480,11 +1480,14 @@ message RefList {
 message DefListRefLocationsOptions {
 	// Repos is the list of repos to restrict the results to.
 	// If empty, all repos are searched for references.
-	repeated int32 Repos = 1 [(gogoproto.moretags) = "url:\",omitempty\""];
+	repeated string Repos = 1 [(gogoproto.moretags) = "url:\",omitempty\""];
 
 	// ListOptions specifies options for paginating
 	// the result.
 	ListOptions ListOptions = 3 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
+
+	// Temporary: optionally specify a specific ranking.
+	string Sorting = 4;
 }
 
 // DefListRefLocationsOptions holds the options for fetching
