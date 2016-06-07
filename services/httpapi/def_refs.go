@@ -121,6 +121,39 @@ func serveDefRefLocations(w http.ResponseWriter, r *http.Request) error {
 	return json.NewEncoder(w).Encode(refLocations)
 }
 
+func serveDefExamples(w http.ResponseWriter, r *http.Request) error {
+	ctx, cl := handlerutil.Client(r)
+
+	var opt sourcegraph.DefsListExamplesOp
+	if err := schemaDecoder.Decode(&opt, r.URL.Query()); err != nil {
+		return err
+	}
+
+	dc, repo, err := handlerutil.GetDefCommon(ctx, mux.Vars(r), nil)
+	if err != nil {
+		return err
+	}
+
+	def := dc.Def
+	defSpec := sourcegraph.DefSpec{
+		Repo:     repo.ID,
+		Unit:     def.Unit,
+		UnitType: def.UnitType,
+		Path:     def.Path,
+	}
+	opt.Def = defSpec
+
+	opt.ListOptions.PerPage = 3
+	opt.ListOptions.Page = 1
+
+	refLocations, err := cl.Defs.ListExamples(ctx, &opt)
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(w).Encode(refLocations)
+}
+
 type fileList []*sourcegraph.DefFileRef
 
 func (f fileList) Len() int           { return len(f) }

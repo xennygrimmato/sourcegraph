@@ -193,6 +193,7 @@ func (g *globalRefs) Get(ctx context.Context, op *sourcegraph.DefsListRefLocatio
 	observe("locations", start)
 	start = time.Now()
 
+	// SECURITY: filter private repos user doesn't have access to.
 	repoRefs, err = filterVisibleRepos(ctx, repoRefs)
 	if err != nil {
 		return nil, err
