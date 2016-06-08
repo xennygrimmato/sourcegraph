@@ -68,9 +68,6 @@ func (s *Repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 	if ghrepo.Private != nil && !*ghrepo.Private {
 		reposGithubPublicCache.Add(repo, remoteRepo, reposGithubPublicCacheTTL)
 
-		log15.Info("github cache-get miss - adding to cache","repo", repoName, "err", err)
-		reposGithubPublicCacheCounter.WithLabelValues("miss").Inc()
-	} else {
 		log15.Error("github cache-get error attmpting to clone private repo or unknown error has occured ", "repo", repoName, "err", err)
 
 		log15.Info("github cache-get miss - adding to cache", "repo", repoName, "err", err)
@@ -82,11 +79,6 @@ func (s *Repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 
 	return remoteRepo, nil
 }
-
-
-
-
-
 
 
 
