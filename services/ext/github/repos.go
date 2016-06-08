@@ -80,11 +80,6 @@ func (s *Repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 	return remoteRepo, nil
 }
 
-
-
-
-
-
 func (s *Repos) GetByID(ctx context.Context, id int) (*sourcegraph.RemoteRepo, error) {
 	ghrepo, resp, err := client(ctx).repos.GetByID(id)
 	if err != nil {
