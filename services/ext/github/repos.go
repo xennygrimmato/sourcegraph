@@ -59,14 +59,21 @@ func (s *Repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 	ghrepo, resp, err := client(ctx).repos.Get(owner, repoName)
 	if err != nil {
 		reposGithubPublicCacheCounter.WithLabelValues("error").Inc()
-		log15.Error("github cache-get standard error for repo ", "repo", repoName, "err", err)
+
+		log15.Error("github cache-get standard error for repo ", repoName, "err", err)
 
 		return nil, checkResponse(ctx, resp, err, fmt.Sprintf("github.Repos.Get %q", repo))
 	}
 	remoteRepo := toRemoteRepo(ghrepo)
 	if ghrepo.Private != nil && !*ghrepo.Private {
 		reposGithubPublicCache.Add(repo, remoteRepo, reposGithubPublicCacheTTL)
+
 		log15.Info("github cache-get miss - adding to cache","repo", repoName, "err", err)
+		reposGithubPublicCacheCounter.WithLabelValues("miss").Inc()
+	} else {
+		log15.Error("github cache-get error attmpting to clone private repo or unknown error has occured ", "repo", repoName, "err", err)
+
+		log15.Info("github cache-get miss - adding to cache", "repo", repoName, "err", err)
 		reposGithubPublicCacheCounter.WithLabelValues("miss").Inc()
 	} else {
 		log15.Error("github cache-get error attmpting to clone private repo or unknown error has occured ", "repo", repoName, "err", err)
@@ -75,6 +82,16 @@ func (s *Repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 
 	return remoteRepo, nil
 }
+
+
+
+
+
+
+
+
+
+
 
 func (s *Repos) GetByID(ctx context.Context, id int) (*sourcegraph.RemoteRepo, error) {
 	ghrepo, resp, err := client(ctx).repos.GetByID(id)
@@ -135,6 +152,7 @@ func toRemoteRepo(ghrepo *github.Repository) *sourcegraph.RemoteRepo {
 func (s *Repos) ListAccessible(ctx context.Context, opt *github.RepositoryListOptions) ([]*sourcegraph.RemoteRepo, error) {
 	ghRepos, resp, err := client(ctx).repos.List("", opt)
 	if err != nil {
+
 		log15.Error("github cache-get list-accessible has failed against ", "resp", resp, "err", err)
 		return nil, checkResponse(ctx, resp, err, "github.Repos.ListAccessible")
 	}
