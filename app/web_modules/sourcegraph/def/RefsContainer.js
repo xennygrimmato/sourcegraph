@@ -96,28 +96,9 @@ export default class RefsContainer extends Container {
 		state.rangeLimit = props.rangeLimit || null;
 		if (state.repoRefLocations) {
 			state.fileLocations = state.repoRefLocations.Files;
-			// TODO state.fileLocations = state.fileLocations.sort((a, b) => b.Count - a.Count); // flatten
 		}
 
 		state.refs = props.refs || DefStore.refs.get(state.repo, state.rev, state.def, state.refRepo, null);
-		if (state.refs && !state.refs.Error && state.fileLocations) {
-			// TODO: cleanup data fetching logic so this doesn't need to be handled as a special case...
-			// state.refs does *not* include the def itself, and this component fetches blobs based on
-			// file locations of state.refs; however, state.fileLocations comes from the ref-locations
-			// endpoint and *does* include the file location of the def.  Once refs are fetched,
-			// prune state.fileLocations to include only files which have non-def refs.
-			// This also resolves an issue where refs pagination causes some of the refLocations
-			// files to not be fetched (since no refs match these file locations).
-			const fileIndex = {};
-			state.refs.forEach((ref) => fileIndex[ref.File] = true);
-
-			const fileIndexExclusions = {};
-			state.fileLocations = state.fileLocations.filter((loc, i) => {
-				if (fileIndex[loc.Path]) return true;
-				fileIndexExclusions[i] = true;
-				return false;
-			});
-		}
 
 		if (state.fileLocations && !state.initExpanded) {
 			// Auto-expand N snippets by default.
@@ -128,18 +109,26 @@ export default class RefsContainer extends Container {
 			state.initExpanded = true;
 		}
 
-		if (state.mouseover) {
+		// TODO move this to another component.
+		if (state.rangeLimit) {
 			state.highlightedDef = DefStore.highlightedDef;
-			if (state.highlightedDef) {
-				let {repo, rev, def} = defRouteParams(state.highlightedDef);
-				state.highlightedDefObj = DefStore.defs.get(repo, rev, def);
-			} else {
+		} else {
+			if (state.mouseover) {
+				state.highlightedDef = DefStore.highlightedDef;
+				if (state.highlightedDef) {
+					let {repo, rev, def} = defRouteParams(state.highlightedDef);
+					state.highlightedDefObj = DefStore.defs.get(repo, rev, def);
+				} else {
+					state.highlightedDefObj = null;
+				}
+			}
+			if (state.mouseout) {
+				state.highlightedDef = null;
 				state.highlightedDefObj = null;
 			}
 		}
 		if (state.mouseout) {
 			// Clear DefTooltip so it doesn't hang around.
-			state.highlightedDef = null;
 			state.highlightedDefObj = null;
 		}
 
@@ -260,8 +249,10 @@ export default class RefsContainer extends Container {
 
 		return (
 			<div className={styles.container}
-				onMouseOver={() => this.setState({mouseover: true, mouseout: false})}
-				onMouseOut={() => this.setState({mouseover: false, mouseout: true})}>
+				onMouseOver={() => {
+					if (!this.state.mouseover) this.setState({mouseover: true, mouseout: false});
+				}}
+				onMouseLeave={() => this.setState({mouseover: false, mouseout: true})}>
 				{/* mouseover state is for optimization which will only re-render the moused-over blob when a def is highlighted */}
 				{/* this is important since there may be many ref containers on the page */}
 				<div>
