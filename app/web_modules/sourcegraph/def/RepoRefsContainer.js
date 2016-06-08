@@ -11,7 +11,7 @@ import styles from "./styles/DefInfo.css";
 import {RefLocsPerPage} from "sourcegraph/def";
 import "whatwg-fetch";
 
-class GlobalRefsContainer extends Container {
+class RepoRefsContainer extends Container {
 	static propTypes = {
 		repo: React.PropTypes.string,
 		rev: React.PropTypes.string,
@@ -42,9 +42,15 @@ class GlobalRefsContainer extends Container {
 		state.defObj = props.defObj || null;
 		state.defRepos = props.defRepos || [];
 		state.sorting = props.sorting || null;
-		state.refLocations = state.def ? DefStore.getRefLocations({
-			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos, sorting: state.sorting,
-		}) : null;
+		if (state.sorting !== "top") {
+			state.refLocations = state.def ? DefStore.getRefLocations({
+				repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos, sorting: state.sorting,
+			}) : null;
+		} else {
+			state.refLocations = state.def ? DefStore.getExamples({
+				repo: state.repo, commitID: state.commitID, def: state.def,
+			}) : null;
+		}
 		if (this.props.refLocations && this.props.refLocations.PagesFetched >= this.state.currPage) {
 			state.nextPageLoading = false;
 		}
@@ -52,9 +58,15 @@ class GlobalRefsContainer extends Container {
 
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
-			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
-				repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage, sorting: nextState.sorting,
-			}));
+			if (nextState.sorting !== "top") {
+				Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
+					repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage, sorting: nextState.sorting,
+				}));
+			} else {
+				Dispatcher.Backends.dispatch(new DefActions.WantExamples({
+					repo: nextState.repo, commitID: nextState.commitID, def: nextState.def,
+				}));
+			}
 		}
 	}
 
@@ -111,4 +123,4 @@ class GlobalRefsContainer extends Container {
 	}
 }
 
-export default CSSModules(GlobalRefsContainer, styles);
+export default CSSModules(RepoRefsContainer, styles);

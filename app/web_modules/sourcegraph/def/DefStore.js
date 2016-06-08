@@ -5,7 +5,7 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import deepFreeze from "sourcegraph/util/deepFreeze";
 import * as DefActions from "sourcegraph/def/DefActions";
 import {defPath} from "sourcegraph/def";
-import type {Def, RefLocationsKey} from "sourcegraph/def";
+import type {Def, ExamplesKey, RefLocationsKey} from "sourcegraph/def";
 import * as BlobActions from "sourcegraph/blob/BlobActions";
 import "sourcegraph/def/DefBackend";
 import {fastParseDefPath} from "sourcegraph/def";
@@ -36,6 +36,10 @@ function refLocationsKeyFor(r: RefLocationsKey): string {
 	return `/.api/repos/${r.repo}${r.rev ? `@${r.rev}` : ""}/-/def/${r.def}/-/ref-locations?${q}`;
 }
 
+function examplesKeyFor(r: ExamplesKey): string {
+	return (new DefActions.WantExamples(r)).url();
+}
+
 type DefPos = {
 	// Mirrors the fields of the same name in Def so that if the whole
 	// Def is available, we can just use it as its own DefPos.
@@ -45,9 +49,15 @@ type DefPos = {
 };
 
 export class DefStore extends Store {
-	refLocations_: Object;
+	_refLocations: Object;
+	_examples: Object;
+
 	getRefLocations(r: RefLocationsKey): ?Object {
-		return this.refLocations_[refLocationsKeyFor(r)] || null;
+		return this._refLocations[refLocationsKeyFor(r)] || null;
+	}
+
+	getExamples(r: ExamplesKey): ?Object {
+		return this._examples[examplesKeyFor(r)] || null;
 	}
 
 	reset(data?: {defs: any, refs: any}) {
@@ -86,7 +96,8 @@ export class DefStore extends Store {
 				return this.content[refsKeyFor(repo, commitID, def, refRepo, refFile)] || null;
 			},
 		});
-		this.refLocations_ = deepFreeze(data && data.refLocations ? data.refLocations.content : {});
+		this._refLocations = deepFreeze(data && data.refLocations ? data.refLocations.content : {});
+		this._examples = deepFreeze(data && data.examples ? data.examples.content : {});
 	}
 
 	toJSON() {
@@ -177,6 +188,12 @@ export class DefStore extends Store {
 			this.highlightedDef = action.url;
 			break;
 
+		case DefActions.ExamplesFetched:
+			this._examples = deepFreeze(Object.assign({}, this._examples, {
+				[examplesKeyFor(action.request.resource)]: action.locations,
+			}));
+			break;
+
 		case DefActions.RefLocationsFetched:
 			{
 				let a = (action: DefActions.RefLocationsFetched);
@@ -231,7 +248,7 @@ export class DefStore extends Store {
 					updatedContent[refLocationsKeyFor(r2)] = Object.assign({}, a.locations, {PagesFetched: page});
 				}
 
-				this.refLocations_ = deepFreeze(Object.assign({}, this.refLocations_, updatedContent));
+				this._refLocations = deepFreeze(Object.assign({}, this._refLocations, updatedContent));
 				break;
 			}
 

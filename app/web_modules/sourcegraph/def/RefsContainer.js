@@ -93,6 +93,7 @@ export default class RefsContainer extends Container {
 		state.refRepo = props.repoRefs.Repo || null;
 		state.refRev = state.refRepo === state.repo ? state.rev : null;
 		state.repoRefLocations = props.repoRefs || null;
+		state.rangeLimit = props.rangeLimit || null;
 		if (state.repoRefLocations) {
 			state.fileLocations = state.repoRefLocations.Files;
 			// TODO state.fileLocations = state.fileLocations.sort((a, b) => b.Count - a.Count); // flatten
@@ -216,7 +217,9 @@ export default class RefsContainer extends Container {
 				{this.state.shownFiles.has(path) ? <TriangleDownIcon className={styles.toggleIcon} /> : <TriangleRightIcon className={styles.toggleIcon} />}
 				<div className={styles.pathContainer}>
 					{pathBreadcrumb}
-					<span className={styles.refsLabel}>{`${count} ref${count > 1 ? "s" : ""}`}</span>
+					{count &&
+						<span className={styles.refsLabel}>{`${count} ref${count > 1 ? "s" : ""}`}</span>
+					}
 				</div>
 				<Link className={styles.viewFile}
 					to={urlToBlob(repo, rev, path)}>
@@ -288,11 +291,8 @@ export default class RefsContainer extends Container {
 
 							let ranges = this.ranges[loc.Path];
 							if (this.state.rangeLimit) {
-								console.log("RANGING");
 								ranges = ranges.slice(0, this.state.rangeLimit);
-								console.log("BEFORE", ranges);
 								ranges.map((r) => [r[0], Math.min(r[0] + 10, r[1])]);
-								console.log(ranges);
 							}
 
 							return (
