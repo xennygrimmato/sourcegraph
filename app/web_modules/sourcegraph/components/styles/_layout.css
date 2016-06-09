@@ -2,6 +2,14 @@
 
 .containerFixed {
 	composes: center from base;
+	composes: ph3 from base;
 	width: 100%;
 	max-width: 940px;
+}
+:global .full-width :local .containerFixed {
+	max-width: none;
+}
+.navbar-fixed {
+	composes: containerFixed;
+	composes: ph3 from base;
 }

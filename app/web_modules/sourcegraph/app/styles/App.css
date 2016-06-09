@@ -1,10 +1,12 @@
 @value colors "sourcegraph/components/styles/_colors.css";
 @value vars "sourcegraph/components/styles/_vars.css";
 @value base "sourcegraph/components/styles/_base.css";
+@value layout "sourcegraph/components/styles/_layout.css";
 @value modal "sourcegraph/components/styles/modal.css";
 
 @value desktop-base-size, mobile-base-size, media-sm from vars;
 @value c_cool-gray from colors;
+@value media-sm from vars;
 
 /*
 Stick footer at bottom even if the page content doesn't take up
@@ -24,8 +26,14 @@ the entire viewport height.
 }
 
 .breadcrumb {
-	composes: bb ph3 pv2 from base;
+	composes: bb pv2 from base;
 	composes: b--cool-gray-2 bg-cool-pale-gray-2 from colors;
+}
+.nav-context {
+	composes: breadcrumb;
+}
+.nav-context-inner {
+	composes: navbar-fixed from layout;
 }
 
 /*

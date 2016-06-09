@@ -1,7 +1,7 @@
 @value vars "sourcegraph/components/styles/_vars.css";
 @value base "sourcegraph/components/styles/_base.css";
 @value colors "sourcegraph/components/styles/_colors.css";
-@value grid "sourcegraph/components/styles/_grid.css";
+@value layout "sourcegraph/components/styles/_layout.css";
 @value typography "sourcegraph/components/styles/_typography.css";
 @value GlobalNav "sourcegraph/app/styles/GlobalNav.css";
 
@@ -27,6 +27,7 @@
 
 .container {
 	composes: pt6 from base;
+	composes: containerFixed from layout;
 }
 
 .cloning-title {
@@ -41,6 +42,5 @@
 /* Repo Main */
 .tree-search-modal {
 	composes: f4 from typography;
-	composes: col-9 from grid;
 	composes: modal from "sourcegraph/components/styles/modal.css";
 }

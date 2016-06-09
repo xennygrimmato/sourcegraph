@@ -55,7 +55,11 @@
 	padding-top: navbarHeight;
 }
 
-.logo { composes: mt2 mh3 from base; }
+.navbar-inner {
+	composes: navbar-fixed from layout;
+}
+
+.logo { composes: mt2 mr3 from base; }
 .logomark:hover {
 	animation: spin 0.5s ease-in-out 1;
 }

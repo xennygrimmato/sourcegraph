@@ -1,12 +1,11 @@
 @value base "sourcegraph/components/styles/_base.css";
 @value grid "sourcegraph/components/styles/_grid.css";
+@value layout "sourcegraph/components/styles/_layout.css";
 @value colors "sourcegraph/components/styles/_colors.css";
 @value typography "sourcegraph/components/styles/_typography.css";
 
 .container {
-	composes: center from base;
-	composes: col-11-ns from grid;
-	max-width: 68rem;
+	composes: containerFixed from layout;
 	min-height: 50vh;
 }
 
