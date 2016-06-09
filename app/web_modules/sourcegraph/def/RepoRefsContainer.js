@@ -19,7 +19,6 @@ class RepoRefsContainer extends Container {
 		def: React.PropTypes.string,
 		defObj: React.PropTypes.object,
 		defRepos: React.PropTypes.array,
-		sorting: React.PropTypes.string,
 	};
 
 	constructor(props) {
@@ -41,16 +40,9 @@ class RepoRefsContainer extends Container {
 		state.def = props.def || null;
 		state.defObj = props.defObj || null;
 		state.defRepos = props.defRepos || [];
-		state.sorting = props.sorting || null;
-		if (state.sorting !== "top") {
-			state.refLocations = state.def ? DefStore.getRefLocations({
-				repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos, sorting: state.sorting,
-			}) : null;
-		} else {
-			state.refLocations = state.def ? DefStore.getExamples({
-				repo: state.repo, commitID: state.commitID, def: state.def,
-			}) : null;
-		}
+		state.refLocations = state.def ? DefStore.getRefLocations({
+			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos,
+		}) : null;
 		if (this.props.refLocations && this.props.refLocations.PagesFetched >= this.state.currPage) {
 			state.nextPageLoading = false;
 		}
@@ -58,15 +50,9 @@ class RepoRefsContainer extends Container {
 
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
-			if (nextState.sorting !== "top") {
-				Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
-					repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage, sorting: nextState.sorting,
-				}));
-			} else {
-				Dispatcher.Backends.dispatch(new DefActions.WantExamples({
-					repo: nextState.repo, commitID: nextState.commitID, def: nextState.def,
-				}));
-			}
+			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
+				repo: nextState.repo, commitID: nextState.commitID, def: nextState.def, repos: nextState.defRepos, page: nextState.currPage,
+			}));
 		}
 	}
 
@@ -81,18 +67,13 @@ class RepoRefsContainer extends Container {
 		let fileCount = refLocs && refLocs.RepoRefs ?
 			refLocs.RepoRefs.reduce((total, refs) => total + refs.Files.length, refLocs.RepoRefs[0].Files.length) : 0;
 
-		// TODO Kill this:
-		let expand = this.props.sorting === "top" ? 3 : null;
 		return (
 			<div>
 				<div styleName="section-label">
-					{this.props.sorting === "top" &&
-						`Usage examples`
-					}
-					{this.props.sorting !== "top" && refLocs && refLocs.TotalRepos &&
+					{refLocs && refLocs.TotalRepos &&
 						`Used in ${refLocs.TotalRepos} repositor${refLocs.TotalRepos === 1 ? "y" : "ies"}`
 					}
-					{this.props.sorting !== "top" && refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
+					{refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
 						`Used in ${refLocs.RepoRefs.length}+ repositories`
 					}
 				</div>
@@ -107,11 +88,10 @@ class RepoRefsContainer extends Container {
 					defObj={this.props.defObj}
 					repoRefs={repoRefs}
 					prefetch={i === 0}
-					initNumSnippets={expand || (i === 0 ? 1 : 0)}
-					rangeLimit={this.props.sorting === "top" ? 1 : null}
+					initNumSnippets={i === 0 ? 1 : 0}
 					fileCollapseThreshold={5} />)}
 				{/* Display the paginator if we have more files repos or repos to show. */}
-				{refLocs && refLocs.RepoRefs && this.props.sorting !== "top" &&
+				{refLocs && refLocs.RepoRefs &&
 					(fileCount >= RefLocsPerPage || refLocs.TotalRepos > refLocs.RepoRefs.length || !refLocs.TotalRepos) &&
 					!refLocs.StreamTerminated &&
 					<div styleName="pagination">

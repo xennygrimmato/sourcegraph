@@ -7,6 +7,7 @@ import Container from "sourcegraph/Container";
 import DefStore from "sourcegraph/def/DefStore";
 import DefContainer from "sourcegraph/def/DefContainer";
 import RepoRefsContainer from "sourcegraph/def/RepoRefsContainer";
+import ExamplesContainer from "sourcegraph/def/ExamplesContainer";
 import {Link} from "react-router";
 import "sourcegraph/blob/BlobBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
@@ -22,8 +23,6 @@ import {defTitle, defTitleOK} from "sourcegraph/def/Formatter";
 import "whatwg-fetch";
 import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown, TabItem} from "sourcegraph/components";
-
-// type refSorting = "top" | "local" | "all";
 
 class DefInfo extends Container {
 	static contextTypes = {
@@ -203,13 +202,12 @@ class DefInfo extends Container {
 								</Link>
 							</div>
 							{refsSorting === "top" &&
-								<RepoRefsContainer
+								<ExamplesContainer
 									repo={this.props.repo}
 									rev={this.props.rev}
 									commitID={this.props.commitID}
 									def={this.props.def}
-									defObj={this.props.defObj}
-									sorting="top" />
+									defObj={this.props.defObj} />
 							}
 							{refsSorting === "local" &&
 								<RepoRefsContainer
