@@ -109,26 +109,18 @@ export default class RefsContainer extends Container {
 			state.initExpanded = true;
 		}
 
-		// TODO move this to another component.
-		if (state.rangeLimit) {
+		if (state.mouseover) {
 			state.highlightedDef = DefStore.highlightedDef;
-		} else {
-			if (state.mouseover) {
-				state.highlightedDef = DefStore.highlightedDef;
-				if (state.highlightedDef) {
-					let {repo, rev, def} = defRouteParams(state.highlightedDef);
-					state.highlightedDefObj = DefStore.defs.get(repo, rev, def);
-				} else {
-					state.highlightedDefObj = null;
-				}
-			}
-			if (state.mouseout) {
-				state.highlightedDef = null;
+			if (state.highlightedDef) {
+				let {repo, rev, def} = defRouteParams(state.highlightedDef);
+				state.highlightedDefObj = DefStore.defs.get(repo, rev, def);
+			} else {
 				state.highlightedDefObj = null;
 			}
 		}
 		if (state.mouseout) {
 			// Clear DefTooltip so it doesn't hang around.
+			state.highlightedDef = null;
 			state.highlightedDefObj = null;
 		}
 
@@ -249,10 +241,11 @@ export default class RefsContainer extends Container {
 
 		return (
 			<div className={styles.container}
-				onMouseOver={() => {
+				onMouseEnter={() => {
 					if (!this.state.mouseover) this.setState({mouseover: true, mouseout: false});
 				}}
 				onMouseLeave={() => this.setState({mouseover: false, mouseout: true})}>
+				onMouseOut={() => Dispatcher.Stores.dispatch(new DefActions.HighlightDef(null))}>
 				{/* mouseover state is for optimization which will only re-render the moused-over blob when a def is highlighted */}
 				{/* this is important since there may be many ref containers on the page */}
 				<div>
