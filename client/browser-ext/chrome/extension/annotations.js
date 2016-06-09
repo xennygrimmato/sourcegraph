@@ -2,6 +2,7 @@ import utf8 from "utf8";
 import fetch from "../../app/actions/xhr";
 import styles from "../../app/components/App.css";
 import _ from "lodash";
+import EventLogger from "../../app/analytics/EventLogger";
 
 // addAnnotations takes json annotation data returned from the
 // Sourcegraph annotations API and manipulates the DOM to add
@@ -74,13 +75,24 @@ function traverseDOM(annsByStartByte, annsByEndByte){
 			if (children[j].nodeType === Node.TEXT_NODE){
 				childNodeChars = children[j].nodeValue.split("");
 			} else {
+				// Quotation marks on GitHub are given their own span tags.
+				// This messes up anns for go imports and other strings with quote marks.
+				// We handle this by combining all the child span tags when we see child
+				// spans with "pl-pds", the class for quotes, and there aren't any other
+				// tags between them (tags in between needed for highlighting).
 				if (children[j].children.length > 1) {
-					// HACK: combine children spans, e.g. for a quoted token
-					// there may be 3 spans, one for each quote and one
-					// for the token iteself
-					children[j].innerHTML = _.escape(children[j].innerText);
+					let stringWithQuotes = true;
+					for (let k = 0; k < children[j].children.length; k++) {
+						if (children[j].children[k].className !== "pl-pds") {
+							stringWithQuotes = false
+							break;
+						}
+					}
+					if (stringWithQuotes) {
+						children[j].innerHTML = _.escape(children[j].innerText);
+					}
 				}
-				childNodeChars = _.unescape(children[j].outerHTML).split("");
+				childNodeChars = children[j].outerHTML.split("");
 			}
 
 			let consumingSpan = false;
@@ -91,14 +103,21 @@ function traverseDOM(annsByStartByte, annsByEndByte){
 				if (childNodeChars[k] === "<" && (childNodeChars.slice(k, k+5).join("") === "<span" || childNodeChars.slice(k, k+6).join("") === "</span")) {
 					consumingSpan = true;
 				}
-
 				if (!consumingSpan){
-					output += next(childNodeChars[k], startByte, annsByStartByte, annsByEndByte)
-					startByte += utf8.encode(childNodeChars[k]).length
-				}
-				else {
+					// Case to handle if < or > appears, so that we don't "consume" or make span tags in the code disappear
+					// This will not break if "&lt;" or "&gt;" appear because chars are escaped.
+					if (isStartOfSpanTag(childNodeChars, k)) {
+						output += next(childNodeChars.slice(k, k+4).join(""), startByte, annsByStartByte, annsByEndByte);
+						k += childNodeChars.slice(k, k+4).join("").length-1;
+						startByte += utf8.encode(childNodeChars[k]).length;
+					}
+					else {
+						output += next(childNodeChars[k], startByte, annsByStartByte, annsByEndByte);
+						startByte += utf8.encode(childNodeChars[k]).length;
+					}
+				} else {
 					// when we are consuming the <span> element, don't increment startByte
-					output += childNodeChars[k]
+					output += childNodeChars[k];
 				}
 
 				if (childNodeChars[k] === ">" && consumingSpan) {
@@ -119,13 +138,14 @@ function traverseDOM(annsByStartByte, annsByEndByte){
 	}
 }
 
+function isStartOfSpanTag(childNodeChars, idx) {
+	return (childNodeChars[idx] === "&" && (((childNodeChars.slice(idx, idx+4).join("")) === ("&gt;")) || (childNodeChars.slice(idx, idx+4).join("") === ("&lt;"))))
+}
+
 // next is a helper method for traverseDOM which transforms a character
 // into itself or wraps the character in a starting/ending anchor tag
 function next(c, byteCount, annsByStartByte, annsByEndByte) {
 	let matchDetails = annsByStartByte[byteCount];
-
-	c = _.escape(c); // IMPORTANT: escape all markup injected in HTML
-
 	// if there is a match
 	if (!annotating && matchDetails) {
 		// Handle non-GitHub defs by going to Sourcegraph.
@@ -140,18 +160,38 @@ function next(c, byteCount, annsByStartByte, annsByEndByte) {
 		if (annsByStartByte[byteCount].EndByte - annsByStartByte[byteCount].StartByte === 1) {
 			return `${insert}</a>`;
 		}
-
+		cacheDefaultBranch(matchDetails.URL)
 		annotating = true;
 		return insert;
 	}
-
 	// if we reach the end, close the tag.
 	if (annotating && annsByEndByte[byteCount + 1]) {
 		annotating = false;
 		return `${c}</a>`;
 	}
-
 	return c;
+}
+
+export const defaultBranchCache = {};
+// fetchingDefaultBranchCache ensures we only make one API call per repo to get default branch.
+export const fetchingDefaultBranchCache = {};
+function cacheDefaultBranch(annURL) {
+	// Assumes annURL has the form github.com/user/repo. If we can't fetch the default branch, we default to master.
+	let annURLsplit = annURL.split("/");
+	let annRepo = [annURLsplit[1], annURLsplit[2], annURLsplit[3]]
+	let repo = annRepo.join("/");
+	if (fetchingDefaultBranchCache[repo]) {
+		return;
+	}
+	if (!defaultBranchCache[repo]) {
+		fetchingDefaultBranchCache[repo] = true;
+		fetch(`https://sourcegraph.com/.api/repos/${repo}`)
+			.then((response) => {
+				defaultBranchCache[repo] = response.ok ? response.DefaultBranch : "master";
+				fetchingDefaultBranchCache[repo] = false;
+			})
+			.catch((err) => console.log("Error getting default branch"))
+	}
 }
 
 function urlToDef(origURL) {
@@ -181,7 +221,7 @@ function addPopover(el) {
 		if (!t) return;
 		if (activeTarget !== t) {
 			activeTarget = t;
-			let url = activeTarget.dataset.src.split("https://sourcegraph.com")[1]
+			let url = activeTarget.dataset.src.split("https://sourcegraph.com")[1];
 			url = `https://sourcegraph.com/.api/repos${url}?ComputeLineRange=true&Doc=true`;
 			fetchPopoverData(url, function(html, data) {
 				if (activeTarget && html) showPopover(html, e.pageX, e.pageY);
@@ -196,6 +236,7 @@ function addPopover(el) {
 
 	function showPopover(html, x, y) {
 		if (!popover) {
+			EventLogger.logEvent("HighlightDef");
 			popover = document.createElement("div");
 			popover.classList.add(styles.popover);
 			popover.innerHTML = html;

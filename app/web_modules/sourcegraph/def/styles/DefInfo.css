@@ -15,7 +15,6 @@
 }
 
 .def-title {
-	composes: mid-grey from colors;
 	composes: fw1 f4 from typography;
 }
 
@@ -64,7 +63,7 @@
 .translation-widget {
 	composes: bg-cool-pale-gray-5 from colors;
 	composes: fw6 from typography;
-    composes: pa2 pl3 pr3 pb2 from base;
+	composes: pa2 pl3 pr3 pb2 from base;
 	border-bottom-right-radius: 2px;
 	border-bottom-left-radius: 2px;
 }

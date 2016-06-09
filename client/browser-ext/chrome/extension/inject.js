@@ -12,6 +12,8 @@ import styles from "../../app/components/App.css";
 import {SearchIcon} from "../../app/components/Icons";
 import {keyFor, getExpiredSrclibDataVersion, getExpiredDef, getExpiredDefs, getExpiredAnnotations} from "../../app/reducers/helpers";
 import createStore from "../../app/store/configureStore";
+import {defaultBranchCache} from "../../chrome/extension/annotations";
+import EventLogger from "../../app/analytics/EventLogger";
 
 @connect(
 	(state) => ({
@@ -40,7 +42,7 @@ class InjectApp extends React.Component {
 		def: React.PropTypes.object.isRequired,
 		annotations: React.PropTypes.object.isRequired,
 		defs: React.PropTypes.object.isRequired,
-		actions: React.PropTypes.object.isRequired
+		actions: React.PropTypes.object.isRequired,
 	};
 
 	constructor(props) {
@@ -114,14 +116,16 @@ class InjectApp extends React.Component {
 
 			this.props.actions.getDef(urlProps.repo, urlProps.rev, urlProps.defPath);
 
-			const props = {...urlProps, def: this.props.def};
+			const props = {...urlProps, def: this.props.def}
 			const info = this._directURLToDef(props);
 			if (info) {
+				EventLogger.logEvent("ClickedDef", {defPath: props.defPath, repo: props.repo, user: props.user, direct: "true"});
 				// Fast path. Uses PJAX if possible (automatically).
 				const {pathname, hash} = info;
 				ev.target.href = `${pathname}${hash}`;
 				this._renderDefInfo(props);
 			} else {
+				EventLogger.logEvent("ClickedDef", {defPath: props.defPath, repo: props.repo, user: props.user, direct: "false"});
 				pjaxGoTo(ev.target.href, urlProps.repo === this.props.repo);
 			}
 		}
@@ -132,14 +136,17 @@ class InjectApp extends React.Component {
 		const urlsplit = loc.pathname.slice(1).split("/");
 		let user = urlsplit[0];
 		let repo = urlsplit[1]
-		let rev = "master"
-		if (urlsplit[3] !== null && (urlsplit[2] === "tree" || urlsplit[2] === "blob")) { // what about "commit"
+		// We scrape the current branch and set rev to it so we stay on the same branch when doing jump-to-def.
+		// Need to use the branch selector button because _clickRef passes a pathname as the location which,
+		// only includes ${user}/${repo}, and no rev.
+		let currBranch = this.getBranchSelectorButton();
+		let rev = currBranch;
+		if (urlsplit[3] && (urlsplit[2] === "tree" || urlsplit[2] === "blob")) { // what about "commit"
 			rev = urlsplit[3];
 		}
 		let path = urlsplit.slice(4).join("/");
 
 		const info = {user, repo, rev, path};
-
 		// Check for URL hashes like "#sourcegraph&def=...".
 		if (loc.hash.startsWith("#sourcegraph&")) {
 			const parts = loc.hash.slice(1).split("&").slice(1); // omit "sourcegraph" sentinel
@@ -153,6 +160,18 @@ class InjectApp extends React.Component {
 			});
 		}
 		return info;
+	}
+
+	getBranchSelectorButton() {
+		if (document.getElementsByClassName("select-menu-button js-menu-target css-truncate")[0]) {
+			if (document.getElementsByClassName("select-menu-button js-menu-target css-truncate")[0].title !== "") {
+				return document.getElementsByClassName("select-menu-button js-menu-target css-truncate")[0].title
+			} else {
+				return document.getElementsByClassName("js-select-button css-truncate-target")[0].innerText;
+			}
+		} else {
+			return "master";
+		}
 	}
 
 	supportsAnnotatingFile(path) {
@@ -173,8 +192,17 @@ class InjectApp extends React.Component {
 		this.addSearchButton();
 
 		let {user, repo, rev, path, defPath} = this.parseURL();
+		// This scrapes the latest commit ID and updates rev to the latest commit so we are never injecting
+		// outdated annotations.  If there is a new commit, srclib-data-version will return a 404, but the
+		// refresh endpoint will update the version and the annotations will be up to date once the new build succeeds
+		let latestRev = document.getElementsByClassName("js-permalink-shortcut")[0] ? document.getElementsByClassName("js-permalink-shortcut")[0].href.split("/")[6] : rev;
+		// TODO: Branches that are not built on Sourcegraph will not get annotations, need to trigger
+		rev = latestRev;
 		const repoName = repo;
-		if (repo) repo = `github.com/${user}/${repo}`;
+		if (repo) {
+			repo = `github.com/${user}/${repo}`;
+			this.props.actions.refreshVCS(repo);
+		}
 		if (path) {
 			// Strip hash (e.g. line location) from path.
 			const hashLoc = path.indexOf("#");
@@ -217,6 +245,7 @@ class InjectApp extends React.Component {
 	_directURLToDef({repo, rev, defPath, def}) {
 		const defObj = def ? def.content[keyFor(repo, rev, defPath)] : null;
 		if (defObj) {
+			if (repo !== this.props.repo) rev = defaultBranchCache[repo] || "master";
 			const pathname = `/${repo.replace("github.com/", "")}/blob/${rev}/${defObj.File}`;
 			const hash = `#sourcegraph&def=${defPath}&L${defObj.StartLine || 0}-${defObj.EndLine || 0}`;
 			return {pathname, hash};
@@ -305,6 +334,7 @@ class InjectApp extends React.Component {
 	// it will directly manipulate the DOM to hide all GitHub repository
 	// content and mount an iframe embedding the chrome extension (react) app.
 	toggleAppFrame = () => {
+		EventLogger.logEvent("ToggleSearchInput", {visibility: this.state.appFrameIsVisible ? "hidden" : "visible"});
 		const focusInput = () => {
 			const el = document.querySelector(".sg-input");
 			if (el) setTimeout(() => el.focus()); // Auto focus input, with slight delay so T doesn't appear
@@ -334,6 +364,7 @@ class InjectApp extends React.Component {
 		let fileElem = document.querySelector(".file .blob-wrapper");
 		if (fileElem) {
 			if (document.querySelector(".vis-private") && !this.props.accessToken) {
+				EventLogger.logEvent("ViewPrivateCodeError");
 				console.error("To use the Sourcegraph Chrome extension on private code, sign in at https://sourcegraph.com and add your repositories.");
 			} else {
 				addAnnotations(json);
@@ -371,7 +402,7 @@ class InjectApp extends React.Component {
 			e.appendChild(a);
 		}
 
-		a.href = `https://sourcegraph.com/${props.repo}/-/info/${props.defPath}`;
+		a.href = `https://sourcegraph.com/${props.repo}@${props.rev}/-/info/${props.defPath}?utm_source=browser-ext&browser_type=chrome`;
 		a.dataset.content = "Find Usages";
 		a.target = "tab";
 		a.title = `Sourcegraph: View cross-references to ${def.Name}`;

@@ -27,7 +27,7 @@ import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown} from "sourcegraph/components";
 
 class DefInfo extends Container {
-
+	
 	static contextTypes = {
 		router: React.PropTypes.object.isRequired,
 		features: React.PropTypes.object.isRequired,
@@ -150,34 +150,16 @@ class DefInfo extends Container {
 					subtitle={`References are not available.`} />
 			);
 		}
-		let title = trimRepo(this.state.repo);
-		let description_title = trimRepo(this.state.repo);
-		if (defTitleOK(def)) {
-			title = `${defTitle(def)} · ${trimRepo(this.state.repo)}`;
-			description_title = `${defTitle(def)} in ${trimRepo(this.state.repo)}`;
-		}
-		let description = `Code and usage examples for ${description_title}.`;
-		if (def && def.Docs && def.Docs.length && def.Docs[0].Data) {
-			description = description.concat(" ").concat(def.Docs[0].Data);
-		}
-		if (description.length > 159) {
-			description = description.substring(0, 159).concat("…");
-		}
+
 		return (
 			<div styleName="container">
-				{description ?
-					<Helmet
-						title={title}
-						meta={[
-							{name: "description", content: description},
-						]} /> :
-					<Helmet title={title} />
-				}
-			{def &&
-			<h1 styleName="def-header">
-				<Link title="View definition in code" to={urlToDef(def, this.state.rev)} className={`${colors["mid-gray"]}`}>
+			{/* NOTE: This should (roughly) be kept in sync with page titles in app/internal/ui. */}
+				<Helmet title={defTitleOK(def) ? `${defTitle(def)} · ${trimRepo(this.state.repo)}` : trimRepo(this.state.repo)} />
+				{def &&
+					<h1 styleName="def-header">
+						<Link title="View definition in code" to={urlToDef(def, this.state.rev)} className={`${colors["mid-gray"]}`}>
 							<code styleName="def-title">{qualifiedNameAndType(def, {unqualifiedNameClass: styles.def})}</code>
-				</Link>
+						</Link>
 					</h1>
 				}
 				<div>

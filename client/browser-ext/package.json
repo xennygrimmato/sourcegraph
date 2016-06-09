@@ -7,7 +7,9 @@
     "build": "node scripts/build",
     "compress": "node scripts/compress",
     "compress-keygen": "crx keygen",
-    "clean": "rimraf build/ dev/ *.zip *.crx"
+    "clean": "rimraf build/ dev/ *.zip *.crx",
+    "build-docker": "docker build -t sourcegraph/browser-ext-build scripts/build-env",
+    "dist": "npm run build-docker && docker run -v `pwd`:/browser-ext -i -t sourcegraph/browser-ext-build /bin/bash /browser-ext/scripts/build-env/dist.sh"
   },
   "author": "John Rothfels <john@sourcegraph.com>",
   "license": "MIT",
@@ -50,6 +52,7 @@
     "webpack-dev-server": "^1.10.1"
   },
   "dependencies": {
+    "amplitude-js": "git://github.com/amplitude/Amplitude-Javascript.git#v3.0.0",
     "bluebird": "^3.3.4",
     "classnames": "^2.1.3",
     "lodash": "^4.11.2",

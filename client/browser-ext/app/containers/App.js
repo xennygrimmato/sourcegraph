@@ -99,7 +99,7 @@ export default class App extends Component {
 						<table className="tree-browser css-truncate">
 							<tbody className="tree-browser-result js-tree-browser-result">
 							{defs && defs.Defs && defs.Defs.map((item, i) =>
-								<DefSearchResult key={i} href={`https://sourcegraph.com/${this.urlToDef(item, this.props.rev)}`} qualifiedNameAndType={qualifiedNameAndType(item)} />
+								<DefSearchResult key={i} href={`https://sourcegraph.com/${this.urlToDef(item, this.props.rev)}`} query={this.props.query} qualifiedNameAndType={qualifiedNameAndType(item)} />
 							)}
 							</tbody>
 						</table>
@@ -110,7 +110,7 @@ export default class App extends Component {
 							<h3 styleName="list-item-empty">Searching...</h3>
 						}
 						{srclibDataVersionFetch && srclibDataVersionFetch.response && srclibDataVersionFetch.response.status === 404 &&
-							<h3 styleName="list-item-empty">404 Not Found: This repository has not been indexed by Sourcegraph.<br/><a href={`https://sourcegraph.com/${this.props.repo}`}>Let Sourcegraph index this repository.</a></h3>
+							<h3 styleName="list-item-empty">404 Not Found: This repository (or revision) has not been indexed by Sourcegraph.<br/><a href={`https://sourcegraph.com/${this.props.repo}@${this.props.rev}`}>Let Sourcegraph index this repository.</a></h3>
 						}
 						{srclibDataVersionFetch && srclibDataVersionFetch.response && srclibDataVersionFetch.response.status === 401 &&
 							<h3 styleName="list-item-empty">401 Unauthorized: Log in to Sourcegraph to search private code</h3>
