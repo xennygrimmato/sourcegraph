@@ -78,6 +78,7 @@ class TreeSearch extends Container {
 		location: React.PropTypes.object,
 		route: React.PropTypes.object,
 		initialDefs: React.PropTypes.bool,
+		includeXDefs: React.PropTypes.bool,
 	};
 
 	props: {
@@ -90,6 +91,7 @@ class TreeSearch extends Container {
 		location: Location;
 		route: Route;
 		initialDefs: boolean;
+		includeXDefs: boolean;
 		onChangeQuery: (query: string) => void;
 		onSelectPath: (path: string) => void;
 	};
@@ -173,7 +175,7 @@ class TreeSearch extends Container {
 
 			state.matchingDefs = state.srclibDataVersion && state.srclibDataVersion.CommitID ? DefStore.defs.list(state.repo, state.srclibDataVersion.CommitID, state.query, state.defListFilePathPrefix) : null;
 
-			state.xdefs = SearchStore.results.get(state.query, null, [this.state.repo], GLOBAL_DEFS_LIMIT);
+			state.xdefs = state.includeXDefs ? SearchStore.results.get(state.query, null, [this.state.repo], GLOBAL_DEFS_LIMIT) : null;
 		} else {
 			state.srclibDataVersion = null;
 			state.matchingDefs = null;
@@ -215,7 +217,7 @@ class TreeSearch extends Container {
 		}
 
 		// Global search results only show up for admin users
-		if (this.context.user && this.context.user.Admin && (prevState.query !== nextState.query || prevState.repo !== nextState.repo)) {
+		if (nextState.includeXDefs && this.context.user && this.context.user.Admin && (prevState.query !== nextState.query || prevState.repo !== nextState.repo)) {
 			Dispatcher.Backends.dispatch(new SearchActions.WantResults(nextState.query, null, [nextState.repo], GLOBAL_DEFS_LIMIT));
 		}
 
@@ -681,7 +683,7 @@ class TreeSearch extends Container {
 					</div>
 				</div>}
 
-				{this.state.showDefs && xdefInfo.items}
+				{this.state.showDefs && this.state.includeXDefs && xdefInfo.items}
 
 				<div styleName="list-header">
 					Files in

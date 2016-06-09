@@ -229,6 +229,7 @@ class RepoMain extends React.Component {
 								location={this.props.location}
 								route={this.props.route}
 								initialDefs={true}
+								includeXDefs={true}
 								onChangeQuery={this._onChangeQuery.bind(this)}
 								onSelectPath={this._onSelectPath.bind(this)} />
 						</div>
