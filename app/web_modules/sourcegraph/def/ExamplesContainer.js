@@ -57,6 +57,7 @@ class ExamplesContainer extends Container {
 				</div>
 				<hr style={{marginTop: 0, clear: "both"}}/>
 				{!refLocs && <i>Loading...</i>}
+				{refLocs && !refLocs.RepoRefs && <i>No examples found</i>}
 				{refLocs && refLocs.RepoRefs && refLocs.RepoRefs.map((repoRefs, i) => <RefsContainer
 					key={i}
 					repo={this.props.repo}
