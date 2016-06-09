@@ -28,7 +28,7 @@
 				},
 				{
 					"type": "div",
-					"key": ".1",
+					"key": ".0",
 					"props": {
 						"styleName": "list-header",
 						"children": [
@@ -178,7 +178,7 @@
 				},
 				{
 					"type": "div",
-					"key": ".4",
+					"key": ".3",
 					"props": {
 						"styleName": "list-header",
 						"children": [
@@ -240,7 +240,7 @@
 				},
 				{
 					"type": "div",
-					"key": ".5",
+					"key": ".4",
 					"props": {
 						"styleName": "list-item-group",
 						"children": [

@@ -77,6 +77,7 @@ class TreeSearch extends Container {
 		prefetch: React.PropTypes.bool,
 		location: React.PropTypes.object,
 		route: React.PropTypes.object,
+		initialDefs: React.PropTypes.bool,
 	};
 
 	props: {
@@ -88,6 +89,7 @@ class TreeSearch extends Container {
 		prefetch: ?boolean;
 		location: Location;
 		route: Route;
+		initialDefs: boolean;
 		onChangeQuery: (query: string) => void;
 		onSelectPath: (path: string) => void;
 	};
@@ -165,11 +167,18 @@ class TreeSearch extends Container {
 		// searches are global).
 		state.defListFilePathPrefix = state.query || state.path === "/" ? null : `${state.path}/`;
 
-		state.srclibDataVersion = TreeStore.srclibDataVersions.get(state.repo, state.commitID);
+		state.showDefs = Boolean(state.initialDefs || state.query || state.path !== "/");
+		if (state.showDefs) {
+			state.srclibDataVersion = TreeStore.srclibDataVersions.get(state.repo, state.commitID);
 
-		state.matchingDefs = state.srclibDataVersion && state.srclibDataVersion.CommitID ? DefStore.defs.list(state.repo, state.srclibDataVersion.CommitID, state.query, state.defListFilePathPrefix) : null;
+			state.matchingDefs = state.srclibDataVersion && state.srclibDataVersion.CommitID ? DefStore.defs.list(state.repo, state.srclibDataVersion.CommitID, state.query, state.defListFilePathPrefix) : null;
 
-		state.xdefs = SearchStore.results.get(state.query, null, [this.state.repo], GLOBAL_DEFS_LIMIT);
+			state.xdefs = SearchStore.results.get(state.query, null, [this.state.repo], GLOBAL_DEFS_LIMIT);
+		} else {
+			state.srclibDataVersion = null;
+			state.matchingDefs = null;
+			state.xdefs = null;
+		}
 	}
 
 	onStateTransition(prevState: TreeSearch.state, nextState: TreeSearch.state) {
@@ -655,22 +664,24 @@ class TreeSearch extends Container {
 						spellCheck={false}
 						domRef={(e) => this._queryInput = e} />
 				</div>
-				<div styleName="list-header">
-					Symbols in current repository
-				</div>
-				<div>
-					{symbolItems}
-					{this.state.srclibDataVersion && !this.state.srclibDataVersion.CommitID &&
-						<div styleName="list-item list-item-empty">
-							<span style={{paddingRight: "1rem"}}><Loader /></span>
-							<i>Sourcegraph is analyzing your code &mdash;
-								<Link styleName="link" to={urlToBuilds(this.state.repo)}>results will be available soon!</Link>
-							</i>
-						</div>
-					}
-				</div>
+				{this.state.showDefs && <div>
+					<div styleName="list-header">
+						Symbols in current repository
+					</div>
+					<div>
+						{symbolItems}
+						{this.state.srclibDataVersion && !this.state.srclibDataVersion.CommitID &&
+							<div styleName="list-item list-item-empty">
+								<span style={{paddingRight: "1rem"}}><Loader /></span>
+								<i>Sourcegraph is analyzing your code &mdash;
+									<Link styleName="link" to={urlToBuilds(this.state.repo)}>results will be available soon!</Link>
+								</i>
+							</div>
+						}
+					</div>
+				</div>}
 
-				{xdefInfo.items}
+				{this.state.showDefs && xdefInfo.items}
 
 				<div styleName="list-header">
 					Files in

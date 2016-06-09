@@ -48,6 +48,7 @@ class TreeMain extends React.Component {
 					query={this.props.location.query.q || ""}
 					location={this.props.location}
 					route={this.props.route}
+					hideDefs={true}
 					onChangeQuery={this._onChangeQuery.bind(this)}
 					onSelectPath={this._onSelectPath.bind(this)}/>
 			</div>
