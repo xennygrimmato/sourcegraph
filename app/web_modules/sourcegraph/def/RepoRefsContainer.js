@@ -43,7 +43,7 @@ class RepoRefsContainer extends Container {
 		state.refLocations = state.def ? DefStore.getRefLocations({
 			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos,
 		}) : null;
-		if (this.props.refLocations && this.props.refLocations.PagesFetched >= this.state.currPage) {
+		if (state.refLocations && state.refLocations.PagesFetched >= state.currPage) {
 			state.nextPageLoading = false;
 		}
 	}
