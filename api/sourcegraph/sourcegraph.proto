@@ -1485,9 +1485,6 @@ message DefListRefLocationsOptions {
 	// ListOptions specifies options for paginating
 	// the result.
 	ListOptions ListOptions = 3 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
-
-	// Temporary: optionally specify a specific ranking.
-	string Sorting = 4;
 }
 
 // DefListRefLocationsOptions holds the options for fetching
