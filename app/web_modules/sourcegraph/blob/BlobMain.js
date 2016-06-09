@@ -58,11 +58,13 @@ export default class BlobMain extends Container {
 	componentDidMount() {
 		if (super.componentDidMount) super.componentDidMount();
 		this._dispatcherToken = Dispatcher.Stores.register(this.__onDispatch.bind(this));
+		if (typeof document !== "undefined") this._setFullWidthPage(true);
 	}
 
 	componentWillUnmount() {
 		if (super.componentWillUnmount) super.componentWillUnmount();
 		Dispatcher.Stores.unregister(this._dispatcherToken);
+		if (typeof document !== "undefined") this._setFullWidthPage(false);
 	}
 
 	_dispatcherToken: string;
@@ -125,6 +127,12 @@ export default class BlobMain extends Container {
 		} else if (action instanceof BlobActions.SelectCharRange) {
 			let hash = action.startLine ? `L${lineRange(lineCol(action.startLine, action.startCol), action.endLine && lineCol(action.endLine, action.endCol))}` : null;
 			this._navigate(action.repo, action.rev, action.path, hash);
+		}
+	}
+
+	_setFullWidthPage(fullWidth) {
+		if (typeof document !== "undefined") {
+			document.body.classList.toggle("full-width", fullWidth);
 		}
 	}
 

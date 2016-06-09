@@ -33,7 +33,9 @@ function App(props, {signedIn}) {
 			<Helmet titleTemplate="%s · Sourcegraph" defaultTitle="Sourcegraph" />
 			<GlobalNav location={props.location} channelStatusCode={props.channelStatusCode}/>
 			<div styleName="main-content">
-				{props.navContext && <div styleName="breadcrumb">{props.navContext}</div>}
+				{props.navContext && <nav styleName="nav-context">
+					<div styleName="nav-context-inner">{props.navContext}</div>
+				</nav>}
 				{props.main}
 			</div>
 			{!signedIn && <Footer />}

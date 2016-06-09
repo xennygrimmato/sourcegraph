@@ -39,7 +39,7 @@ function GlobalNav({navContext, location, channelStatusCode}, {user, siteConfig,
 					</div>
 				</LocationStateModal>
 			}
-			<div styleName="flex flex-fill flex-center tl" className={base.bn}>
+			<div styleName="navbar-inner flex flex-fill flex-center tl" className={base.bn}>
 				<Link to="/">
 					<Logo styleName={`logo flex-fixed ${signedIn ? "logomark" : ""}`}
 						width={signedIn ? "24px" : "200px"}
