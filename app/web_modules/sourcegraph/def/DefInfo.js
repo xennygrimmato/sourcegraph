@@ -6,7 +6,6 @@ import AuthorList from "sourcegraph/def/AuthorList";
 import Container from "sourcegraph/Container";
 import DefStore from "sourcegraph/def/DefStore";
 import RefsContainer from "sourcegraph/def/RefsContainer";
-import DefContainer from "sourcegraph/def/DefContainer";
 import {RefLocsPerPage} from "sourcegraph/def";
 import {Button} from "sourcegraph/components";
 import {Link} from "react-router";
@@ -17,6 +16,7 @@ import {urlToDef} from "sourcegraph/def/routes";
 import CSSModules from "react-css-modules";
 import styles from "./styles/DefInfo.css";
 import base from "sourcegraph/components/styles/_base.css";
+import colors from "sourcegraph/components/styles/_colors.css";
 import {qualifiedNameAndType} from "sourcegraph/def/Formatter";
 import Header from "sourcegraph/components/Header";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
@@ -80,7 +80,6 @@ class DefInfo extends Container {
 			state.nextPageLoading = false;
 		}
 	}
-				   
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
@@ -95,8 +94,8 @@ class DefInfo extends Container {
 		}
 	}
 
-    _onTranslateDefInfo(val) {	
-	        let $this = this;
+	_onTranslateDefInfo(val) {
+		let $this = this;
 		let def = $this.state.defObj;
 		let apiKey = "AIzaSyCKati7PcEa2fqyuoDDwd1ujXiBVOddwf4";
 		let targetLang = val;
@@ -151,7 +150,6 @@ class DefInfo extends Container {
 					subtitle={`References are not available.`} />
 			);
 		}
-
 		let title = trimRepo(this.state.repo);
 		let description_title = trimRepo(this.state.repo);
 		if (defTitleOK(def)) {
@@ -175,13 +173,11 @@ class DefInfo extends Container {
 						]} /> :
 					<Helmet title={title} />
 				}
-				{def &&
-					<h1 styleName="def-header">
-						<Link title="View definition in code" styleName="back-icon" to={urlToDef(def, this.state.rev)}>&laquo;</Link>
-						&nbsp;
-						<Link to={urlToDef(def, this.state.rev)}>
+			{def &&
+			<h1 styleName="def-header">
+				<Link title="View definition in code" to={urlToDef(def, this.state.rev)} className={`${colors["mid-gray"]}`}>
 							<code styleName="def-title">{qualifiedNameAndType(def, {unqualifiedNameClass: styles.def})}</code>
-						</Link>
+				</Link>
 					</h1>
 				}
 				<div>

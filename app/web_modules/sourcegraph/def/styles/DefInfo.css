@@ -15,9 +15,8 @@
 }
 
 .def-title {
-	composes: black from colors;
-	font-weight: normal;
-	line-height: small;
+	composes: mid-grey from colors;
+	composes: fw1 f4 from typography;
 }
 
 .def-title:hover {
@@ -25,8 +24,7 @@
 }
 
 .def {
-	composes: blue from colors;
-	font-weight: bold;
+	composes: purple from colors;
 }
 
 .authors {

@@ -28,7 +28,7 @@ class AuthorList extends React.Component {
 								<li key={i} styleName={`person${this.props.horizontal ? "-horizontal" : ""}`}>
 									<Avatar styleName="avatar" size="tiny" img={a.AvatarURL} />
 								</li>
-							)) }
+							))}
 							<li>
 								<span>{authors.length} contributor{(authors.length > 1) ? "s" : null} </span>
 							</li>

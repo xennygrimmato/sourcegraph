@@ -8,7 +8,11 @@
 	float: right;
 	line-height: 1.45;
 	cursor: pointer;
-}	
+}
+
+.wrapper:hover{
+	color: rgba(0, 82, 140, 1);
+}
 
 .wrapper-disabled {
 	composes: wrapper;
@@ -25,11 +29,12 @@
 }
 
 .toggle {
-	composes: light-silver from colors;
 	padding-left: 5px;
+	fill: currentColor;
 }
 
-.toggle:hover {
+.open-arrow {
+	transform: rotate(90deg);
 }
 
 .dropdown-menu-open {
