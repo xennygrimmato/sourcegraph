@@ -47,7 +47,6 @@
 }
 
 .icon {
-	composes: blue from colors;
 	font-size: 1.5rem;
 	padding-top: 5px;
 	padding-right: 10px;
@@ -65,11 +64,11 @@
 }
 
 .translation-widget {
+	composes: bg-cool-pale-gray-5 from colors;
 	composes: fw6 from typography;
     composes: pa2 pl3 pr3 pb2 from base;
 	border-bottom-right-radius: 2px;
 	border-bottom-left-radius: 2px;
-	background-color: #eeeeee;
 }
 
 @media screen and (max-width: 48em) {

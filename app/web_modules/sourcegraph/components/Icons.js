@@ -19,7 +19,6 @@ export const MagnifyingGlassIcon = iconWrapper(require("react-icons/lib/fa/searc
 export const CloseIcon = iconWrapper(require("react-icons/lib/fa/close"));
 export const EllipsisHorizontal = iconWrapper(require("react-icons/lib/fa/ellipsis-v"));
 export const FaAngleDown = iconWrapper(require("react-icons/lib/fa/angle-down"));
-export const RoundedDownArrow = <Icon icon="rounded-down-arrow" width="10px" height="6px" className=""/>;
 
 // iconWrapper lets you pass a style directly to any of the exported components, e.g.
 // <RepoIcon styleName="foo" />
