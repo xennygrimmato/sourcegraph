@@ -51,11 +51,10 @@ func (e *examples) Get(ctx context.Context, opt *sourcegraph.DefsListExamplesOp)
 		return v
 	}
 
-	const topLimit = 3 // TODO: Remove
 	innerSelectSQL := `
 SELECT DISTINCT ON (repo) repo, file, count
 FROM global_refs_new
-WHERE def_key_id=` + arg(defKeyID) + fmt.Sprintf(" LIMIT %s", arg(topLimit))
+WHERE def_key_id=` + arg(defKeyID) + fmt.Sprintf(" LIMIT %s", arg(opt.PerPageOrDefault()))
 
 	sql := `
 SELECT repo, file, count

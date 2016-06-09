@@ -49,7 +49,7 @@ class ExamplesContainer extends Container {
 	render() {
 		let refLocs = this.state.examples;
 
-		let expand = 3;
+		const expandedSnippets = 3;
 		return (
 			<div>
 				<div styleName="section-label">
@@ -67,7 +67,7 @@ class ExamplesContainer extends Container {
 					defObj={this.props.defObj}
 					repoRefs={repoRefs}
 					prefetch={i === 0}
-					initNumSnippets={expand}
+					initNumSnippets={expandedSnippets}
 					rangeLimit={1}
 					fileCollapseThreshold={5} />)}
 			</div>

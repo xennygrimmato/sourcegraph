@@ -244,7 +244,7 @@ export default class RefsContainer extends Container {
 				onMouseEnter={() => {
 					if (!this.state.mouseover) this.setState({mouseover: true, mouseout: false});
 				}}
-				onMouseLeave={() => this.setState({mouseover: false, mouseout: true})}>
+				onMouseLeave={() => this.setState({mouseover: false, mouseout: true})}
 				onMouseOut={() => Dispatcher.Stores.dispatch(new DefActions.HighlightDef(null))}>
 				{/* mouseover state is for optimization which will only re-render the moused-over blob when a def is highlighted */}
 				{/* this is important since there may be many ref containers on the page */}

@@ -126,7 +126,6 @@ export class WantRefLocations {
 			Repos: this.resource.repos,
 			Page: this.resource.page,
 			PerPage: RefLocsPerPage,
-			Sorting: this.resource.sorting,
 		});
 		if (q) {
 			q = `?${q}`;

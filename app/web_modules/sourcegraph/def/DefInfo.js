@@ -46,7 +46,6 @@ class DefInfo extends Container {
 			translations: {},
 		};
 		this._onTranslateDefInfo = this._onTranslateDefInfo.bind(this);
-		this._mergeQuery = this._mergeQuery.bind(this);
 	}
 
 	stores() {
@@ -75,10 +74,6 @@ class DefInfo extends Container {
 				Dispatcher.Backends.dispatch(new DefActions.WantDefAuthors(nextState.repo, nextState.defCommitID, nextState.def));
 			}
 		}
-	}
-
-	_mergeQuery(param: string, value: any) {
-		return Object.assign({}, this.props.location.query, {[param]: value});
 	}
 
 	_onTranslateDefInfo(val) {
@@ -159,6 +154,7 @@ class DefInfo extends Container {
 								onItemClick={(val) => this._onTranslateDefInfo(val)}
 								items={[
 									{name: "English", value: "en"},
+									{name: "简体中文", value: "zh-CN"},
 									{name: "繁體中文", value: "zh-TW"},
 									{name: "日本語", value: "ja"},
 									{name: "Français", value: "fr"},
@@ -191,13 +187,13 @@ class DefInfo extends Container {
 					{def && !def.Error &&
 						<div>
 							<div style={{float: "right"}}>
-								<Link to={{pathname: defInfoUrl, query: this._mergeQuery("refs", "top")}}>
+								<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "top"}}}>
 									<TabItem active={refsSorting === "top"}>Top</TabItem>
 								</Link>
-								<Link to={{pathname: defInfoUrl, query: this._mergeQuery("refs", "local")}}>
+								<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "local"}}}>
 									<TabItem active={refsSorting === "local"}>Local</TabItem>
 								</Link>
-								<Link to={{pathname: defInfoUrl, query: this._mergeQuery("refs", "all")}}>
+								<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "all"}}}>
 									<TabItem active={refsSorting === "all"}>All</TabItem>
 								</Link>
 							</div>
