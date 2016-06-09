@@ -2,6 +2,7 @@ import React from "react";
 
 import CSSModules from "react-css-modules";
 import styles from "./styles/icon.css";
+import Icon from "./Icon";
 
 export const FileIcon = iconWrapper(require("react-icons/lib/go/file-text"));
 export const FolderIcon = iconWrapper(require("react-icons/lib/go/file-directory"));
@@ -17,6 +18,8 @@ export const LanguageIcon = iconWrapper(require("react-icons/lib/fa/language"));
 export const MagnifyingGlassIcon = iconWrapper(require("react-icons/lib/fa/search"));
 export const CloseIcon = iconWrapper(require("react-icons/lib/fa/close"));
 export const EllipsisHorizontal = iconWrapper(require("react-icons/lib/fa/ellipsis-v"));
+export const FaAngleDown = iconWrapper(require("react-icons/lib/fa/angle-down"));
+export const RoundedDownArrow = <Icon icon="rounded-down-arrow" width="10px" height="6px" className=""/>;
 
 // iconWrapper lets you pass a style directly to any of the exported components, e.g.
 // <RepoIcon styleName="foo" />

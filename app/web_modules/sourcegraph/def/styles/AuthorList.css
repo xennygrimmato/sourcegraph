@@ -8,6 +8,10 @@
 	padding-left: 0;
 }
 
+.list-horizontal-container{
+	display: flex;
+}
+
 .list-horizontal {
 	composes: list;
 	display: flex;

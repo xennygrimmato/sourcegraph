@@ -17,7 +17,7 @@
 .def-title {
 	composes: black from colors;
 	font-weight: normal;
-	line-height: normal;
+	line-height: small;
 }
 
 .def-title:hover {
@@ -40,10 +40,14 @@
 }
 
 .description-wrapper {
-	padding-top: 10px;
+	border-top: 1px solid #eeeeee;
+	border-bottom: 1px solid #eeeeee;
+	padding-top: 0px;
+	position: relative;
 }
 
 .icon {
+	composes: blue from colors;
 	font-size: 1.5rem;
 	padding-top: 5px;
 	padding-right: 10px;
@@ -61,7 +65,11 @@
 }
 
 .translation-widget {
-	composes: pl4 pb3 from base;
+	composes: fw6 from typography;
+    composes: pa2 pl3 pr3 pb2 from base;
+	border-bottom-right-radius: 2px;
+	border-bottom-left-radius: 2px;
+	background-color: #eeeeee;
 }
 
 @media screen and (max-width: 48em) {

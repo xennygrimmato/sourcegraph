@@ -16,6 +16,7 @@ import * as DefActions from "sourcegraph/def/DefActions";
 import {urlToDef} from "sourcegraph/def/routes";
 import CSSModules from "react-css-modules";
 import styles from "./styles/DefInfo.css";
+import base from "sourcegraph/components/styles/_base.css";
 import {qualifiedNameAndType} from "sourcegraph/def/Formatter";
 import Header from "sourcegraph/components/Header";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
@@ -26,6 +27,7 @@ import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown} from "sourcegraph/components";
 
 class DefInfo extends Container {
+
 	static contextTypes = {
 		router: React.PropTypes.object.isRequired,
 		features: React.PropTypes.object.isRequired,
@@ -78,7 +80,7 @@ class DefInfo extends Container {
 			state.nextPageLoading = false;
 		}
 	}
-
+				   
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
@@ -93,8 +95,8 @@ class DefInfo extends Container {
 		}
 	}
 
-	_onTranslateDefInfo(val) {
-		let $this = this;
+    _onTranslateDefInfo(val) {	
+	        let $this = this;
 		let def = $this.state.defObj;
 		let apiKey = "AIzaSyCKati7PcEa2fqyuoDDwd1ujXiBVOddwf4";
 		let targetLang = val;
@@ -164,7 +166,6 @@ class DefInfo extends Container {
 			description = description.substring(0, 159).concat("…");
 		}
 		return (
-
 			<div styleName="container">
 				{description ?
 					<Helmet
@@ -183,13 +184,13 @@ class DefInfo extends Container {
 						</Link>
 					</h1>
 				}
-				<hr/>
 				<div>
 					{authors && Object.keys(authors).length > 0 && <AuthorList authors={authors} horizontal={true} />}
 					{def && def.DocHTML &&
 						<div styleName="description-wrapper">
 							<Dropdown
 								styleName="translation-widget"
+								className={base.mt0}
 								icon={<GlobeIcon styleName="icon" />}
 								title="Translate"
 								initialValue={this.state.currentLang}
@@ -216,6 +217,7 @@ class DefInfo extends Container {
 							{this.state.showTranslatedString &&
 								<hr/>
 							}
+							<h3>DocString</h3>
 							<div styleName="description" dangerouslySetInnerHTML={def.DocHTML}></div>
 						</div>
 					}
@@ -227,13 +229,12 @@ class DefInfo extends Container {
 					{def && !def.DocHTML && def.Docs && def.Docs.length &&
 						<div styleName="description">{def.Docs[0].Data}</div>
 					}
-					{def && !def.Error && <DefContainer {...this.props} />}
 					{def && !def.Error &&
 						<div>
 							{!refLocs && <i>Loading...</i>}
 							{refLocs && refLocs.TotalRepos &&
 								<div styleName="section-label">
-									Used in {refLocs.TotalRepos} repositor{refLocs.TotalRepos === 1 ? "y" : "ies"}
+									Referenced in {refLocs.TotalRepos} repositor{refLocs.TotalRepos === 1 ? "y" : "ies"}
 								</div>
 							}
 							{refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&

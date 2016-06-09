@@ -6,7 +6,6 @@
 	display: inline-block;
 	float: right;
 	line-height: 1.45;
-	margin-top: 18px;
 	cursor: pointer;
 }
 
@@ -21,7 +20,7 @@
 }
 
 .icon {
-	composes: gray from colors;
+	composes: dark-grey from colors;
 	font-size: 1.5rem;
 }
 
