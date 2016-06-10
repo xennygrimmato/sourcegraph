@@ -214,6 +214,11 @@
 	composes: white from colors;
 }
 
+.sfye_beta {
+	display: inline;
+	font-size: 10px;
+}
+
 a.white:hover {
 	color: white;
 	opacity: 0.8;

@@ -88,13 +88,14 @@ class AnonymousLandingPage extends Component {
 							<div styleName="content">
 								<Logo width="32px" className={base.mt4} />
 								<h3 styleName="h3">Sourcegraph for your editor (beta)</h3>
-								<p>Get real usage examples of Go code from across GitHub as you type in your Sublime or Vim. <em>We are actively developing support for other other editors and languages.</em></p>
+								<p>See usage examples for code instantly, as you type. It's like pair programming with the smartest developer in the world.</p>
 							</div>
 							<a href="/tools?tool=editor">
 								<Button color="blue" onClick={(v) => v && eventLogger.logEvent("ClickedInstallChromeExt")}>
-									Learn More
+									Install for your editor
 								</Button>
 							</a>
+							<div styleName="sfye_beta"><em>Beta for Go in Sublime Text and Vim, <a href="/tools?tool=editor">get notified when it supports your editor</a></em></div>
 						</div>
 					</div>
 
