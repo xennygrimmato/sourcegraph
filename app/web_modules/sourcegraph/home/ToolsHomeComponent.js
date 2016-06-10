@@ -45,7 +45,7 @@ class ToolsHomeComponent extends Component {
 					img: "/img/Dashboard/SourcegraphLiveAsset.svg",
 				},
 				primaryButton: this._sfyeCTA(),
-				gif: "/img/Dashboard/LiveEditorExampleGif.gif",
+				gif: "/img/Dashboard/SourcegraphForYourEditor.gif",
 			},
 		};
 	}
