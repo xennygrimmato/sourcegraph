@@ -88,7 +88,7 @@ class AnonymousLandingPage extends Component {
 							<div styleName="content">
 								<Logo width="32px" className={base.mt4} />
 								<h3 styleName="h3">Sourcegraph for your editor (beta)</h3>
-								<p>Get real usage examples of code from across GitHub as you type in your Sublime or Vim. <em>Support for other other editors is coming soon.</em></p>
+								<p>Get real usage examples of Go code from across GitHub as you type in your Sublime or Vim. <em>We are actively developing support for other other editors and languages.</em></p>
 							</div>
 							<a href="/tools?tool=editor">
 								<Button color="blue" onClick={(v) => v && eventLogger.logEvent("ClickedInstallChromeExt")}>
