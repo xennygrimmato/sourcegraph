@@ -30,7 +30,7 @@ class ToolsHomeComponent extends Component {
 		this.supportedTools = {
 			browser: {
 				hero: {
-					title: "Sourcegraph for your browser",
+					title: "Browser extensions",
 					subtitle: "Jump-to-definition, code search, and documentation.",
 					paragraph: "This extension enhances code pages on GitHub by making every identifier a jump-to-definition link. Hovering over identifiers displays a tooltip with documentation and type information. The new keyboard shortcut Shift-T allows you to search for functions, types, and other definitions. After installing it, view some code on GitHub and hover your mouse over identifiers.",
 					img: "/img/Dashboard/GoogleChromeAsset.svg",
@@ -39,7 +39,7 @@ class ToolsHomeComponent extends Component {
 			},
 			editor: {
 				hero: {
-					title: "Sourcegraph for your editor",
+					title: "Editor integrations",
 					subtitle: "Live usage examples for Go code, as you type. Currently in beta.",
 					paragraph: "When Sourcegraph is installed in your editor, you get real usage examples from across GitHub, immediate access to source code, and documentation about libraries, objects, and functions as you type. No more repetitive Google searches, and no more interruptions. We currently  support Go for Vim and Sublime, but are rapidly developing support for additional languages and editors.",
 					img: "/img/Dashboard/SourcegraphLiveAsset.svg",
@@ -133,6 +133,7 @@ class ToolsHomeComponent extends Component {
 	_sfyeCTA() {
 		return (
 			<div>
+				<span className="button-prefix">Install for:</span>
 				<span className={base.ph1}>
 					<Button color="purple" onClick={this._installEditorForSublimeCTAClicked.bind(this)}>Sublime</Button>
 				</span>
@@ -205,4 +206,4 @@ class ToolsHomeComponent extends Component {
 	}
 }
 
-export default CSSModules(ToolsHomeComponent, styles);
+export default CSSModules(ToolsHomeComponent, styles, {allowMultiple: true});

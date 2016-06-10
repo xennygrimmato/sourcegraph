@@ -95,7 +95,7 @@ class AnonymousLandingPage extends Component {
 									Install for your editor
 								</Button>
 							</a>
-							<div styleName="sfye_beta"><em>Beta for Go in Sublime Text and Vim, <a href="/tools?tool=editor">get notified when it supports your editor</a></em></div>
+							<div styleName="sfye_beta"><em>Beta for Go in Sublime Text and Vim, <a href="/tools?tool=editor">get notified when Sourcgraph is available for your editor</a></em></div>
 						</div>
 					</div>
 
