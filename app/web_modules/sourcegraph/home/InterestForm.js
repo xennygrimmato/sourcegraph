@@ -1,15 +1,16 @@
 import React from "react";
 import CSSModules from "react-css-modules";
 import styles from "./styles/Tools.css";
-import base from "sourcegraph/components/styles/_base.css";
-import grid from "sourcegraph/components/styles/_base.css";
 import {Button} from "sourcegraph/components";
 import Selector from "./Selector";
-import {CheckIcon} from "sourcegraph/components/Icons";
-import FormSignup from "sourcegraph/home/HomeBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
+import * as UserActions from "sourcegraph/user/UserActions";
 
 class InterestForm extends React.Component {
+
+	static propTypes = {
+		onSubmitted: React.PropTypes.func.isRequired,
+	}
 
 	constructor(props) {
 		super(props);
@@ -45,38 +46,14 @@ class InterestForm extends React.Component {
 	_sendForm(ev) {
 		ev.preventDefault();
 		let data = {
-			name: ev.currentTarget[0]["value"],
+			firstName: ev.currentTarget[0]["value"],
+			lastName: ev.currentTarget[0]["value"],
 			email: ev.currentTarget[1]["value"],
 			editor: ev.currentTarget[2]["value"],
 			language: ev.currentTarget[3]["value"],
 			message: ev.currentTarget[4]["value"],
 		};
-		if (!data["name"]) {
-			this.setState({formError: "Please provide your name."});
-		} else if (!data["email"]) {
-			this.setState({formError: "Please provide your email."});
-		} else if (!data["editor"] === "none") {
-			this.setState({formError: "Please choose an editor."});
-		} else if (!data["language"] === "none") {
-			this.setState({formError: "Please choose an editor."});
-		} else {
-			this.setState({formError: "none"});
-		}
-		if (this.state.formError === "none") {
-			this.setState({submitted: true});
-			Dispatcher.Backends.dispatch(new FormSignup("form_id", data));
-		}
-	}
 
-	_sendForm(ev) {
-		ev.preventDefault();
-		let data = {
-			name: ev.currentTarget[0]["value"],
-			email: ev.currentTarget[1]["value"],
-			editor: ev.currentTarget[2]["value"],
-			language: ev.currentTarget[3]["value"],
-			message: ev.currentTarget[4]["value"],
-		};
 		if (!data["name"]) {
 			this.setState({formError: "Please provide your name."});
 		} else if (!data["email"]) {
@@ -89,8 +66,15 @@ class InterestForm extends React.Component {
 			this.setState({formError: "none"});
 		}
 		if (this.state.formError === "none") {
-			this.setState({submitted: true});
-			Dispatcher.Backends.dispatch(new FormSignup("form_id", data));
+			this.props.onSubmitted();
+			Dispatcher.Backends.dispatch(new UserActions.SubmitEmailSubscription(
+				data.email,
+				data.firstName,
+				data.lastName,
+				data.language,
+				data.editor,
+				data.message,
+			));
 		}
 	}
 

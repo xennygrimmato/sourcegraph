@@ -2,14 +2,10 @@ import React from "react";
 import CSSModules from "react-css-modules";
 import styles from "./styles/Tools.css";
 import base from "sourcegraph/components/styles/_base.css";
-import grid from "sourcegraph/components/styles/_base.css";
 import {Heading, Panel, Button} from "sourcegraph/components";
 import {CloseIcon} from "sourcegraph/components/Icons";
 import Modal from "sourcegraph/components/Modal";
-import Selector from "./Selector";
 import {TriangleRightIcon, TriangleDownIcon, CheckIcon} from "sourcegraph/components/Icons";
-import FormSignup from "sourcegraph/home/HomeBackend";
-import Dispatcher from "sourcegraph/Dispatcher";
 import InterestForm from "./InterestForm";
 
 class ToolComponent extends React.Component {
@@ -69,8 +65,13 @@ class ToolComponent extends React.Component {
 		return this.state.formExpanded;
 	}
 
+	_hasSubmittedInterestForm() {
+		this.setState({
+			submitted: true,
+		});
+	}
+
 	render() {
-		// flex-container ${this._getVisibility() ? "visible" : "invisible"}
 		return (
 			<Modal onDismiss={this._dismissModal.bind(this)}>
 					<div styleName="tool-item">
@@ -100,7 +101,7 @@ class ToolComponent extends React.Component {
 										</div>
 										<div className={base.mb5} styleName={this._getVisibility() ? "visible" : "invisible"}>
 											{this.state.formError ? <div>{this.state.formError}</div> : ""}
-											<InterestForm />
+											<InterestForm onSubmitted={this._hasSubmittedInterestForm.bind(this)} />
 									</div>
 								</div> :
 								<span className={base.mb5}>
