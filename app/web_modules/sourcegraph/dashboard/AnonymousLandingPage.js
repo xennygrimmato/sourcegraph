@@ -81,14 +81,14 @@ class AnonymousLandingPage extends Component {
 					<div styleName="content-block">
 						<div styleName="img-left">
 							<Link to="/github.com/golang/go@0cc710dca63b79ed2dd6ce9375502e76e5fc0484/-/tree/src/testing?q=testing" onClick={(v) => v && eventLogger.logEvent("ClickedExplorePublicRepo")}>
-								<img src={`${siteConfig.assetsRoot}/img/Homepage/screenshot-sourcegraph.png`} styleName="img" width="460" />
+								<img src={`${siteConfig.assetsRoot}/img/Homepage/screenshot-editor.png`} styleName="img" width="460" />
 							</Link>
 						</div>
 						<div styleName="content-right">
 							<div styleName="content">
 								<Logo width="32px" className={base.mt4} />
 								<h3 styleName="h3">Sourcegraph for your editor</h3>
-								<p>When Sourcegraph is installed in your editor, you get real usage examples from across GitHub, immediate access to source code, and documentation about libraries, objects, and functions as you type. No more repetitive Google searches, and no more interruptions. <em>Support for other other editors is coming soon.</em></p>
+								<p>Get real usage examples of code from across GitHub as you type in your Sublime or Vim. <em>Support for other other editors is coming soon.</em></p>
 							</div>
 							<a href="/tools?tool=editor">
 								<Button color="blue" onClick={(v) => v && eventLogger.logEvent("ClickedInstallChromeExt")}>
