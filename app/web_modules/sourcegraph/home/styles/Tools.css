@@ -16,6 +16,21 @@
 	display: flex;
 }
 
+.visible {
+	display: inherit;
+}
+
+.invisible {
+	display: none;
+}
+
+.question-container {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
 .container-fixed {
 	composes: center pt5 pb5 from base;
 	width: 100%;
