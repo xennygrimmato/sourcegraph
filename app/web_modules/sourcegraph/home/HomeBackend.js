@@ -3,8 +3,6 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import {defaultFetch, checkStatus} from "sourcegraph/util/xhr";
 import {trackPromise} from "sourcegraph/app/status";
 import {singleflightFetch} from "sourcegraph/util/singleflightFetch";
-import {updateRepoCloning} from "sourcegraph/repo/cloning";
-import {sortBranches, sortTags} from "sourcegraph/repo/vcs";
 import EventLogger from "sourcegraph/util/EventLogger";
 
 export class FormSignup {
@@ -37,3 +35,4 @@ const HomeBackend = {
 Dispatcher.Backends.register(HomeBackend.__onDispatch);
 
 export default HomeBackend;
+export default FormSignup;
