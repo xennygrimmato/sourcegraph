@@ -27,7 +27,6 @@ import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown} from "sourcegraph/components";
 
 class DefInfo extends Container {
-	
 	static contextTypes = {
 		router: React.PropTypes.object.isRequired,
 		features: React.PropTypes.object.isRequired,
@@ -49,9 +48,13 @@ class DefInfo extends Container {
 			nextPageLoading: false,
 			currentLang: localStorage.getItem("defInfoCurrentLang"),
 			translations: {},
+			defDescrHidden: false,
+			descrCutoff: 1000,
 		};
 		this._onNextPage = this._onNextPage.bind(this);
 		this._onTranslateDefInfo = this._onTranslateDefInfo.bind(this);
+		this.splitHTMLDescr = this.splitHTMLDescr.bind(this);
+		this.splitPlainDescr = this.splitPlainDescr.bind(this);
 	}
 
 	stores() {
@@ -63,6 +66,52 @@ class DefInfo extends Container {
 		// Fix a bug where navigating from a blob page here does not cause the
 		// browser to scroll to the top of this page.
 		if (typeof window !== "undefined") window.scrollTo(0, 0);
+	}
+
+	shouldHideDescr(defObj, cutOff) {
+		if (defObj.DocHTML) {
+			let parser = new DOMParser();
+			let doc = parser.parseFromString(defObj.DocHTML.__html, "text/html");
+			return doc.documentElement.textContent.length >= cutOff;
+		}
+		return defObj.Docs[0].Data.length >= cutOff;
+	}
+
+	splitHTMLDescr(html, cutOff) {
+		let parser = new DOMParser();
+		let doc = parser.parseFromString(html, "text/html");
+
+		function lp(node, oldLength) {
+			let childrenCopy = [];
+			while (node.firstChild) {
+				let clone = node.firstChild.cloneNode(true);
+				childrenCopy.push(clone);
+				node.removeChild(node.firstChild);
+			}
+
+			let newLength = node.textContent.length + oldLength;
+			if (newLength >= cutOff) {
+				node.textContent = `${node.textContent.slice(0, cutOff - node.textContent.length - 1)}...`;
+				return [node, cutOff];
+			}
+
+			let latestLength = newLength;
+			for (let child of childrenCopy) {
+				let [newChild, newCount] = lp(child, latestLength);
+				node.appendChild(newChild);
+				latestLength = newCount;
+				if (latestLength >= cutOff) {
+					break;
+				}
+			}
+			return [node, latestLength];
+		}
+		let newDoc = lp(doc.documentElement, 0)[0];
+		return newDoc.getElementsByTagName("body")[0].innerHTML;
+	}
+
+	splitPlainDescr(txt, cutOff) {
+		return txt.slice(0, Math.min(txt.length, cutOff));
 	}
 
 	reconcileState(state, props) {
@@ -79,7 +128,11 @@ class DefInfo extends Container {
 		if (state.refLocations && state.refLocations.PagesFetched >= state.currPage) {
 			state.nextPageLoading = false;
 		}
+		if (state.defObj) {
+			state.defDescrHidden = this.shouldHideDescr(state.defObj, state.descrCutoff);
+		}
 	}
+
 	onStateTransition(prevState, nextState) {
 		if (nextState.currPage !== prevState.currPage || nextState.repo !== prevState.repo || nextState.rev !== prevState.rev || nextState.def !== prevState.def) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefLocations({
@@ -138,11 +191,12 @@ class DefInfo extends Container {
 
 	render() {
 		let def = this.state.defObj;
+		let hiddenDescr = this.state.defDescrHidden;
+		let cutOff = this.state.descrCutoff;
 		let refLocs = this.state.refLocations;
 		let authors = this.state.authors;
 		let fileCount = refLocs && refLocs.RepoRefs ?
 			refLocs.RepoRefs.reduce((total, refs) => total + refs.Files.length, refLocs.RepoRefs[0].Files.length) : 0;
-
 		if (refLocs && refLocs.Error) {
 			return (
 				<Header
@@ -150,7 +204,6 @@ class DefInfo extends Container {
 					subtitle={`References are not available.`} />
 			);
 		}
-
 		return (
 			<div styleName="container">
 			{/* NOTE: This should (roughly) be kept in sync with page titles in app/internal/ui. */}
@@ -163,7 +216,7 @@ class DefInfo extends Container {
 					</h1>
 				}
 				<div>
-					{authors && Object.keys(authors).length > 0 && <AuthorList authors={authors} horizontal={true} />}
+					{authors && Object.keys(authors).length > 0 && <AuthorList authors={authors} horizontal={true} styleName="authors"/>}
 					{def && def.DocHTML &&
 						<div styleName="description-wrapper">
 							<Dropdown
@@ -195,30 +248,31 @@ class DefInfo extends Container {
 							{this.state.showTranslatedString &&
 								<hr/>
 							}
-							<h3>DocString</h3>
-							<div styleName="description" dangerouslySetInnerHTML={def.DocHTML}></div>
-						</div>
+					<h3>DocString</h3>
+							<div styleName="description"
+								dangerouslySetInnerHTML={hiddenDescr && {__html: this.splitHTMLDescr(def.DocHTML.__html, cutOff)} || def.DocHTML}></div>
+					</div>
 					}
 					{/* TODO DocHTML will not be set if the this def was loaded via the
 						serveDefs endpoint instead of the serveDef endpoint. In this case
 						we'll fallback to displaying plain text. We should be able to
 						sanitize/render DocHTML on the front-end to make this consistent.
 					*/}
-					{def && !def.DocHTML && def.Docs && def.Docs.length &&
-						<div styleName="description">{def.Docs[0].Data}</div>
+			{def && !def.DocHTML && def.Docs && def.Docs.length &&
+						<div styleName="description">{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, cutOff) || def.Docs[0].Data}</div>
 					}
 					{def && !def.Error &&
 						<div>
 							{!refLocs && <i>Loading...</i>}
 							{refLocs && refLocs.TotalRepos &&
-								<div styleName="section-label">
+								<h3 styleName="section-label">
 									Referenced in {refLocs.TotalRepos} repositor{refLocs.TotalRepos === 1 ? "y" : "ies"}
-								</div>
+								</h3>
 							}
 							{refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
-								<div styleName="section-label">
+								<h3 styleName="section-label">
 									Used in {refLocs.RepoRefs.length}+ repositories
-								</div>
+								</h3>
 							}
 							{refLocs && refLocs.RepoRefs && refLocs.RepoRefs.map((repoRefs, i) => <RefsContainer
 								key={i}

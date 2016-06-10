@@ -2,16 +2,13 @@
 @value grid "sourcegraph/components/styles/_grid.css";
 @value colors "sourcegraph/components/styles/_colors.css";
 @value typography "sourcegraph/components/styles/_typography.css";
+@value headings "sourcegraph/components/styles/heading.css";
 
 .container {
 	composes: center from base;
 	composes: col-11-ns from grid;
 	max-width: 68rem;
 	min-height: 50vh;
-}
-
-.back-icon {
-	composes: gray from colors;
 }
 
 .def-title {
@@ -27,13 +24,13 @@
 }
 
 .authors {
+	composes: ma2 from base; 
 	display: flex;
 	align-items: center;
 }
 
 .section-label {
-	composes: subsection-header from typography;
-	composes: pt3 pb1 from base;
+	composes: mt3 mr3 mb3 from base;
 }
 
 .description-wrapper {
@@ -51,7 +48,7 @@
 }
 
 .description {
-	composes: normal-text from typography;
+	composes: f4 fw2 from typography;
 }
 
 .pagination {
@@ -61,9 +58,9 @@
 }
 
 .translation-widget {
-	composes: bg-cool-pale-gray-5 from colors;
 	composes: fw6 from typography;
 	composes: pa2 pl3 pr3 pb2 from base;
+	composes: bg-cool-pale-gray-5 from colors;
 	border-bottom-right-radius: 2px;
 	border-bottom-left-radius: 2px;
 }
