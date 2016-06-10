@@ -125,9 +125,9 @@ class ToolsHomeComponent extends Component {
 		window.location.assign("https://packagecontrol.io/packages/Sourcegraph");
 	}
 
-	_installEditorForEmacsCTAClicked() {
-		this.context.eventLogger.logEventForPage("SourcegraphLiveCTAClicked", "DashboardTools", {editorType: "Emacs"});
-		window.location.assign("https://github.com/sourcegraph/sourcegraph/tree/master/client/emacs");
+	_installEditorForVimCTAClicked() {
+		this.context.eventLogger.logEventForPage("SourcegraphLiveCTAClicked", "DashboardTools", {editorType: "Vim"});
+		window.location.assign("https://github.com/sourcegraph/sourcegraph-vim");
 	}
 
 	_sfyeCTA() {
@@ -137,7 +137,7 @@ class ToolsHomeComponent extends Component {
 					<Button color="purple" onClick={this._installEditorForSublimeCTAClicked.bind(this)}>Sublime</Button>
 				</span>
 				<span className={base.ph1}>
-					<Button color="purple" onClick={this._installEditorForEmacsCTAClicked.bind(this)}>Emacs</Button>
+					<Button color="purple" onClick={this._installEditorForVimCTAClicked.bind(this)}>Vim</Button>
 				</span>
 			</div>
 		);
