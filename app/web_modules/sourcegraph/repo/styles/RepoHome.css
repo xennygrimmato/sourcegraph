@@ -1,0 +1,41 @@
+@value base "sourcegraph/components/styles/_base.css";
+@value vars "sourcegraph/components/styles/_vars.css";
+@value colors "sourcegraph/components/styles/_colors.css";
+@value typography "sourcegraph/components/styles/_typography.css";
+@value Tree "sourcegraph/tree/styles/Tree.css";
+
+.container {
+	display: flex;
+	composes: pa3 from base;
+}
+
+.info {
+	flex: 1 0 350px;
+	composes: pr3 from base;
+	max-width: 450px;
+}
+.description {
+	composes: mt0 from base;
+}
+.tree-container {
+	composes: tree-container from Tree;
+	flex: 1 1 300px;
+	min-width: 250px;
+	max-width: 600px;
+	margin-left: 0;
+}
+
+.defs {
+	composes: mt5 from base;
+}
+.defs-list {
+	list-style-type: none;
+	composes: pl0 from base;
+}
+.def {
+	display: block;
+	composes: code from typography;
+	composes: bb from base;
+	composes: b--light-gray normal-text from colors;
+	composes: pv3 from base;
+}

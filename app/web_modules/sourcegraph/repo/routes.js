@@ -24,6 +24,8 @@ const common = {
 	},
 };
 
+let _indexComponents;
+
 // routes are the 2 routes needed for repos: the first is the one for repo
 // subroutes, which must take precedence because the repo route matches
 // greedily.
@@ -51,9 +53,13 @@ export const routes: Array<Route> = [
 			disableTreeSearchOverlay: true,
 			keepScrollPositionOnRouteChangeKey: "tree",
 			getComponents: (location, callback) => {
-				require.ensure([], (require) => {
-					require("sourcegraph/tree/routes").routes[0].getComponents(location, callback);
-				});
+				if (!_indexComponents) {
+					const withResolvedRepoRev = require("sourcegraph/repo/withResolvedRepoRev").default;
+					_indexComponents = {
+						main: withResolvedRepoRev(require("sourcegraph/repo/RepoHome").default, false),
+					};
+				}
+				callback(null, _indexComponents);
 			},
 		},
 	},
