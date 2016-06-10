@@ -40,8 +40,8 @@ class ToolsHomeComponent extends Component {
 			editor: {
 				hero: {
 					title: "Sourcegraph for your editor",
-					subtitle: "Live usage examples for Go code, as you type.",
-					paragraph: "When Sourcegraph is installed in your editor, you get real usage examples from across GitHub, immediate access to source code, and documentation about libraries, objects, and functions as you type. No more repetitive Google searches, and no more interruptions. We currently only support Go on Vim and Sublime, but are quickly building support for additional languages and editors.",
+					subtitle: "Live usage examples for Go code, as you type. Currently in beta.",
+					paragraph: "When Sourcegraph is installed in your editor, you get real usage examples from across GitHub, immediate access to source code, and documentation about libraries, objects, and functions as you type. No more repetitive Google searches, and no more interruptions. We currently  support Go for Vim and Sublime, but are rapidly developing support for additional languages and editors.",
 					img: "/img/Dashboard/SourcegraphLiveAsset.svg",
 				},
 				primaryButton: this._sfyeCTA(),
