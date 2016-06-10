@@ -51,14 +51,15 @@ func (e *examples) Get(ctx context.Context, opt *sourcegraph.DefsListExamplesOp)
 		return v
 	}
 
-	innerSelectSQL := `
+	// Over-compensate the amount of refs we fetch since some of them may be
+	// filtered out by filterVisibleRepos below.
+	//
+	// TODO limit this query in a more reliable way.
+	const rowLimit = 100
+	sql := `
 SELECT DISTINCT ON (repo) repo, file, count
 FROM global_refs_new
-WHERE def_key_id=` + arg(defKeyID) + fmt.Sprintf(" LIMIT %s", arg(opt.PerPageOrDefault()))
-
-	sql := `
-SELECT repo, file, count
-FROM (` + innerSelectSQL + `) res`
+WHERE def_key_id=` + arg(defKeyID) + fmt.Sprintf(" LIMIT %s", arg(rowLimit))
 
 	var examplesResult []*dbExamplesResult
 	if _, err := graphDBH(ctx).Select(&examplesResult, sql, args...); err != nil {
@@ -86,6 +87,11 @@ FROM (` + innerSelectSQL + `) res`
 	repoRefs, err = filterVisibleRepos(ctx, repoRefs)
 	if err != nil {
 		return nil, err
+	}
+
+	limit := opt.PerPageOrDefault()
+	if len(repoRefs) > limit {
+		repoRefs = repoRefs[:limit]
 	}
 
 	// Return Files in a consistent order
