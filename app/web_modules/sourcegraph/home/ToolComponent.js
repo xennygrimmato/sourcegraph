@@ -2,19 +2,22 @@ import React from "react";
 import CSSModules from "react-css-modules";
 import styles from "./styles/Tools.css";
 import base from "sourcegraph/components/styles/_base.css";
+import grid from "sourcegraph/components/styles/_base.css";
 import {Heading, Panel, Button} from "sourcegraph/components";
 import {CloseIcon} from "sourcegraph/components/Icons";
 import Modal from "sourcegraph/components/Modal";
 import Selector from "./Selector";
-import {TriangleRightIcon, TriangleDownIcon} from "sourcegraph/components/Icons";
+import {TriangleRightIcon, TriangleDownIcon, CheckIcon} from "sourcegraph/components/Icons";
 import FormSignup from "sourcegraph/home/HomeBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
+import InterestForm from "./InterestForm";
 
 class ToolComponent extends React.Component {
 
 	static propTypes = {
 		location: React.PropTypes.object.isRequired,
 		supportedTool: React.PropTypes.object.isRequired,
+		formExpanded: React.PropTypes.bool,
 	};
 
 	static contextTypes = {
@@ -26,7 +29,8 @@ class ToolComponent extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			visibility: false,
+			formExpanded: false,
+			formError: "none",
 			submitted: false,
 		};
 
@@ -59,21 +63,10 @@ class ToolComponent extends React.Component {
 		this.context.router.replace({...this.props.location, query: ""});
 	}
 	_toggleView() {
-		this.setState({visibility: !this.state.visibility});
-		console.log(this.state.visibility);
+		this.setState({formExpanded: !this.state.formExpanded});
 	}
 	_getVisibility() {
-		return this.state.visibility;
-	}
-	_sendForm(ev) {
-		ev.preventDefault();
-		this.setState({submitted: true});
-		let data = {
-			email: ev.currentTarget[0]['value'],
-			editor: ev.currentTarget[1]['value'],
-			lanuage: ev.currentTarget[2]['value'],
-		};
-		Dispatcher.Backends.dispatch(new FormSignup("form_id", data));
+		return this.state.formExpanded;
 	}
 
 	render() {
@@ -100,28 +93,20 @@ class ToolComponent extends React.Component {
 							</div>
 							<div styleName="button-container">{this.props.supportedTool.primaryButton}</div>
 							<div>
-								<div>{this._getVisibility()?<TriangleDownIcon />:<TriangleRightIcon />}<a onClick={() => this._toggleView()}>Don't see the editor that you use? Let us know what we should work on next!</a>
-								</div>
-								<div styleName={this._getVisibility() ? "visible" : "invisible"}>
-								{!this.state.submitted?
-									<form onSubmit={this._sendForm.bind(this)}>
-										<div styleName="question-container">
-											<span>Email</span>
-											<input type="text" name="email" />
-											<div>
-												<span>Preferred editor:</span>
-												<Selector mapping={this.editors} />
-											</div>
-											<div>
-												<span>Programming langauge:</span>
-												<Selector mapping={this.languages} />
-											</div>
+								{!this.state.submitted ?
+									<div>
+										<div>
+											<a styleName="dont-see-link" onClick={() => this._toggleView()}>{this._getVisibility()?<TriangleDownIcon />:<TriangleRightIcon />}Don't see the editor that you use? Let us know what we should work on next!</a>
 										</div>
-									<Button>Let me know when Sourcegraph is ready for my editor!</Button>
-								</form> :
-								<span>Thanks for your feedback!</span>
+										<div className={base.mb5} styleName={this._getVisibility() ? "visible" : "invisible"}>
+											{this.state.formError ? <div>{this.state.formError}</div> : ""}
+											<InterestForm />
+									</div>
+								</div> :
+								<span className={base.mb5}>
+									<CheckIcon />Thanks for your feedback!
+								</span>
 								}
-							</div>
 							</div>
 
 							{this.props.supportedTool.secondaryButton}
