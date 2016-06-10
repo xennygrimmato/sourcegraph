@@ -7,7 +7,7 @@ import {CloseIcon} from "sourcegraph/components/Icons";
 import Modal from "sourcegraph/components/Modal";
 import Selector from "./Selector";
 import {TriangleRightIcon, TriangleDownIcon} from "sourcegraph/components/Icons";
-import HomeBackend from "sourcegraph/home/HomeBackend";
+import FormSignup from "sourcegraph/home/HomeBackend";
 import Dispatcher from "sourcegraph/Dispatcher";
 
 class ToolComponent extends React.Component {
@@ -66,13 +66,14 @@ class ToolComponent extends React.Component {
 		return this.state.visibility;
 	}
 	_sendForm(ev) {
+		ev.preventDefault();
 		this.setState({submitted: true});
 		let data = {
 			email: ev.currentTarget[0]['value'],
 			editor: ev.currentTarget[1]['value'],
 			lanuage: ev.currentTarget[2]['value'],
 		};
-		Dispatcher.Backends.dispatch(new HomeBackend.FormSignup("form_id", data));
+		Dispatcher.Backends.dispatch(new FormSignup("form_id", data));
 	}
 
 	render() {
@@ -103,7 +104,7 @@ class ToolComponent extends React.Component {
 								</div>
 								<div styleName={this._getVisibility() ? "visible" : "invisible"}>
 								{!this.state.submitted?
-									<form onSubmit={this._sendForm}>
+									<form onSubmit={this._sendForm.bind(this)}>
 										<div styleName="question-container">
 											<span>Email</span>
 											<input type="text" name="email" />
