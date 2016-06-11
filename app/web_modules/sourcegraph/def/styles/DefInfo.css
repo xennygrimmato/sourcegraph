@@ -33,6 +33,10 @@
 	composes: mt3 mr3 mb3 from base;
 }
 
+.section-label:after {
+	content: none;
+}
+
 .description-wrapper {
 	border-top: 1px solid #eeeeee;
 	border-bottom: 1px solid #eeeeee;
@@ -48,7 +52,12 @@
 }
 
 .description {
-	composes: f4 fw1 from typography;
+	composes: normal-text from typography;
+}
+
+.doc-string{
+	composes: pt4 pb1 from base;
+	composes: b normal-text from typography;
 }
 
 .description-expander{
@@ -62,10 +71,11 @@
 	justify-content: center;
 }
 
-.translation-widget {
+.translation-dropdown {
+	/*Why is it that I can't set this to gray-5?*/
+	composes: bg-cool-pale-gray-8 from colors;
 	composes: fw6 from typography;
-	composes: pa2 pl3 pr3 pb2 from base;
-	composes: bg-cool-pale-gray-5 from colors;
+	composes: pt2 pl3 pr3 pb2 from base;
 	border-bottom-right-radius: 2px;
 	border-bottom-left-radius: 2px;
 }

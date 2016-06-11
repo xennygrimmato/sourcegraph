@@ -38,13 +38,15 @@ type GlobalRefs interface {
 	Update(ctx context.Context, op *sourcegraph.DefsRefreshIndexOp) error
 }
 
+// DefExamples defines the interface for getting and listing def usage examples.
+type DefExamples interface {
+	// Get returns the list of example locations for a given def.
+	Get(ctx context.Context, op *sourcegraph.DefsListExamplesOp) (*sourcegraph.RefLocationsList, error)
+}
+
 type GlobalDefSearchOp struct {
 	UnitQuery     string
 	UnitTypeQuery string
-
-	// If specified, filters matches to those of a definition kind
-	// (func, type, var, package, etc.)
-	Kinds []string
 
 	// TokQuery is a list of tokens that describe the user's text
 	// query. Order matter, as the last token is given especial weight.
