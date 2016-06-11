@@ -48,13 +48,15 @@ class DefInfo extends Container {
 			nextPageLoading: false,
 			currentLang: localStorage.getItem("defInfoCurrentLang"),
 			translations: {},
-			defDescrHidden: false,
-			descrCutoff: 1000,
+			defDescrHidden: null,
+			descrCutoff: 500,
 		};
 		this._onNextPage = this._onNextPage.bind(this);
 		this._onTranslateDefInfo = this._onTranslateDefInfo.bind(this);
 		this.splitHTMLDescr = this.splitHTMLDescr.bind(this);
 		this.splitPlainDescr = this.splitPlainDescr.bind(this);
+		this._onViewMore = this._onViewMore.bind(this);
+		this._onViewLess = this._onViewLess.bind(this);
 	}
 
 	stores() {
@@ -114,6 +116,15 @@ class DefInfo extends Container {
 		return txt.slice(0, Math.min(txt.length, cutOff));
 	}
 
+	_onViewMore() {
+		this.setState({defDescrHidden: false});
+	}
+
+	_onViewLess() {
+		this.setState({defDescrHidden: true});
+	}
+
+
 	reconcileState(state, props) {
 		state.repo = props.repo || null;
 		state.rev = props.rev || null;
@@ -128,7 +139,7 @@ class DefInfo extends Container {
 		if (state.refLocations && state.refLocations.PagesFetched >= state.currPage) {
 			state.nextPageLoading = false;
 		}
-		if (state.defObj) {
+		if (state.defObj && state.defDescrHidden === null) {
 			state.defDescrHidden = this.shouldHideDescr(state.defObj, state.descrCutoff);
 		}
 	}
@@ -251,6 +262,8 @@ class DefInfo extends Container {
 					<h3>DocString</h3>
 							<div styleName="description"
 								dangerouslySetInnerHTML={hiddenDescr && {__html: this.splitHTMLDescr(def.DocHTML.__html, cutOff)} || def.DocHTML}></div>
+							{hiddenDescr && <div styleName="description-expander" onClick={this._onViewMore}>View More...</div>}
+							{!hiddenDescr && this.shouldHideDescr(def, cutOff) && <div styleName="description-expander" onClick={this._onViewLess}>Collapse</div>}
 					</div>
 					}
 					{/* TODO DocHTML will not be set if the this def was loaded via the
@@ -258,9 +271,14 @@ class DefInfo extends Container {
 						we'll fallback to displaying plain text. We should be able to
 						sanitize/render DocHTML on the front-end to make this consistent.
 					*/}
-			{def && !def.DocHTML && def.Docs && def.Docs.length &&
-						<div styleName="description">{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, cutOff) || def.Docs[0].Data}</div>
-					}
+
+				{def && !def.DocHTML && def.Docs && def.Docs.length &&
+							<div styleName="description-wrapper">
+								<div styleName="description">{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, cutOff) || def.Docs[0].Data}</div>
+								{hiddenDescr && <div onClick={this._onViewMore}>View More...</div>}
+							</div>
+						}
+
 					{def && !def.Error &&
 						<div>
 							{!refLocs && <i>Loading...</i>}

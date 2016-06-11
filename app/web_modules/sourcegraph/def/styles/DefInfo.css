@@ -48,7 +48,12 @@
 }
 
 .description {
-	composes: f4 fw2 from typography;
+	composes: f4 fw1 from typography;
+}
+
+.description-expander{
+	composes: description;
+	composes: link from "sourcegraph/components/styles/link.css";
 }
 
 .pagination {
