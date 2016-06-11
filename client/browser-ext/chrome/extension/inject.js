@@ -4,6 +4,7 @@ import {bindActionCreators} from "redux";
 import {connect, Provider} from "react-redux";
 
 import addAnnotations from "./annotations";
+import addAnnotationsForPullRequest from "./annotations2";
 
 import {useAccessToken} from "../../app/actions/xhr";
 import * as Actions from "../../app/actions";
@@ -250,11 +251,59 @@ class InjectApp extends React.Component {
 
 		this._renderDefInfo(this.props);
 
+		let prData = this.getPullRequestData();
+		if (prData) {
+			console.log("going through fun land");
+
+			// TODO(rothfels): kick off refresh vcs to build the repo@branch
+			if (prData.files) {
+				console.log("have files", prData.files);
+				prData.files.forEach((file, i) => {
+					this.props.actions.getAnnotations(repo, prData.base, file);
+					this.props.actions.getAnnotations(repo, prData.head, file);
+				});
+
+				let byteOffsetsByLineBase = {};
+				[0, 13, 14, 27, 28, 42, 61, 83, 85].forEach((val, i) => {
+					byteOffsetsByLineBase[i+1] = val;
+				});
+
+				let path = "main.go";
+				const srclibDataVersion2 = this.props.srclibDataVersion.content[keyFor(repo, prData.base, path)];
+				console.log("have srclibdataversin", srclibDataVersion2);
+				if (srclibDataVersion2 && srclibDataVersion2.CommitID) {
+					const annotations = this.props.annotations.content[keyFor(repo, srclibDataVersion2.CommitID, path)];
+					console.log("have annotatins");
+					if (annotations) addAnnotationsForPullRequest(path, byteOffsetsByLineBase, byteOffsetsByLineBase, annotations, null, prData.blobs[1]);
+				}
+			}
+		}
+
 		const srclibDataVersion = this.props.srclibDataVersion.content[keyFor(repo, rev, path)];
 		if (srclibDataVersion && srclibDataVersion.CommitID) {
 			const annotations = this.props.annotations.content[keyFor(repo, srclibDataVersion.CommitID, path)];
 			if (annotations) this.annotate(annotations);
 		}
+	}
+
+	getPullRequestData() {
+		if (window.location.href.split("/")[5] !== "pull") return null;
+
+		const branches = document.querySelectorAll(".commit-ref,.current-branch");
+		if (branches.length !== 2) return null;
+
+		const base = branches[0].innerText;
+		const head = branches[1].innerText;
+
+		if (window.location.href.split("/")[7] !== "files") return {base, head};
+
+		let fileEls = document.querySelectorAll(".file-header");
+		let files = []
+		for (let i = 0; i < fileEls.length; ++i) {
+			files.push(fileEls[i].dataset.path);
+		}
+		let blobs = document.querySelectorAll(".blob-wrapper");
+		return {base, head, files: files, blobs};
 	}
 
 	_refreshVCS() {
