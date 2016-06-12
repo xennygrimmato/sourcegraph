@@ -250,11 +250,10 @@ class InjectApp extends React.Component {
 		}
 
 		this._renderDefInfo(this.props);
-
+		debugger;
 		let prData = this.getPullRequestData();
 		if (prData) {
 			console.log("going through fun land");
-
 			// TODO(rothfels): kick off refresh vcs to build the repo@branch
 			if (prData.files) {
 				console.log("have files", prData.files);
