@@ -36,6 +36,7 @@ class ToolsHomeComponent extends Component {
 					img: "/img/Dashboard/GoogleChromeAsset.svg",
 				},
 				primaryButton: this._browserCTA(),
+				toolname: "browser",
 			},
 			editor: {
 				hero: {
@@ -46,6 +47,7 @@ class ToolsHomeComponent extends Component {
 				},
 				primaryButton: this._sfyeCTA(),
 				gif: "/img/Dashboard/LiveEditorExampleGif.gif",
+				toolname: "editor",
 			},
 		};
 	}

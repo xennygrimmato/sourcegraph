@@ -72,6 +72,7 @@ class ToolComponent extends React.Component {
 	}
 
 	render() {
+		debugger;
 		return (
 			<Modal onDismiss={this._dismissModal.bind(this)}>
 					<div styleName="tool-item">
@@ -93,7 +94,8 @@ class ToolComponent extends React.Component {
 								</div>
 							</div>
 							<div styleName="button-container">{this.props.supportedTool.primaryButton}</div>
-							<div>
+							{this.props.supportedTool.toolName === "editor" ?
+								<div>
 								{!this.state.submitted ?
 									<div>
 										<div styleName="dont-see-div">
@@ -107,7 +109,7 @@ class ToolComponent extends React.Component {
 									<CheckIcon styleName="check-icon" />Thanks for your feedback!
 								</div>
 								}
-							</div>
+								</div> : ""}
 
 							{this.props.supportedTool.secondaryButton}
 							{this.props.supportedTool.gif && <div styleName="tool-gif-container">
