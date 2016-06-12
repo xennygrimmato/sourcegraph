@@ -36,7 +36,7 @@ class ToolsHomeComponent extends Component {
 					img: "/img/Dashboard/GoogleChromeAsset.svg",
 				},
 				primaryButton: this._browserCTA(),
-				toolname: "browser",
+				toolName: "browser",
 			},
 			editor: {
 				hero: {
@@ -47,7 +47,11 @@ class ToolsHomeComponent extends Component {
 				},
 				primaryButton: this._sfyeCTA(),
 				gif: "/img/Dashboard/LiveEditorExampleGif.gif",
-				toolname: "editor",
+				toolName: "editor",
+				interestForm: {
+					title: "Don't see the editor that you use? Let us know what we should work on next!",
+					submittedTitle: "Thanks for your feedback!",
+				},
 			},
 		};
 	}

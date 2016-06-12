@@ -25,9 +25,9 @@ class ToolComponent extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			formExpanded: false,
+			formExpanded: this.props.location.query.expanded === "true",
 			formError: "none",
-			submitted: false,
+			submitted: window.localStorage["email_subscription_submitted"] === "true",
 		};
 
 		this.languages = {
@@ -58,21 +58,48 @@ class ToolComponent extends React.Component {
 		this.context.eventLogger.logEvent("ToolBackButtonClicked", {toolType: this.props.location.query.tool});
 		this.context.router.replace({...this.props.location, query: ""});
 	}
+
 	_toggleView() {
+		this.context.router.replace({...this.props.location, query: {...this.props.location.query, expanded: !this.state.formExpanded}});
 		this.setState({formExpanded: !this.state.formExpanded});
 	}
+
 	_getVisibility() {
 		return this.state.formExpanded;
 	}
 
-	_hasSubmittedInterestForm() {
+	_submitInterestForm() {
+		this.context.eventLogger.logEvent("EmailSubscriptionSubmitted");
+		window.localStorage["email_subscription_submitted"] = "true";
 		this.setState({
 			submitted: true,
 		});
 	}
 
+	_optionalFormView() {
+		if (!this.props.supportedTool.interestForm) {
+			return <div/>;
+		}
+
+		if (!this.state.submitted) {
+			return (<div>
+				<div styleName="dont-see-div">
+					<a styleName="dont-see-link" onClick={() => this._toggleView()}>{this.state.formExpanded ? <TriangleDownIcon /> : <TriangleRightIcon />}{this.props.supportedTool.interestForm.title}</a>
+				</div>
+				<div className={base.mb5} styleName={this.state.formExpanded ? "visible" : "invisible"}>
+					<InterestForm onSubmitted={this._submitInterestForm.bind(this)} />
+				</div>
+			</div>);
+		}
+
+		return (
+			<div className={base.mb3}>
+				<CheckIcon styleName="check-icon" /><span>{this.props.supportedTool.interestForm.submittedTitle}</span>
+			</div>
+		);
+	}
+
 	render() {
-		debugger;
 		return (
 			<Modal onDismiss={this._dismissModal.bind(this)}>
 					<div styleName="tool-item">
@@ -94,23 +121,7 @@ class ToolComponent extends React.Component {
 								</div>
 							</div>
 							<div styleName="button-container">{this.props.supportedTool.primaryButton}</div>
-							{this.props.supportedTool.toolName === "editor" ?
-								<div>
-								{!this.state.submitted ?
-									<div>
-										<div styleName="dont-see-div">
-											<a styleName="dont-see-link" onClick={() => this._toggleView()}>{this._getVisibility()?<TriangleDownIcon />:<TriangleRightIcon />}Don't see the editor that you use? Let us know what we should work on next!</a>
-										</div>
-										<div className={base.mb5} styleName={this._getVisibility() ? "visible" : "invisible"}>
-											<InterestForm onSubmitted={this._hasSubmittedInterestForm.bind(this)} />
-									</div>
-								</div> :
-								<div className={base.mb3}>
-									<CheckIcon styleName="check-icon" />Thanks for your feedback!
-								</div>
-								}
-								</div> : ""}
-
+							{this._optionalFormView()}
 							{this.props.supportedTool.secondaryButton}
 							{this.props.supportedTool.gif && <div styleName="tool-gif-container">
 								<img styleName="tool-gif" src={`${this.context.siteConfig.assetsRoot}${this.props.supportedTool.gif}`}></img>

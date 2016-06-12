@@ -16,6 +16,7 @@ class Button extends Component {
 		loading: React.PropTypes.bool,
 		color: React.PropTypes.string, // "blue", "purple", "green", "red", "orange"
 		onClick: React.PropTypes.func,
+		type: React.PropTypes.string,
 	};
 
 	static defaultProps = {

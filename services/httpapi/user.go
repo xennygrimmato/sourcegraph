@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
@@ -57,7 +56,6 @@ func serveEmailSubscription(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	fmt.Print(string(body))
 	return writeJSON(w, string(body))
 
 }

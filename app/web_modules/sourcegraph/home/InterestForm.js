@@ -1,6 +1,6 @@
 import React from "react";
 import CSSModules from "react-css-modules";
-import styles from "./styles/Tools.css";
+import styles from "./styles/InterestForm.css";
 import {Button} from "sourcegraph/components";
 import Selector from "./Selector";
 import Dispatcher from "sourcegraph/Dispatcher";
@@ -55,69 +55,54 @@ class InterestForm extends React.Component {
 				lastName = names.slice(1).join(" ");
 			}
 		}
-		let data = {
-			firstName: firstName,
-			lastName: lastName,
-			email: ev.currentTarget[1]["value"],
-			editor: ev.currentTarget[2]["value"],
-			language: ev.currentTarget[3]["value"],
-			message: ev.currentTarget[4]["value"],
-		};
-		let callBack = ()=>{
-			if (!this.state.formError) {
-				this.props.onSubmitted();
-				Dispatcher.Backends.dispatch(new UserActions.SubmitEmailSubscription(
-					data.email,
-					data.firstName,
-					data.lastName,
-					data.language,
-					data.editor,
-					data.message,
-				));
-			}
-		};
-		if (!data["firstName"]) {
-			this.setState({formError: "Please provide your name.", callBack});
-		} else if (!data["email"]) {
-			this.setState({formError: "Please provide your email.", callBack});
-		} else if (!data["editor"]) {
-			this.setState({formError: "Please choose an editor."}, callBack);
-		} else if (!data["language"]) {
-			this.setState({formError: "Please choose a language.", callBack});
-		} else {
-			this.setState({formError: null}, callBack);
-		}
+
+		this.props.onSubmitted();
+		Dispatcher.Backends.dispatch(new UserActions.SubmitEmailSubscription(
+			ev.currentTarget[1]["value"].trim(),
+			firstName.trim(),
+			lastName.trim(),
+			ev.currentTarget[3]["value"].trim(),
+			ev.currentTarget[2]["value"].trim(),
+			ev.currentTarget[4]["value"].trim(),
+		));
 	}
 
 	render() {
 		return (
 			<form onSubmit={this._sendForm.bind(this)}>
-				{this.state.formError ? <div>{this.state.formError}</div> : ""}
-				<div styleName="question-container">
-					<ul styleName="form-style">
-						<li>
-							<label styleName="label">Full Name:<span styleName="required">*</span></label>
-							<input styleName="elem-width" type="text" name="name" placeholder="Full name" />
-						</li>
-						<li>
-							<label styleName="label">Email:<span styleName="required">*</span></label>
-							<input styleName="elem-width" type="email" name="email" placeholder="Email address" />
-						</li>
-						<li>
-							<label styleName="label">Preferred editor:<span styleName="required">*</span></label>
-							<Selector mapping={this.editors} />
-						</li>
-						<li>
-							<label styleName="label">Primary language:<span styleName="required">*</span></label>
-							<Selector mapping={this.languages} />
-						</li>
-						<li>
-							<label styleName="label">Any other features you'd like to see?:</label>
-							<textarea styleName="elem-width" name="message"></textarea>
-						</li>
-					</ul>
+				{this.state.formError && <div>{this.state.formError}</div>}
+				<div styleName="container">
+					<div styleName="table-row">
+						<span styleName="full-input">
+							<input styleName="input-field" type="text" name="firstName" placeholder="Full name*" required={true}/>
+						</span>
+					</div>
+					<div styleName="table-row">
+						<span styleName="full-input">
+							<input styleName="input-field" type="text" name="emailAddress" placeholder="Email address*" required={true}/>
+						</span>
+					</div>
+					<div styleName="table-row">
+						<span styleName="full-input">
+							<Selector requiredTitle="Select your preferred editor" mapping={this.editors} />
+						</span>
+					</div>
+					<div styleName="table-row">
+						<span styleName="full-input">
+							<Selector requiredTitle="Select your primary language" mapping={this.languages} />
+						</span>
+					</div>
+					<div styleName="table-row">
+						<span styleName="full-input">
+							<textarea styleName="input-field" name="message" placeholder="Any other features you'd like to see?"></textarea>
+						</span>
+					</div>
+					<div styleName="table-row">
+						<span styleName="full-input">
+							<Button styleName="button" type="submit" color="purple">Keep me updated!</Button>
+						</span>
+					</div>
 				</div>
-				<Button color="purple">Let me know when Sourcegraph is available for my editor!</Button>
 			</form>
 		);
 	}

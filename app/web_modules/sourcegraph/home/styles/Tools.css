@@ -129,29 +129,25 @@
 	composes: center from base;
 	composes: col-10 from base;
 	max-width: 400px;
-    /*max-width: 400px;
-    min-width: 400px;*/
 }
 
 .form-style > li {
 	padding: 0;
-    display: block;
-    list-style: none;
-    margin: 10px 0 0 0;
+	display: block;
+	list-style: none;
+	padding: 10px 0 0 0;
 }
 
 .label {
-	margin:0 0 3px 0;
-    padding:0px;
-    display:block;
-    font-weight: bold;
-    text-align:left;
-}
-
-.elem-width {
-	composes: col-10 from grid;
+	padding:0 0 3px 0;
+	padding:0px;
+	display:block;
+	font-weight: bold;
+	text-align:left;
 }
 
 .check-icon {
 	composes: green-8 from colors;
+	vertical-align: middle;
+	padding-right: 5px;
 }
