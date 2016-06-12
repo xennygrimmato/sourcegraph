@@ -188,7 +188,13 @@ export default class RefsContainer extends Container {
 		let pathBreadcrumb = breadcrumb(
 			path,
 			(j) => <span key={j} className={styles.sep}> / </span>,
-			(_, component, j, isLast) => <span className={styles.pathPart} key={j}>{component}</span>
+			(_, component, j, isLast) => {
+				let span = <span key={j}>{component}</span>;
+				if (isLast) {
+					return <Link to={urlToBlob(repo, rev, path)} key={j}> {span} </Link>;
+				}
+				return span;
+			}
 		);
 		return (
 			<div key={path} className={styles.filename} onClick={(e) => {
@@ -202,10 +208,6 @@ export default class RefsContainer extends Container {
 						<span className={styles.refsLabel}>{`${count} ref${count > 1 ? "s" : ""}`}</span>
 					}
 				</div>
-				<Link className={styles.viewFile}
-					to={urlToBlob(repo, rev, path)}>
-					<span className={styles.pageLink}>View</span>
-				</Link>
 			</div>
 		);
 	}

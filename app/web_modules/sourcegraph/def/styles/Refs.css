@@ -11,7 +11,7 @@
 .container {
 	display: flex;
 	flex-direction: column;
-	composes: mb4 from base;
+	composes: mb4 br2 from base;
 }
 
 .repo {
@@ -37,6 +37,7 @@
 }
 
 .refs {
+	border-radius: 100px;
 	flex: 1 1 auto;
 }
 
@@ -59,11 +60,6 @@
 
 .pathContainer {
 	flex: 1 1 auto;
-}
-
-.viewFile {
-	composes: tr from typography;
-	flex: 0 0 35px;
 }
 
 .toggleIcon {
