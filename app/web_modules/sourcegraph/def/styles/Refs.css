@@ -49,9 +49,8 @@
 
 .filename {
 	composes: pa2 mt2 ba br1 from base;
-	composes: f5 from typography;
+	composes: f5 fw1 from typography;
 	composes: mid-gray from colors;
-	background-color: #f7f7f7;
 	border-color: #d8d8d8;
 	display: flex;
 	align-items: center;
