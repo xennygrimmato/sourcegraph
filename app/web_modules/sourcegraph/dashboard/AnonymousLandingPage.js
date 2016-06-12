@@ -87,15 +87,19 @@ class AnonymousLandingPage extends Component {
 						<div styleName="content-right">
 							<div styleName="content">
 								<Logo width="32px" className={base.mt4} />
-								<h3 styleName="h3">Sourcegraph for your editor (beta)</h3>
+								<h3 styleName="h3">Sourcegraph for your editor</h3>
 								<p>See usage examples for code instantly, as you type. It's like pair programming with the smartest developer in the world.</p>
+								<div styleName="flex">
+									<div styleName="sfye-flex">
+										<a styleName="" href="/tools?tool=editor">
+											<Button color="blue" onClick={(v) => v && eventLogger.logEvent("ClickedInstallChromeExt")}>
+												Install for your editor
+											</Button>
+										</a>
+									</div>
+									<div styleName="sfye_beta"><em>Beta for Go in Sublime Text and Vim, <a href="/tools?tool=editor">get notified when Sourcgraph is available for your editor</a></em></div>
+								</div>
 							</div>
-							<a href="/tools?tool=editor">
-								<Button color="blue" onClick={(v) => v && eventLogger.logEvent("ClickedInstallChromeExt")}>
-									Install for your editor
-								</Button>
-							</a>
-							<div styleName="sfye_beta"><em>Beta for Go in Sublime Text and Vim, <a href="/tools?tool=editor">get notified when Sourcgraph is available for your editor</a></em></div>
 						</div>
 					</div>
 

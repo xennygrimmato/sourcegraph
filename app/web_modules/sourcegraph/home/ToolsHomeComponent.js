@@ -133,12 +133,11 @@ class ToolsHomeComponent extends Component {
 	_sfyeCTA() {
 		return (
 			<div>
-				<span className="button-prefix">Install for:</span>
 				<span className={base.ph1}>
-					<Button color="purple" onClick={this._installEditorForSublimeCTAClicked.bind(this)}>Sublime</Button>
+					<Button color="purple" onClick={this._installEditorForSublimeCTAClicked.bind(this)}>Install for Sublime</Button>
 				</span>
 				<span className={base.ph1}>
-					<Button color="purple" onClick={this._installEditorForVimCTAClicked.bind(this)}>Vim</Button>
+					<Button color="purple" onClick={this._installEditorForVimCTAClicked.bind(this)}>Install for Vim</Button>
 				</span>
 			</div>
 		);
@@ -188,7 +187,9 @@ class ToolsHomeComponent extends Component {
 					</div>
 					<div styleName="panel-item">
 						<Panel hoverLevel="high">
-							<img styleName="img" src={`${this.context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphLiveAsset.svg`}></img>
+							<img styleName="img" src={`${this.context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphLiveSublime.svg`}></img>
+							<img styleName="img" src={`${this.context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphLiveVim.svg`}></img>
+
 							<Heading align="center" level="4" className={base.ph4}>Sourcegraph for your editor</Heading>
 							<p styleName="cool-mid-gray" className={base.ph4}>
 								Live usage examples for Go code, as you type.
