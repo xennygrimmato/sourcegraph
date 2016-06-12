@@ -10,12 +10,12 @@ class Selector extends React.Component {
 
 	render() {
 		let optionalRender = [];
-		optionalRender.push(<option key="none" value="none" disabled="true"> -- select an option -- </option>);
+		optionalRender.push(<option key="none" value="" disabled="true"> -- select an option -- </option>);
 		for (let key in this.props.mapping) {
 			optionalRender.push(<option key={key} name={key}>{this.props.mapping[key]}</option>);
 		}
 		return (
-			<select styleName="elem-width" defaultValue="none">
+			<select styleName="elem-width" defaultValue="">
 				{optionalRender}
 			</select>
 		);

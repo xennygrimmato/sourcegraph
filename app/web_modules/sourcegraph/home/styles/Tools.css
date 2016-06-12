@@ -117,15 +117,20 @@
 	cursor: pointer;
 }
 
+.dont-see-div {
+	composes: mb3 from base;
+}
+
 .required {
 	color: red;
 }
 
 .form-style {
-	margin:10px auto;
-    max-width: 400px;
-    min-width: 400px;
-    padding: 20px 12px 10px 20px;
+	composes: center from base;
+	composes: col-10 from base;
+	max-width: 400px;
+    /*max-width: 400px;
+    min-width: 400px;*/
 }
 
 .form-style > li {
@@ -145,4 +150,8 @@
 
 .elem-width {
 	composes: col-10 from grid;
+}
+
+.check-icon {
+	composes: green-8 from colors;
 }

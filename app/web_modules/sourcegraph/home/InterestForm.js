@@ -15,8 +15,8 @@ class InterestForm extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			formError: "none",
 			submitted: false,
+			formError: null,
 		};
 
 		this.languages = {
@@ -45,42 +45,54 @@ class InterestForm extends React.Component {
 
 	_sendForm(ev) {
 		ev.preventDefault();
+		const name = ev.currentTarget[0]["value"];
+		let firstName = null;
+		let lastName = null;
+		if (name) {
+			const names = name.match(/\S+/g); //	gets rid of leading whitespaces and splits on whitespace
+			if (names) {
+				firstName = names[0];
+				lastName = names.slice(1).join(" ");
+			}
+		}
 		let data = {
-			firstName: ev.currentTarget[0]["value"],
-			lastName: ev.currentTarget[0]["value"],
+			firstName: firstName,
+			lastName: lastName,
 			email: ev.currentTarget[1]["value"],
 			editor: ev.currentTarget[2]["value"],
 			language: ev.currentTarget[3]["value"],
 			message: ev.currentTarget[4]["value"],
 		};
-
-		if (!data["name"]) {
-			this.setState({formError: "Please provide your name."});
+		let callBack = ()=>{
+			if (!this.state.formError) {
+				this.props.onSubmitted();
+				Dispatcher.Backends.dispatch(new UserActions.SubmitEmailSubscription(
+					data.email,
+					data.firstName,
+					data.lastName,
+					data.language,
+					data.editor,
+					data.message,
+				));
+			}
+		};
+		if (!data["firstName"]) {
+			this.setState({formError: "Please provide your name.", callBack});
 		} else if (!data["email"]) {
-			this.setState({formError: "Please provide your email."});
-		} else if (!data["editor"] === "none") {
-			this.setState({formError: "Please choose an editor."});
-		} else if (!data["language"] === "none") {
-			this.setState({formError: "Please choose an editor."});
+			this.setState({formError: "Please provide your email.", callBack});
+		} else if (!data["editor"]) {
+			this.setState({formError: "Please choose an editor."}, callBack);
+		} else if (!data["language"]) {
+			this.setState({formError: "Please choose a language.", callBack});
 		} else {
-			this.setState({formError: "none"});
-		}
-		if (this.state.formError === "none") {
-			this.props.onSubmitted();
-			Dispatcher.Backends.dispatch(new UserActions.SubmitEmailSubscription(
-				data.email,
-				data.firstName,
-				data.lastName,
-				data.language,
-				data.editor,
-				data.message,
-			));
+			this.setState({formError: null}, callBack);
 		}
 	}
 
 	render() {
 		return (
 			<form onSubmit={this._sendForm.bind(this)}>
+				{this.state.formError ? <div>{this.state.formError}</div> : ""}
 				<div styleName="question-container">
 					<ul styleName="form-style">
 						<li>

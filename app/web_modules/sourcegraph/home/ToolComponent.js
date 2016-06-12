@@ -96,17 +96,16 @@ class ToolComponent extends React.Component {
 							<div>
 								{!this.state.submitted ?
 									<div>
-										<div>
+										<div styleName="dont-see-div">
 											<a styleName="dont-see-link" onClick={() => this._toggleView()}>{this._getVisibility()?<TriangleDownIcon />:<TriangleRightIcon />}Don't see the editor that you use? Let us know what we should work on next!</a>
 										</div>
 										<div className={base.mb5} styleName={this._getVisibility() ? "visible" : "invisible"}>
-											{this.state.formError ? <div>{this.state.formError}</div> : ""}
 											<InterestForm onSubmitted={this._hasSubmittedInterestForm.bind(this)} />
 									</div>
 								</div> :
-								<span className={base.mb5}>
-									<CheckIcon />Thanks for your feedback!
-								</span>
+								<div className={base.mb3}>
+									<CheckIcon styleName="check-icon" />Thanks for your feedback!
+								</div>
 								}
 							</div>
 
