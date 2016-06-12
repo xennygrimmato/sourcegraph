@@ -21,6 +21,7 @@ import httpStatusCode from "sourcegraph/util/httpStatusCode";
 import {RepoLink} from "sourcegraph/components";
 import {TriangleRightIcon, TriangleDownIcon} from "sourcegraph/components/Icons";
 import breadcrumb from "sourcegraph/util/breadcrumb";
+import stripDomain from "sourcegraph/util/stripDomain";
 import styles from "./styles/Refs.css";
 
 const SNIPPET_REF_CONTEXT_LINES = 4; // Number of additional lines to show above/below a ref
@@ -185,8 +186,10 @@ export default class RefsContainer extends Container {
 	}
 
 	renderFileHeader(repo, rev, path, count, i) {
+		let trimmedPath = stripDomain(repo);
+		trimmedPath = trimmedPath.concat("/", path);
 		let pathBreadcrumb = breadcrumb(
-			path,
+			trimmedPath,
 			(j) => <span key={j}> / </span>,
 			(_, component, j, isLast) => {
 				let span = <span key={j}>{component}</span>;
