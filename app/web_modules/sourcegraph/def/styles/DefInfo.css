@@ -62,6 +62,7 @@
 .description-expander{
 	composes: description;
 	composes: link from "sourcegraph/components/styles/link.css";
+	cursor: pointer; 
 }
 
 .pagination {
