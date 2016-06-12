@@ -1,4 +1,4 @@
-// @flow 
+// @flow
 
 const domains = ["sourcegraph.com/", "github.com/"];
 

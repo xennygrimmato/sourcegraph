@@ -25,6 +25,8 @@ import "whatwg-fetch";
 import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown, TabItem} from "sourcegraph/components";
 
+const DESCRIPTION_CHAR_CUTOFF = 500;
+
 class DefInfo extends Container {
 	static contextTypes = {
 		router: React.PropTypes.object.isRequired,
@@ -46,7 +48,6 @@ class DefInfo extends Container {
 			currentLang: localStorage.getItem("defInfoCurrentLang"),
 			translations: {},
 			defDescrHidden: null,
-			descrCutoff: 500,
 		};
 		this._onTranslateDefInfo = this._onTranslateDefInfo.bind(this);
 		this.splitHTMLDescr = this.splitHTMLDescr.bind(this);
@@ -131,7 +132,7 @@ class DefInfo extends Container {
 		state.defCommitID = props.defObj ? props.defObj.CommitID : null;
 		state.authors = state.defObj ? DefStore.authors.get(state.repo, state.defObj.CommitID, state.def) : null;
 		if (state.defObj && state.defDescrHidden === null) {
-			state.defDescrHidden = this.shouldHideDescr(state.defObj, state.descrCutoff);
+			state.defDescrHidden = this.shouldHideDescr(state.defObj, DESCRIPTION_CHAR_CUTOFF);
 		}
 	}
 
@@ -181,7 +182,6 @@ class DefInfo extends Container {
 	render() {
 		let def = this.state.defObj;
 		let hiddenDescr = this.state.defDescrHidden;
-		let cutOff = this.state.descrCutoff;
 		let refLocs = this.state.refLocations;
 		let authors = this.state.authors;
 		let defInfoUrl = this.state.defObj ? urlToDefInfo(this.state.defObj, this.state.rev) : "";
@@ -240,11 +240,11 @@ class DefInfo extends Container {
 							}
 							<div styleName="doc-string">DocString</div>
 							<div styleName="description"
-								dangerouslySetInnerHTML={hiddenDescr && {__html: this.splitHTMLDescr(def.DocHTML.__html, cutOff)} || def.DocHTML}></div>
+								dangerouslySetInnerHTML={hiddenDescr && {__html: this.splitHTMLDescr(def.DocHTML.__html, DESCRIPTION_CHAR_CUTOFF)} || def.DocHTML}></div>
 							{hiddenDescr &&
 								<div styleName="description-expander" onClick={this._onViewMore}>View More...</div>
 							}
-							{!hiddenDescr && this.shouldHideDescr(def, cutOff) &&
+							{!hiddenDescr && this.shouldHideDescr(def, DESCRIPTION_CHAR_CUTOFF) &&
 								<div styleName="description-expander" onClick={this._onViewLess}>Collapse</div>
 							}
 					</div>
@@ -257,11 +257,11 @@ class DefInfo extends Container {
 
 				{def && !def.DocHTML && def.Docs && def.Docs.length &&
 							<div styleName="description-wrapper">
-								<div styleName="description">{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, cutOff) || def.Docs[0].Data}</div>
+								<div styleName="description">{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, DESCRIPTION_CHAR_CUTOFF) || def.Docs[0].Data}</div>
 								{hiddenDescr &&
 									<div styleName="description-expander" onClick={this._onViewMore}>View More...</div>
 								}
-								{!hiddenDescr && this.shouldHideDescr(def, cutOff) &&
+								{!hiddenDescr && this.shouldHideDescr(def, DESCRIPTION_CHAR_CUTOFF) &&
 									<div styleName="description-expander" onClick={this._onViewLess}>Collapse</div>
 								}
 							</div>

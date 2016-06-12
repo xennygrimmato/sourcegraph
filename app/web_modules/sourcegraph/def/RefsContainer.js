@@ -18,7 +18,6 @@ import lineFromByte from "sourcegraph/blob/lineFromByte";
 import {urlToBlob} from "sourcegraph/blob/routes";
 import Header from "sourcegraph/components/Header";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
-import {RepoLink} from "sourcegraph/components";
 import {TriangleRightIcon, TriangleDownIcon} from "sourcegraph/components/Icons";
 import breadcrumb from "sourcegraph/util/breadcrumb";
 import stripDomain from "sourcegraph/util/stripDomain";
