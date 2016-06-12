@@ -187,7 +187,7 @@ export default class RefsContainer extends Container {
 	renderFileHeader(repo, rev, path, count, i) {
 		let pathBreadcrumb = breadcrumb(
 			path,
-			(j) => <span key={j} className={styles.sep}> / </span>,
+			(j) => <span key={j}> / </span>,
 			(_, component, j, isLast) => {
 				let span = <span key={j}>{component}</span>;
 				if (isLast) {
