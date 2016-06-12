@@ -61,6 +61,10 @@
 	flex: 1 1 auto;
 }
 
+.pathEnd{
+	composes: fw5 from typography;
+}
+
 .toggleIcon {
 	composes: mid-gray from colors;
 	flex: 0 0 15px;

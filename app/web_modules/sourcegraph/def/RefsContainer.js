@@ -191,7 +191,7 @@ export default class RefsContainer extends Container {
 			(_, component, j, isLast) => {
 				let span = <span key={j}>{component}</span>;
 				if (isLast) {
-					return <Link to={urlToBlob(repo, rev, path)} key={j}> {span} </Link>;
+					return <Link className={styles.pathEnd} to={urlToBlob(repo, rev, path)} key={j}> {span} </Link>;
 				}
 				return span;
 			}
