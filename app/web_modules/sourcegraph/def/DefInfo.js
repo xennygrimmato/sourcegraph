@@ -71,8 +71,10 @@ class DefInfo extends Container {
 			let parser = new DOMParser();
 			let doc = parser.parseFromString(defObj.DocHTML.__html, "text/html");
 			return doc.documentElement.textContent.length >= cutOff;
+		} else if (defObj.Docs) {
+			return defObj.Docs[0].Data.length >= cutOff;
 		}
-		return defObj.Docs[0].Data.length >= cutOff;
+		return false;
 	}
 
 	splitHTMLDescr(html, cutOff) {
@@ -242,7 +244,7 @@ class DefInfo extends Container {
 							{hiddenDescr &&
 								<div styleName="description-expander" onClick={this._onViewMore}>View More...</div>
 							}
-							{!hiddenDescr && this.shouldHideDescr(def, cutOff) && 
+							{!hiddenDescr && this.shouldHideDescr(def, cutOff) &&
 								<div styleName="description-expander" onClick={this._onViewLess}>Collapse</div>
 							}
 					</div>
@@ -257,7 +259,10 @@ class DefInfo extends Container {
 							<div styleName="description-wrapper">
 								<div styleName="description">{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, cutOff) || def.Docs[0].Data}</div>
 								{hiddenDescr &&
-									<div onClick={this._onViewMore}>View More...</div>
+									<div styleName="description-expander" onClick={this._onViewMore}>View More...</div>
+								}
+								{!hiddenDescr && this.shouldHideDescr(def, cutOff) &&
+									<div styleName="description-expander" onClick={this._onViewLess}>Collapse</div>
 								}
 							</div>
 						}
