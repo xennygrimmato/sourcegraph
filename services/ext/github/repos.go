@@ -1,6 +1,7 @@
 package github
 
 import (
+	"errors"
 	"fmt"
 
 	"google.golang.org/grpc"
@@ -35,39 +36,56 @@ func init() {
 
 type Repos struct{}
 
+type cachedRemoteRepo struct {
+	sourcegraph.RemoteRepo
+
+	// PublicNotFound indicates that the GitHub API returned a 404 when
+	// using an Unauthed request (repo may be exist privately).
+	PublicNotFound bool
+}
+
 func (s *Repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, error) {
 	// This function is called a lot, especially on popular public
 	// repos. For public repos we have the same result for everyone, so it
 	// is cacheable. (Permissions can change, but we no longer store that.) But
 	// for the purpose of avoiding rate limits, we set all public repos to
 	// read-only permissions.
-	var cachedRemoteRepo sourcegraph.RemoteRepo
-	if err := reposGithubPublicCache.Get(repo, &cachedRemoteRepo); err == nil {
-		reposGithubPublicCacheCounter.WithLabelValues("hit").Inc()
-		return &cachedRemoteRepo, nil
-	} else if err != rcache.ErrNotFound {
-		log15.Error("github cache-get error", "err", err)
-	}
-
+	//
+	// First parse the repo url before even trying (redis) cache, since this can
+	// invalide the request more quickly and cheaply.
 	owner, repoName, err := githubutil.SplitRepoURI(repo)
 	if err != nil {
 		reposGithubPublicCacheCounter.WithLabelValues("local-error").Inc()
 		return nil, grpc.Errorf(codes.NotFound, "github repo not found: %s", repo)
 	}
 
-	ghrepo, resp, err := client(ctx).repos.Get(owner, repoName)
+	if cached, err := getFromCache(ctx, repo); err == nil {
+		reposGithubPublicCacheCounter.WithLabelValues("hit").Inc()
+		if cached.PublicNotFound {
+			return nil, grpc.Errorf(codes.NotFound, "github repo not found: %s", repo)
+		}
+		return &cached.RemoteRepo, nil
+	}
+
+	remoteRepo, err := getFromAPI(ctx, owner, repoName)
+	if grpc.Code(err) == codes.NotFound {
+		// Before we do anything, ensure we cache NotFound responses.
+		// Do this if client is unauthed or authed, it's okay since we're only caching not found responses here.
+		_ = reposGithubPublicCache.Add(repo, cachedRemoteRepo{PublicNotFound: true}, reposGithubPublicCacheTTL)
+		reposGithubPublicCacheCounter.WithLabelValues("public-notfound").Inc()
+	}
 	if err != nil {
 		reposGithubPublicCacheCounter.WithLabelValues("error").Inc()
-		return nil, checkResponse(ctx, resp, err, fmt.Sprintf("github.Repos.Get %q", repo))
+		return nil, err
 	}
-	remoteRepo := toRemoteRepo(ghrepo)
-	if ghrepo.Private != nil && !*ghrepo.Private {
-		reposGithubPublicCache.Add(repo, remoteRepo, reposGithubPublicCacheTTL)
+
+	// We are allowed to cache public repos
+	if !remoteRepo.Private {
+		_ = reposGithubPublicCache.Add(repo, remoteRepo, reposGithubPublicCacheTTL)
 		reposGithubPublicCacheCounter.WithLabelValues("miss").Inc()
 	} else {
 		reposGithubPublicCacheCounter.WithLabelValues("private").Inc()
 	}
-
 	return remoteRepo, nil
 }
 
@@ -75,6 +93,39 @@ func (s *Repos) GetByID(ctx context.Context, id int) (*sourcegraph.RemoteRepo, e
 	ghrepo, resp, err := client(ctx).repos.GetByID(id)
 	if err != nil {
 		return nil, checkResponse(ctx, resp, err, fmt.Sprintf("github.Repos.GetByID #%d", id))
+	}
+	return toRemoteRepo(ghrepo), nil
+}
+
+var errInapplicableCache = errors.New("cached value cannot be used in this scenario")
+
+// getFromCache attempts to get a response from the redis cache.
+// It returns nil error for cache-hit condition and non-nil error for cache-miss.
+func getFromCache(ctx context.Context, repo string) (*cachedRemoteRepo, error) {
+	var cached cachedRemoteRepo
+	err := reposGithubPublicCache.Get(repo, &cached)
+	if err != nil {
+		if err != rcache.ErrNotFound {
+			log15.Error("github cache-get error", "repo", repo, "err", err)
+		}
+		return nil, err
+	}
+
+	// Do not use a cached NotFound if we are an authed user, since it may
+	// exist as a private repo for the user.
+	if client(ctx).isAuthedUser && cached.PublicNotFound {
+		return nil, errInapplicableCache
+	}
+
+	return &cached, nil
+}
+
+// getFromAPI attempts to get a response from the GitHub API without use of
+// the redis cache.
+func getFromAPI(ctx context.Context, owner, repoName string) (*sourcegraph.RemoteRepo, error) {
+	ghrepo, resp, err := client(ctx).repos.Get(owner, repoName)
+	if err != nil {
+		return nil, checkResponse(ctx, resp, err, fmt.Sprintf("github.Repos.Get %q", githubutil.RepoURI(owner, repoName)))
 	}
 	return toRemoteRepo(ghrepo), nil
 }
