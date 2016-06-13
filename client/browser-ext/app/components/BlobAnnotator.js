@@ -1,27 +1,20 @@
 import React from "react";
-import {render} from "react-dom";
 import {bindActionCreators} from "redux";
-import {connect, Provider} from "react-redux";
+import {connect} from "react-redux";
 
-import addAnnotations from "./annotations";
-import addAnnotationsForPullRequest from "./annotations2";
+import addAnnotations from "../utils/annotations";
+import addAnnotationsForPullRequest from "../utils/annotations2";
 
-import {useAccessToken} from "../../app/actions/xhr";
-import * as Actions from "../../app/actions";
-import Root from "../../app/containers/Root";
-import styles from "../../app/components/App.css";
-import {SearchIcon, SourcegraphIcon} from "../../app/components/Icons";
-import {keyFor, getExpiredSrclibDataVersion, getExpiredDef, getExpiredDefs, getExpiredAnnotations} from "../../app/reducers/helpers";
-import createStore from "../../app/store/configureStore";
-import {defaultBranchCache} from "../../chrome/extension/annotations";
-import EventLogger from "../../app/analytics/EventLogger";
+import {supportsAnnotatingFile} from "../utils";
+import * as Actions from "../actions";
+import {keyFor} from "../reducers/helpers";
+import EventLogger from "../analytics/EventLogger";
 
 @connect(
 	(state) => ({
 		accessToken: state.accessToken,
 		repo: state.repo,
 		rev: state.rev,
-		path: state.path,
 		defPath: state.defPath,
 		srclibDataVersion: state.srclibDataVersion,
 		def: state.def,
@@ -35,9 +28,10 @@ import EventLogger from "../../app/analytics/EventLogger";
 )
 export default class BlobAnnotator extends React.Component {
 	static propTypes = {
+		accessToken: React.PropTypes.string,
 		repo: React.PropTypes.string.isRequired,
 		rev: React.PropTypes.string.isRequired,
-		path: React.PropTypes.string,
+		path: React.PropTypes.string.isRequired,
 		defPath: React.PropTypes.string,
 		srclibDataVersion: React.PropTypes.object.isRequired,
 		def: React.PropTypes.object.isRequired,
@@ -45,41 +39,59 @@ export default class BlobAnnotator extends React.Component {
 		defs: React.PropTypes.object.isRequired,
 		actions: React.PropTypes.object.isRequired,
 		lastRefresh: React.PropTypes.number,
+		blobElement: React.PropTypes.object,
 	};
 
 	constructor(props) {
+		super(props);
+		this._updateIntervalID = null;
 
+		props.actions.getAnnotations(props.repo, props.rev, props.path);
+		this._addAnnotations(props);
 	}
 
 	componentDidMount() {
-	}
-
-	componentWillReceiveProps(nextProps) {
-		let prData = this.getPullRequestData();
-		if (prData) {
-			// TODO(rothfels): kick off refresh vcs to build the repo@branch
-			if (prData.files) {
-				prData.files.forEach((file, i) => {
-					this.props.actions.getAnnotations(repo, prData.base, file);
-					this.props.actions.getAnnotations(repo, prData.head, file);
-				});
-
-				let byteOffsetsByLineBase = {};
-				[0, 13, 14, 27, 28, 42, 61, 83, 85].forEach((val, i) => {
-					byteOffsetsByLineBase[i+1] = val;
-				});
-
-				let path = "main.go";
-				const srclibDataVersion2 = this.props.srclibDataVersion.content[keyFor(repo, prData.base, path)];
-				if (srclibDataVersion2 && srclibDataVersion2.CommitID) {
-					const annotations = this.props.annotations.content[keyFor(repo, srclibDataVersion2.CommitID, path)];
-					if (annotations) addAnnotationsForPullRequest(path, byteOffsetsByLineBase, byteOffsetsByLineBase, annotations, null, prData.blobs[1]);
-				}
-			}
+		if (this._updateIntervalID === null) {
+			this._updateIntervalID = setInterval(this._refresh.bind(this), 1000 * 10); // refresh every 10s
 		}
 	}
 
 	componentWillUnmount() {
+		if (this._updateIntervalID !== null) {
+			clearInterval(this._updateIntervalID);
+			this._updateIntervalID = null;
+		}
+	}
+
+	_refresh() {
+		this.props.actions.getAnnotations(this.props.repo, this.props.rev, this.props.path);
+	}
+
+
+	componentWillReceiveProps(nextProps) {
+		this._addAnnotations(nextProps);
+		// let prData = this.getPullRequestData();
+		// if (prData) {
+		// 	// TODO(rothfels): kick off refresh vcs to build the repo@branch
+		// 	if (prData.files) {
+		// 		prData.files.forEach((file, i) => {
+		// 			this.props.actions.getAnnotations(repo, prData.base, file);
+		// 			this.props.actions.getAnnotations(repo, prData.head, file);
+		// 		});
+
+		// 		let byteOffsetsByLineBase = {};
+		// 		[0, 13, 14, 27, 28, 42, 61, 83, 85].forEach((val, i) => {
+		// 			byteOffsetsByLineBase[i+1] = val;
+		// 		});
+
+		// 		let path = "main.go";
+		// 		const srclibDataVersion2 = this.props.srclibDataVersion.content[keyFor(repo, prData.base, path)];
+		// 		if (srclibDataVersion2 && srclibDataVersion2.CommitID) {
+		// 			const annotations = this.props.annotations.content[keyFor(repo, srclibDataVersion2.CommitID, path)];
+		// 			if (annotations) addAnnotationsForPullRequest(path, byteOffsetsByLineBase, byteOffsetsByLineBase, annotations, null, prData.blobs[1]);
+		// 		}
+		// 	}
+		// }
 	}
 
 	getPullRequestData() {
@@ -100,6 +112,25 @@ export default class BlobAnnotator extends React.Component {
 		}
 		let blobs = document.querySelectorAll(".blob-wrapper");
 		return {base, head, files: files, blobs};
+	}
+
+	_addAnnotations(props) {
+		const srclibDataVersion = props.srclibDataVersion.content[keyFor(props.repo, props.rev, props.path)];
+		if (srclibDataVersion && srclibDataVersion.CommitID) {
+			const annotations = props.annotations.content[keyFor(props.repo, srclibDataVersion.CommitID, props.path)];
+			if (annotations) {
+				// TODO: use the blobElement passed as prop.
+				let fileElem = document.querySelector(".file .blob-wrapper");
+				if (fileElem) {
+					if (document.querySelector(".vis-private") && !this.props.accessToken) {
+						EventLogger.logEvent("ViewPrivateCodeError");
+						console.error("To use the Sourcegraph Chrome extension on private code, sign in at https://sourcegraph.com and add your repositories.");
+					} else {
+						addAnnotations(annotations);
+					}
+				}
+			}
+		}
 	}
 
 	render() {

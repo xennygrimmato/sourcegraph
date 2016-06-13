@@ -3,18 +3,16 @@ import {render} from "react-dom";
 import {bindActionCreators} from "redux";
 import {connect, Provider} from "react-redux";
 
-import addAnnotations from "./annotations";
-import addAnnotationsForPullRequest from "./annotations2";
-
 import {useAccessToken} from "../../app/actions/xhr";
 import * as Actions from "../../app/actions";
 import App from "../../app/containers/App"; // TODO(rothfels): name this something more sensible; move to Components
 import styles from "../../app/components/App.css";
 import BuildIndicator from "../../app/components/BuildIndicator";
+import BlobAnnotator from "../../app/components/BlobAnnotator";
 import {SearchIcon, SourcegraphIcon} from "../../app/components/Icons";
 import {keyFor, getExpiredSrclibDataVersion, getExpiredDef, getExpiredDefs, getExpiredAnnotations} from "../../app/reducers/helpers";
 import createStore from "../../app/store/configureStore";
-import {defaultBranchCache} from "../../chrome/extension/annotations";
+import {defaultBranchCache} from "../../app/utils/annotations";
 import EventLogger from "../../app/analytics/EventLogger";
 
 import {parseGitHubURL, isGitHubURL} from "../../app/utils";
@@ -55,9 +53,6 @@ class InjectApp extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.state = {
-			appFrameIsVisible: false,
-		};
 		this.refreshState = this.refreshState.bind(this);
 		this.pjaxUpdate = this.pjaxUpdate.bind(this);
 		this.focusUpdate = this.focusUpdate.bind(this);
@@ -96,23 +91,9 @@ class InjectApp extends React.Component {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		// Annotation data is fetched asynchronously; annotate the page if the new props
-		// contains annotation data for the current blob.
-		const srclibDataVersion = nextProps.srclibDataVersion.content[keyFor(nextProps.repo, nextProps.rev, nextProps.path)];
-		if (srclibDataVersion && srclibDataVersion.CommitID) {
-			const annotations = nextProps.annotations.content[keyFor(nextProps.repo, srclibDataVersion.CommitID, nextProps.path)];
-			if (annotations) this.annotate(annotations);
-		}
-
 		// Show/hide def info.
 		if (nextProps.defPath && (nextProps.repo !== this.props.repo || nextProps.rev !== this.props.rev || nextProps.defPath !== this.props.defPath || nextProps.def !== this.props.def)) {
 			this._renderDefInfo(nextProps);
-		}
-
-		if (nextProps.lastRefresh !== this.props.lastRefresh) {
-			if (nextProps.repo && nextProps.rev && this.supportsAnnotatingFile(nextProps.path)) {
-				this.props.actions.getAnnotations(nextProps.repo, nextProps.rev, nextProps.path);
-			}
 		}
 	}
 
@@ -232,18 +213,12 @@ class InjectApp extends React.Component {
 			this.props.actions.getDef(repo, rev, defPath);
 		}
 
-		if (repo && rev && this.supportsAnnotatingFile(path)) {
-			this.props.actions.ensureRepoExists(repo);
-			this.props.actions.getAnnotations(repo, rev, path);
-		}
+		// TODO(rothfels): bring this back
+		// if (repo && rev && this.supportsAnnotatingFile(path)) {
+		// 	this.props.actions.ensureRepoExists(repo);
+		// }
 
 		this._renderDefInfo(this.props);
-
-		const srclibDataVersion = this.props.srclibDataVersion.content[keyFor(repo, rev, path)];
-		if (srclibDataVersion && srclibDataVersion.CommitID) {
-			const annotations = this.props.annotations.content[keyFor(repo, srclibDataVersion.CommitID, path)];
-			if (annotations) this.annotate(annotations);
-		}
 	}
 
 	_refreshVCS() {
@@ -371,20 +346,10 @@ function getSearchFrame() {
 function createSearchFrame() {
 	let searchFrame = getSearchFrame();
 	if (!searchFrame) {
+		console.log("not search frame")
 		searchFrame = document.createElement("div");
 		searchFrame.id = "sourcegraph-search-frame";
 		injectComponent(<App />, searchFrame);
-
-		document.addEventListener("keydown", (e) => {
-			if (e.which === 84 &&
-				e.shiftKey && (e.target.tagName.toLowerCase()) !== "input" &&
-				e.target.tagName.toLowerCase() !== "textarea" &&
-				!isSearchAppShown) {
-				toggleSearchFrame();
-			} else if (e.keyCode === 27 && isSearchAppShown) {
-				toggleSearchFrame();
-			}
-		});
 	}
 	return searchFrame;
 }
@@ -441,11 +406,22 @@ function injectSearchApp() {
 			</button>, button
 		);
 		pagehead.insertBefore(button, pagehead.firstChild);
+
+		document.addEventListener("keydown", (e) => {
+			if (e.which === 84 &&
+				e.shiftKey && (e.target.tagName.toLowerCase()) !== "input" &&
+				e.target.tagName.toLowerCase() !== "textarea" &&
+				!isSearchAppShown) {
+				toggleSearchFrame();
+			} else if (e.keyCode === 27 && isSearchAppShown) {
+				toggleSearchFrame();
+			}
+		});
 	}
 }
 
 function injectBuildIndicators() {
-	if (!isGitHubURL) return;
+	if (!isGitHubURL()) return;
 
 	const {user, repo, rev, path, isPullRequest} = parseGitHubURL();
 	const fileInfos = document.querySelectorAll(".file-info");
@@ -460,16 +436,44 @@ function injectBuildIndicators() {
 			info.appendChild(buildSeparator);
 
 			buildIndicatorContainer = document.createElement("span");
-			buildIndicatorContainer.id = "sourcegraph-build-indicator";
+			buildIndicatorContainer.id = buildIndicatorId;
 			info.appendChild(buildIndicatorContainer);
 			injectComponent(<BuildIndicator path={infoFilePath} />, buildIndicatorContainer);
 		}
 	}
 }
 
+function injectBackgroundApp() {
+	// We inject the background app on BOTH github.com and sourcegraph.com
+	if (!document.getElementById("sourcegraph-app-background")) {
+		let app = document.createElement("div");
+		app.id = "sourcegraph-app-background";
+		app.style.display = "none";
+		injectComponent(<InjectApp />, app);
+	}
+}
+
 function injectBlobAnnotator() {
 	if (!isGitHubURL()) return;
-	// TODO
+
+	const {user, repo, rev, path, isPullRequest} = parseGitHubURL();
+	const fileInfos = document.querySelectorAll(".file-info");
+	const blobs = document.querySelectorAll(".blob-wrapper");
+	console.log("injecting blob annotator", path);
+
+	for (let i = 0; i < fileInfos.length; ++i) {
+		const info = fileInfos[i];
+		const infoFilePath = isPullRequest ? info.querySelector(".user-select-contain").title : path;
+		const blobAnnotatorId = `sourcegraph-blob-annotator-${infoFilePath}`;
+		let blobAnnotatorContainer = document.getElementById(blobAnnotatorId);
+		if (!blobAnnotatorContainer) { // prevent injecting build indicator twice
+			blobAnnotatorContainer = document.createElement("span");
+			blobAnnotatorContainer.id = blobAnnotatorId;
+			blobAnnotatorContainer.style.display = "none";
+			info.appendChild(blobAnnotatorContainer);
+			injectComponent(<BlobAnnotator path={infoFilePath} blobElement={blobs[i]} />, blobAnnotatorContainer);
+		}
+	}
 }
 
 function injectComponent(component, mountElement) {
@@ -478,24 +482,15 @@ function injectComponent(component, mountElement) {
 	});
 }
 
-function bootstrapApp() {
-	chrome.runtime.sendMessage(null, {type: "get"}, {}, (state) => {
-		const app = document.createElement("div");
-		app.id = "sourcegraph-app-bootstrap";
-		app.style.display = "none";
-		render(<Provider store={createStore(state)}><InjectApp /></Provider>, app);
-
-		document.body.appendChild(app);
-
-		injectSearchApp();
-		injectBuildIndicators();
-	});
-}
-
-window.addEventListener("load", bootstrapApp);
-document.addEventListener("pjax:success", () => {
-	removeSearchFrame();
-
+function injectModules() {
+	injectBackgroundApp();
 	injectSearchApp();
 	injectBuildIndicators();
+	injectBlobAnnotator();
+}
+
+window.addEventListener("load", injectModules);
+document.addEventListener("pjax:success", () => {
+	removeSearchFrame();
+	injectModules();
 });

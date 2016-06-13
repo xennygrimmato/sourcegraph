@@ -1,8 +1,8 @@
 import utf8 from "utf8";
-import fetch from "../../app/actions/xhr";
-import styles from "../../app/components/App.css";
+import fetch from "../actions/xhr";
+import styles from "../components/App.css";
 import _ from "lodash";
-import EventLogger from "../../app/analytics/EventLogger";
+import EventLogger from "../analytics/EventLogger";
 
 // addAnnotations takes json annotation data returned from the
 // Sourcegraph annotations API and manipulates the DOM to add

@@ -1,7 +1,6 @@
 import React from "react";
-import {render} from "react-dom";
 import {bindActionCreators} from "redux";
-import {connect, Provider} from "react-redux";
+import {connect} from "react-redux";
 
 import * as Actions from "../actions";
 import {SourcegraphIcon} from "../components/Icons";
@@ -36,12 +35,8 @@ export default class BuildIndicator extends React.Component {
 
 	componentDidMount() {
 		if (this._updateIntervalID === null) {
-			this._updateIntervalID = setInterval(this._refresh.bind(this), 1000 * 5); // refresh every 30s
+			this._updateIntervalID = setInterval(this._refresh.bind(this), 1000 * 30); // refresh every 30s
 		}
-	}
-
-	componentWillReceiveProps(nextProps) {
-		console.log("build indicator received new props");
 	}
 
 	componentWillUnmount() {

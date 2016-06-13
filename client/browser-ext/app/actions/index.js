@@ -1,7 +1,7 @@
 import * as types from "../constants/ActionTypes";
 import {keyFor} from "../reducers/helpers";
 import fetch, {useAccessToken} from "./xhr";
-import {defCache} from "../../chrome/extension/annotations";
+import {defCache} from "../utils/annotations";
 
 export function setAccessToken(token) {
 	useAccessToken(token); // for future fetches

@@ -1,5 +1,4 @@
 export function supportsAnnotatingFile(path) {
-	console.log("supports annotating file", path)
 	if (!path) return false;
 
 	const pathParts = path.split("/");
