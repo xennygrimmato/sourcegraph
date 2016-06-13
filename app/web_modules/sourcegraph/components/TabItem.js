@@ -16,19 +16,24 @@ class TabItem extends React.Component {
 		color: React.PropTypes.string, // blue, purple
 		size: React.PropTypes.string, // small, large
 		icon: React.PropTypes.string,
+		direction: React.PropTypes.string,
+		symmetricalPadding: React.PropTypes.bool,
+		horizontalMargins: React.PropTypes.bool,
 	};
 
 	static defaultProps = {
 		active: null,
 		color: "blue",
 		size: null,
+		direction: "bottom",
+		symmetricalPadding: false,
 	};
 
 	render() {
-		const {size, children, hideMobile, active, color, icon} = this.props;
+		const {size, children, hideMobile, active, color, icon, direction, symmetricalPadding} = this.props;
 		return (
 			<span
-				styleName={`tab ${size ? size : ""} ${hideMobile ? "hidden-s" : ""} ${active ? "active" : "inactive"} ${color}`
+				styleName={`tab ${symmetricalPadding ? "symmetrical-padding" : ""} ${size ? size : ""} ${hideMobile ? "hidden-s" : ""} ${active ? `active ${direction}` : "inactive"} ${color}`
 			}>
 				{icon && <Icon icon={`${icon}-blue`} height="14px" width="auto" styleName={`icon ${!active ? "hide" : ""}`}/>}
 				{icon && <Icon icon={`${icon}-gray`} height="14px" width="auto" styleName={`icon ${active ? "hide" : ""}`}/>}

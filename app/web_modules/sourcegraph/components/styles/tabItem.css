@@ -11,14 +11,27 @@
 .hide { display: none; }
 
 .tab {
-	composes: ph2 mh2 pb3 from base;
-	padding-top: 12px;
+	composes: ph2 mh2 from base;
 	display: inline-block;
 	margin-bottom: -1px;
 }
 
+.non-symmetrical {
+	composes: pb3 from base;
+	padding-top: 12px;
+}
+
+.symmetrical {
+	composes: pv2 from base;
+}
+
 .inactive { composes: cool-mid-gray from colors; }
-.active { composes: bb bw3 from base; }
+.active { composes: bw3 from base; }
+
+.bottom { composes: bb from base;}
+.top{ composes: bt from base;}
+.left { composes: bl from base;}
+.right { composes: br from base;}
 
 .blue { composes: b--blue blue from colors; }
 .blue:hover { color: c_dark-blue; }

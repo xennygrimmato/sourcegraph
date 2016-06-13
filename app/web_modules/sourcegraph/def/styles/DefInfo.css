@@ -3,7 +3,9 @@
 @value colors "sourcegraph/components/styles/_colors.css";
 @value typography "sourcegraph/components/styles/_typography.css";
 @value headings "sourcegraph/components/styles/heading.css";
+@value vars "sourcegraph/components/styles/_vars.css";
 
+@value media-sm from vars;
 .container {
 	composes: center from base;
 	composes: col-11-ns from grid;
@@ -65,6 +67,11 @@
 	cursor: pointer; 
 }
 
+.filter {
+	margin-left: 0;
+	background-color: black;
+}
+
 .pagination {
 	composes: pb5 from base;
 	display: flex;
@@ -78,6 +85,33 @@
 	composes: pt2 pl3 pr3 pb2 from base;
 	border-bottom-right-radius: 2px;
 	border-bottom-left-radius: 2px;
+}
+
+.refs-container{
+	display: flex;
+	flex-direction: row-reverse; 
+}
+
+.refs-sidebar {
+	composes: ml4 from base;
+	flex: 1;
+	flex-shrink: 0;
+	border-left: 1px solid #eeeeee;
+}
+
+.filter-list {
+	composes: ml0 pl0 from base;
+	list-style: none;
+}
+
+.repoList {
+	composes: small-text from typography;
+}
+
+.refs-blobs {
+	flex: 3;
+	overflow-x: auto;
+	overflow-y: scroll;
 }
 
 @media screen and (max-width: 48em) {

@@ -19,6 +19,7 @@ class RepoRefsContainer extends Container {
 		def: React.PropTypes.string,
 		defObj: React.PropTypes.object,
 		defRepos: React.PropTypes.array,
+		repoCallback: React.PropTypes.func,
 	};
 
 	constructor(props) {
@@ -40,12 +41,16 @@ class RepoRefsContainer extends Container {
 		state.def = props.def || null;
 		state.defObj = props.defObj || null;
 		state.defRepos = props.defRepos || [];
+		state.repoCallback = props.repoCallback || null;
 		state.refLocations = state.def ? DefStore.getRefLocations({
 			repo: state.repo, commitID: state.commitID, def: state.def, repos: state.defRepos,
 		}) : null;
 		if (state.refLocations && state.refLocations.PagesFetched >= state.currPage) {
 			state.nextPageLoading = false;
 		}
+		if (state.repoCallback && state.defRepos) {
+			// state.repoCallback(state.defRepos);
+		}	
 	}
 
 	onStateTransition(prevState, nextState) {
@@ -77,7 +82,6 @@ class RepoRefsContainer extends Container {
 						`Used in ${refLocs.RepoRefs.length}+ repositories`
 					}
 				</div>
-				<hr style={{marginTop: 0, clear: "both"}}/>
 				{!refLocs && <i>Loading...</i>}
 				{refLocs && !refLocs.RepoRefs && <i>No references found</i>}
 				{refLocs && refLocs.RepoRefs && refLocs.RepoRefs.map((repoRefs, i) => <RefsContainer

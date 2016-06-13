@@ -49,12 +49,16 @@ class DefInfo extends Container {
 			currentLang: localStorage.getItem("defInfoCurrentLang"),
 			translations: {},
 			defDescrHidden: null,
+			localRepos: [],
+			globalRepos: [],
 		};
 		this._onTranslateDefInfo = this._onTranslateDefInfo.bind(this);
 		this.splitHTMLDescr = this.splitHTMLDescr.bind(this);
 		this.splitPlainDescr = this.splitPlainDescr.bind(this);
 		this._onViewMore = this._onViewMore.bind(this);
 		this._onViewLess = this._onViewLess.bind(this);
+		this._updateLocalRepos = this._updateLocalRepos.bind(this);
+		this._updateGlobalRepos = this._updateGlobalRepos.bind(this);
 	}
 
 	stores() {
@@ -180,6 +184,22 @@ class DefInfo extends Container {
 		localStorage.setItem("defInfoCurrentLang", targetLang);
 	}
 
+	_updateLocalRepos(repos) {
+		this.setState({localRepos: repos});
+	}
+
+	_updateGlobalRepos(repos) {
+		this.setState({globalRepos: repos});
+	}
+
+	renderRepos(repos) {
+		return (
+			<div styleName="repoList">
+				{repos.map(r => <li key={r}> {trimRepo(r)} </li>)}
+			</div>
+		);
+	}
+
 	render() {
 		let def = this.state.defObj;
 		let hiddenDescr = this.state.defDescrHidden;
@@ -269,44 +289,58 @@ class DefInfo extends Container {
 						}
 
 					{def && !def.Error &&
-						<div>
-							<div style={{float: "right"}}>
-								<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "top"}}}>
-									<TabItem active={refsSorting === "top"}>Top</TabItem>
-								</Link>
-								<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "local"}}}>
-									<TabItem active={refsSorting === "local"}>Local</TabItem>
-								</Link>
-								<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "all"}}}>
-									<TabItem active={refsSorting === "all"}>All</TabItem>
-								</Link>
+						<div styleName="refs-container">
+							<div styleName="refs-sidebar">
+								<ul styleName ="filter-list">
+									<li>
+										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "top"}}}>
+											<TabItem symmetrical={true} className="filter" size="small" direction="left" active={refsSorting === "top"}>Top refs</TabItem>
+										</Link>
+									</li>
+									<li>
+										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "local"}}}>
+											<TabItem symmetrical={true} className="filter" size="small" direction="left" active={refsSorting === "local"}>LOCAL REFS</TabItem>
+										</Link>
+									</li>
+									{this.renderRepos(this.state.localRepos)}
+									<li>
+										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "all"}}}>
+											<TabItem symmetrical={true} className="filter" size="small" direction="left" active={refsSorting === "all"}>GLOBAL REFS</TabItem>
+										</Link>
+									</li>
+									{this.renderRepos(this.state.globalRepos)}
+								</ul>
 							</div>
-							{refsSorting === "top" &&
-								<ExamplesContainer
-									repo={this.props.repo}
-									rev={this.props.rev}
-									commitID={this.props.commitID}
-									def={this.props.def}
-									defObj={this.props.defObj} />
-							}
-							{refsSorting === "local" &&
-								<RepoRefsContainer
-									repo={this.props.repo}
-									rev={this.props.rev}
-									commitID={this.props.commitID}
-									def={this.props.def}
-									defObj={this.props.defObj}
-									defRepos={[this.props.repo]} />
-							}
-							{refsSorting === "all" &&
-								<RepoRefsContainer
-									repo={this.props.repo}
-									rev={this.props.rev}
-									commitID={this.props.commitID}
-									def={this.props.def}
-									defObj={this.props.defObj} />
-							}
+							<div styleName="refs-blobs">
+								{refsSorting === "top" &&
+									<ExamplesContainer
+										repo={this.props.repo}
+										rev={this.props.rev}
+										commitID={this.props.commitID}
+										def={this.props.def}
+										defObj={this.props.defObj} />
+								}
+								{refsSorting === "local" &&
+									<RepoRefsContainer
+										repo={this.props.repo}
+										rev={this.props.rev}
+										commitID={this.props.commitID}
+										def={this.props.def}
+										defObj={this.props.defObj}
+										defRepos={[this.props.repo]}
+										repoCallback={(r) => this._updateLocalRepos(r)} />
+								}
+								{refsSorting === "all" &&
+									<RepoRefsContainer
+										repo={this.props.repo}
+										rev={this.props.rev}
+										commitID={this.props.commitID}
+										def={this.props.def}
+										defObj={this.props.defObj}
+										repoCallback={(r) => this._updateGlobalRepos(r)} />
+								}
 							</div>
+						</div>
 					}
 				</div>
 			</div>
