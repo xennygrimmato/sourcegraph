@@ -1,20 +1,18 @@
-import React, {Component, PropTypes} from "react";
+import React from "react";
 
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
 
-import {qualifiedNameAndType} from "../components/Formatter";
-import SearchInput from "../components/SearchInput";
-import DefSearchResult from "../components/DefSearchResult";
+import {qualifiedNameAndType} from "./Formatter";
+import SearchInput from "./SearchInput";
+import DefSearchResult from "./DefSearchResult";
 import {keyFor} from "../reducers/helpers";
 import * as Actions from "../actions";
 
 import _ from "lodash";
 
 import CSSModules from "react-css-modules";
-import styles from "../components/App.css";
-
-import {default as checkErrorStatus} from "../actions/xhr"
+import styles from "./App.css";
 
 @connect(
 	(state) => ({
@@ -30,15 +28,15 @@ import {default as checkErrorStatus} from "../actions/xhr"
 	})
 )
 @CSSModules(styles)
-export default class App extends Component {
+export default class SearchFrame extends React.Component {
 	static propTypes = {
-		repo: PropTypes.string.isRequired,
-		rev: PropTypes.string.isRequired,
-		path: PropTypes.string,
-		query: PropTypes.string.isRequired,
-		srclibDataVersion: PropTypes.object.isRequired,
-		defs: PropTypes.object.isRequired,
-		actions: PropTypes.object.isRequired,
+		repo: React.PropTypes.string.isRequired,
+		rev: React.PropTypes.string.isRequired,
+		path: React.PropTypes.string,
+		query: React.PropTypes.string.isRequired,
+		srclibDataVersion: React.PropTypes.object.isRequired,
+		defs: React.PropTypes.object.isRequired,
+		actions: React.PropTypes.object.isRequired,
 	};
 
 	constructor(props) {
@@ -72,12 +70,6 @@ export default class App extends Component {
 		return this.props.defs.fetches[keyFor(this.props.repo, srclibDataVersion.CommitID, this.props.path, this.props.query)];
 	}
 
-	// TODO: Remove this, re-use this instead:
-	//
-	//       	import {urlToDefInfo} from "sourcegraph/def/routes";
-	//
-	//       Need to verify it doesn't break the DefSearchResult component below that uses urlToDef.
-	//       Who's familiar with it?
 	urlToDef(def, rev) {
 		rev = rev ? rev : (def.CommitID || "");
 		return `${def.Repo}${rev ? `@${rev}` : ""}/-/info/${def.UnitType}/${def.Unit}/-/${def.Path}`;

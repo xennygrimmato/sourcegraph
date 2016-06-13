@@ -5,7 +5,7 @@ import {connect, Provider} from "react-redux";
 
 import {useAccessToken} from "../../app/actions/xhr";
 import * as Actions from "../../app/actions";
-import App from "../../app/containers/App"; // TODO(rothfels): name this something more sensible; move to Components
+import SearchFrame from "../../app/components/SearchFrame";
 import styles from "../../app/components/App.css";
 import BuildIndicator from "../../app/components/BuildIndicator";
 import BlobAnnotator from "../../app/components/BlobAnnotator";
@@ -349,7 +349,7 @@ function createSearchFrame() {
 		console.log("not search frame")
 		searchFrame = document.createElement("div");
 		searchFrame.id = "sourcegraph-search-frame";
-		injectComponent(<App />, searchFrame);
+		injectComponent(<SearchFrame />, searchFrame);
 	}
 	return searchFrame;
 }
