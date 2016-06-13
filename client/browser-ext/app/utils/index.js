@@ -32,3 +32,19 @@ export function parseGitHubRepoURI(loc = window.location) {
 export function isGitHubURL(loc = window.location) {
 	return Boolean(loc.href.match(/https:\/\/(www.)?github.com/));
 }
+
+export function isSourcegraphURL(loc = window.location) {
+	return Boolean(loc.href.match(/https:\/\/(www.)?sourcegraph.com/));
+}
+
+export function getCurrentBranch() {
+	if (document.getElementsByClassName("select-menu-button js-menu-target css-truncate")[0]) {
+		if (document.getElementsByClassName("select-menu-button js-menu-target css-truncate")[0].title !== "") {
+			return document.getElementsByClassName("select-menu-button js-menu-target css-truncate")[0].title
+		} else {
+			return document.getElementsByClassName("js-select-button css-truncate-target")[0].innerText;
+		}
+	} else {
+		return "master";
+	}
+}
