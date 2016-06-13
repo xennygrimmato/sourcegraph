@@ -24,6 +24,20 @@ export function setQuery(query) {
 	return {type: types.SET_QUERY, query};
 }
 
+export function getSrclibDataVersion(repo, rev, path) {
+	return function (dispatch, getState) {
+		const state = getState();
+		// Before fetching defs, get the srclib data version.
+		const srclibDataVersion = state.srclibDataVersion.content[keyFor(repo, rev, path)];
+		if (srclibDataVersion) return Promise.resolve();
+
+		dispatch({type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path})
+		return fetch(`https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path ? encodeURIComponent(path) : ""}`)
+			.then((json) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json}); return json; })
+			.catch((err) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, err}); throw err; });
+	}
+}
+
 function fetchSrclibDataVersion(dispatch, currJson, repo, rev, path) {
 	let promise;
 	// TODO: handle inflight / errored fetches of srclibDataVersion.

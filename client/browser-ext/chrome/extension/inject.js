@@ -8,13 +8,16 @@ import addAnnotationsForPullRequest from "./annotations2";
 
 import {useAccessToken} from "../../app/actions/xhr";
 import * as Actions from "../../app/actions";
-import Root from "../../app/containers/Root";
+import App from "../../app/containers/App"; // TODO(rothfels): name this something more sensible; move to Components
 import styles from "../../app/components/App.css";
+import BuildIndicator from "../../app/components/BuildIndicator";
 import {SearchIcon, SourcegraphIcon} from "../../app/components/Icons";
 import {keyFor, getExpiredSrclibDataVersion, getExpiredDef, getExpiredDefs, getExpiredAnnotations} from "../../app/reducers/helpers";
 import createStore from "../../app/store/configureStore";
 import {defaultBranchCache} from "../../chrome/extension/annotations";
 import EventLogger from "../../app/analytics/EventLogger";
+
+import {parseGitHubURL, isGitHubURL} from "../../app/utils";
 
 @connect(
 	(state) => ({
@@ -56,9 +59,6 @@ class InjectApp extends React.Component {
 			appFrameIsVisible: false,
 		};
 		this.refreshState = this.refreshState.bind(this);
-		this.keyboardEvents = this.keyboardEvents.bind(this);
-		this.removeAppFrame = this.removeAppFrame.bind(this);
-		this.toggleAppFrame = this.toggleAppFrame.bind(this);
 		this.pjaxUpdate = this.pjaxUpdate.bind(this);
 		this.focusUpdate = this.focusUpdate.bind(this);
 		this._clickRef = this._clickRef.bind(this);
@@ -75,9 +75,7 @@ class InjectApp extends React.Component {
 			if (matchResult) this.props.actions.setAccessToken(matchResult[1]);
 		}
 
-		if (window.location.href.match(/https:\/\/(www.)?github.com/)) {
-			document.addEventListener("keydown", this.keyboardEvents);
-
+		if (isGitHubURL()) {
 			// The window focus listener will refresh state to reflect the
 			// current repository being viewed.
 			window.addEventListener("focus", this.focusUpdate);
@@ -111,10 +109,6 @@ class InjectApp extends React.Component {
 			this._renderDefInfo(nextProps);
 		}
 
-		if (nextProps.srclibDataVersion !== this.props.srclibDataVersion) {
-			this._updateBuildIndicator(nextProps);
-		}
-
 		if (nextProps.lastRefresh !== this.props.lastRefresh) {
 			if (nextProps.repo && nextProps.rev && this.supportsAnnotatingFile(nextProps.path)) {
 				this.props.actions.getAnnotations(nextProps.repo, nextProps.rev, nextProps.path);
@@ -123,7 +117,6 @@ class InjectApp extends React.Component {
 	}
 
 	componentWillUnmount() {
-		document.removeEventListener("keydown", this.keyboardEvents);
 		document.removeEventListener("pjax:success", this.pjaxUpdate);
 		window.removeEventListener("focus", this.focusUpdate);
 		document.removeEventListener("click", this._clickRef);
@@ -213,8 +206,6 @@ class InjectApp extends React.Component {
 	// current repo/rev/path. It will render navbar search button
 	// (if none exists) and annotations for the current code file (if any).
 	refreshState() {
-		this.addSearchButton();
-
 		let {user, repo, rev, path, defPath} = this.parseURL();
 		// This scrapes the latest commit ID and updates rev to the latest commit so we are never injecting
 		// outdated annotations.  If there is a new commit, srclib-data-version will return a 404, but the
@@ -245,39 +236,8 @@ class InjectApp extends React.Component {
 			this.props.actions.ensureRepoExists(repo);
 			this.props.actions.getAnnotations(repo, rev, path);
 		}
-		if (path) {
-			this._updateBuildIndicator(this.props);
-		}
 
 		this._renderDefInfo(this.props);
-
-		let prData = this.getPullRequestData();
-		if (prData) {
-			console.log("going through fun land");
-
-			// TODO(rothfels): kick off refresh vcs to build the repo@branch
-			if (prData.files) {
-				console.log("have files", prData.files);
-				prData.files.forEach((file, i) => {
-					this.props.actions.getAnnotations(repo, prData.base, file);
-					this.props.actions.getAnnotations(repo, prData.head, file);
-				});
-
-				let byteOffsetsByLineBase = {};
-				[0, 13, 14, 27, 28, 42, 61, 83, 85].forEach((val, i) => {
-					byteOffsetsByLineBase[i+1] = val;
-				});
-
-				let path = "main.go";
-				const srclibDataVersion2 = this.props.srclibDataVersion.content[keyFor(repo, prData.base, path)];
-				console.log("have srclibdataversin", srclibDataVersion2);
-				if (srclibDataVersion2 && srclibDataVersion2.CommitID) {
-					const annotations = this.props.annotations.content[keyFor(repo, srclibDataVersion2.CommitID, path)];
-					console.log("have annotatins");
-					if (annotations) addAnnotationsForPullRequest(path, byteOffsetsByLineBase, byteOffsetsByLineBase, annotations, null, prData.blobs[1]);
-				}
-			}
-		}
 
 		const srclibDataVersion = this.props.srclibDataVersion.content[keyFor(repo, rev, path)];
 		if (srclibDataVersion && srclibDataVersion.CommitID) {
@@ -286,58 +246,9 @@ class InjectApp extends React.Component {
 		}
 	}
 
-	getPullRequestData() {
-		if (window.location.href.split("/")[5] !== "pull") return null;
-
-		const branches = document.querySelectorAll(".commit-ref,.current-branch");
-		if (branches.length !== 2) return null;
-
-		const base = branches[0].innerText;
-		const head = branches[1].innerText;
-
-		if (window.location.href.split("/")[7] !== "files") return {base, head};
-
-		let fileEls = document.querySelectorAll(".file-header");
-		let files = []
-		for (let i = 0; i < fileEls.length; ++i) {
-			files.push(fileEls[i].dataset.path);
-		}
-		let blobs = document.querySelectorAll(".blob-wrapper");
-		return {base, head, files: files, blobs};
-	}
-
 	_refreshVCS() {
 		if (this.props.repo) {
 			this.props.actions.refreshVCS(this.props.repo);
-		}
-	}
-
-	_updateBuildIndicator(props) {
-		let indicatorText = "";
-		if (props.srclibDataVersion.content[keyFor(props.repo, props.rev, props.path)]) {
-			indicatorText = "Indexed";
-		} else if (!this.supportsAnnotatingFile(props.path)) {
-			indicatorText = "Unsupported file"
-		} else {
-			indicatorText = "Indexing...";
-		}
-
-		const fileInfo = document.querySelector(".file-info");
-		const buildIndicator = document.getElementById("sourcegraph-build-indicator");
-		if (fileInfo && !buildIndicator && window.location.href.split("/")[5] !== "pull") { // don't add build indicator on PRs
-			let buildSeparator = document.createElement("span");
-			buildSeparator.className = "file-info-divider";
-			fileInfo.appendChild(buildSeparator);
-
-			const buildIndicator = document.createElement("span");
-			buildIndicator.id = "sourcegraph-build-indicator";
-			render(<span>
-				<SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", fontSize: "16px"}} />
-				<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>
-			</span>, buildIndicator);
-			fileInfo.appendChild(buildIndicator);
-		} else if (buildIndicator) {
-			document.getElementById("sourcegraph-build-indicator-text").innerText = indicatorText;
 		}
 	}
 
@@ -367,7 +278,6 @@ class InjectApp extends React.Component {
 	// pjaxUpdate is a wrapper around refreshState which is called whenever
 	// pjax completes successfully, etc. It will also remove the app frame.
 	pjaxUpdate() {
-		this.removeAppFrame();
 		this.refreshState();
 	}
 
@@ -381,106 +291,6 @@ class InjectApp extends React.Component {
 			if (accessToken) this.props.actions.setAccessToken(accessToken); // without this, access token may be overwritten to null
 			this.refreshState();
 		});
-	}
-
-	// addSearchButton injects a button into the GitHub pagehead actions bar
-	// (next to "watch" and "star" and "fork" actions). It is idempotent
-	// but the injected component is separated from the react component
-	// hierarchy.
-	addSearchButton() {
-		let pagehead = document.querySelector("ul.pagehead-actions");
-		if (pagehead && !pagehead.querySelector("#sg-search-button-container")) {
-			let button = document.createElement("li");
-			button.id = "sg-search-button-container";
-
-			render(
-				// this button inherits styles from GitHub
-				<button className="btn btn-sm minibutton tooltipped tooltipped-s" aria-label="Keyboard shortcut: shift-T" onClick={this.toggleAppFrame}>
-					<SearchIcon /><span style={{paddingLeft: "5px"}}>Search code</span>
-				</button>, button
-			);
-			pagehead.insertBefore(button, pagehead.firstChild);
-		}
-	}
-
-	// appFrame creates a div frame embedding the chrome extension (react) app.
-	// It can be injected into the DOM when desired. It is idempotent, i.e.
-	// returns the (already mounted) DOM element if one has already been created.
-	// It returns the div asynchronously, since the application bootstrap requires
-	// (asynchronously) connecting to chrome local storage.
-	appFrame(cb) {
-		if (!this.frameDiv) {
-			chrome.runtime.sendMessage(null, {type: "get"}, {}, (state) => {
-				const createStore = require("../../app/store/configureStore");
-
-				const frameDiv = document.createElement("div");
-				frameDiv.id = "sourcegraph-frame";
-				render(<Root store={createStore(state)} />, frameDiv);
-
-				this.frameDiv = frameDiv;
-				cb(frameDiv);
-			});
-		} else {
-			cb(this.frameDiv);
-		}
-	}
-
-	keyboardEvents(e) {
-		if (e.which === 84 && e.shiftKey && (e.target.tagName.toLowerCase()) !== "input" && (e.target.tagName.toLowerCase()) !== "textarea" && !this.state.appFrameIsVisible) {
-			this.toggleAppFrame();
-		} else if (e.keyCode === 27 && this.state.appFrameIsVisible) {
-			this.toggleAppFrame();
-		}
-	}
-
-	removeAppFrame = () => {
-		const el = document.querySelector(".repository-content");
-		if (el) el.style.display = "block";
-		const frame = document.getElementById("sourcegraph-frame");
-		if (frame) frame.style.display = "none";
-		this.setState({appFrameIsVisible: false});
-	}
-
-	// toggleAppFrame is the handler for the pagehead "search code" button;
-	// it will directly manipulate the DOM to hide all GitHub repository
-	// content and mount an iframe embedding the chrome extension (react) app.
-	toggleAppFrame = () => {
-		EventLogger.logEvent("ToggleSearchInput", {visibility: this.state.appFrameIsVisible ? "hidden" : "visible"});
-		const focusInput = () => {
-			const el = document.querySelector(".sg-input");
-			if (el) setTimeout(() => el.focus()); // Auto focus input, with slight delay so T doesn't appear
-		}
-
-		if (!document.getElementById('sourcegraph-frame')) {
-			// Lazy initial application bootstrap; add app frame to DOM.
-			this.appFrame((frameDiv) => {
-				document.querySelector(".repository-content").style.display = "none";
-				document.querySelector(".container.new-discussion-timeline").appendChild(frameDiv);
-				frameDiv.style.display = "block";
-				this.setState({appFrameIsVisible: true}, focusInput);
-			});
-		} else if (this.state.appFrameIsVisible) {
-			// Toggle visibility off.
-			this.removeAppFrame();
-		} else {
-			// Toggle visiblity on.
-			document.querySelector(".repository-content").style.display = "none";
-			const frame = document.getElementById("sourcegraph-frame");
-			if (frame) frame.style.display = "block";
-			this.setState({appFrameIsVisible: true}, focusInput);
-		}
-	};
-
-	annotate(json) {
-		let fileElem = document.querySelector(".file .blob-wrapper");
-		if (fileElem) {
-			if (document.querySelector(".vis-private") && !this.props.accessToken) {
-				EventLogger.logEvent("ViewPrivateCodeError");
-				console.error("To use the Sourcegraph Chrome extension on private code, sign in at https://sourcegraph.com and add your repositories.");
-			} else {
-				addAnnotations(json);
-			}
-		}
 	}
 
 	_renderDefInfo(props) {
@@ -534,17 +344,6 @@ class InjectApp extends React.Component {
 	}
 }
 
-const bootstrapApp = function() {
-	chrome.runtime.sendMessage(null, {type: "get"}, {}, (state) => {
-		const app = document.createElement("div");
-		app.id = "sourcegraph-app-bootstrap";
-		app.style.display = "none";
-		render(<Provider store={createStore(state)}><InjectApp /></Provider>, app);
-
-		document.body.appendChild(app);
-	});
-}
-
 // pjaxGoTo uses GitHub's existing PJAX to navigate to a URL. It
 // is faster than a hard page reload.
 function pjaxGoTo(url, sameRepo) {
@@ -562,4 +361,141 @@ function pjaxGoTo(url, sameRepo) {
 	setTimeout(() => document.body.removeChild(e), 1000);
 }
 
+
+let isSearchAppShown = false; // global state indicating whether the search app is visible
+
+function getSearchFrame() {
+	return document.getElementById("sourcegraph-search-frame");
+}
+
+function createSearchFrame() {
+	let searchFrame = getSearchFrame();
+	if (!searchFrame) {
+		searchFrame = document.createElement("div");
+		searchFrame.id = "sourcegraph-search-frame";
+		injectComponent(<App />, searchFrame);
+
+		document.addEventListener("keydown", (e) => {
+			if (e.which === 84 &&
+				e.shiftKey && (e.target.tagName.toLowerCase()) !== "input" &&
+				e.target.tagName.toLowerCase() !== "textarea" &&
+				!isSearchAppShown) {
+				toggleSearchFrame();
+			} else if (e.keyCode === 27 && isSearchAppShown) {
+				toggleSearchFrame();
+			}
+		});
+	}
+	return searchFrame;
+}
+
+function toggleSearchFrame() {
+	EventLogger.logEvent("ToggleSearchInput", {visibility: isSearchAppShown ? "hidden" : "visible"});
+	function focusInput() {
+		const el = document.querySelector(".sg-input");
+		if (el) setTimeout(() => el.focus()); // Auto focus input, with slight delay so 'T' doesn't appear
+	}
+
+	let frame = getSearchFrame();
+	if (!frame) {
+		// Lazy application bootstrap; add app frame to DOM the first time toggle is called.
+		frame = createSearchFrame();
+		document.querySelector(".repository-content").style.display = "none";
+		document.querySelector(".container.new-discussion-timeline").appendChild(frame);
+		frame.style.display = "block";
+		isSearchAppShown = true;
+		focusInput();
+	} else if (isSearchAppShown) {
+		// Toggle visibility off.
+		removeSearchFrame();
+	} else {
+		// Toggle visiblity on.
+		document.querySelector(".repository-content").style.display = "none";
+		if (frame) frame.style.display = "block";
+		isSearchAppShown = true;
+		focusInput();
+	}
+};
+
+function removeSearchFrame() {
+	const el = document.querySelector(".repository-content");
+	if (el) el.style.display = "block";
+	const frame = getSearchFrame();
+	if (frame) frame.style.display = "none";
+	isSearchAppShown = false;
+}
+
+function injectSearchApp() {
+	if (!isGitHubURL()) return;
+
+	let pagehead = document.querySelector("ul.pagehead-actions");
+	if (pagehead && !pagehead.querySelector("#sourcegraph-search-button")) {
+		let button = document.createElement("li");
+		button.id = "sourcegraph-search-button";
+		render(
+			// this button inherits styles from GitHub
+			<button className="btn btn-sm minibutton tooltipped tooltipped-s"
+				aria-label="Keyboard shortcut: shift-T"
+				onClick={toggleSearchFrame}>
+				<SearchIcon /><span style={{paddingLeft: "5px"}}>Search code</span>
+			</button>, button
+		);
+		pagehead.insertBefore(button, pagehead.firstChild);
+	}
+}
+
+function injectBuildIndicators() {
+	if (!isGitHubURL) return;
+
+	const {user, repo, rev, path, isPullRequest} = parseGitHubURL();
+	const fileInfos = document.querySelectorAll(".file-info");
+	for (let i = 0; i < fileInfos.length; ++i) {
+		const info = fileInfos[i];
+		const infoFilePath = isPullRequest ? info.querySelector(".user-select-contain").title : path;
+		const buildIndicatorId = `sourcegraph-build-indicator-${infoFilePath}`;
+		let buildIndicatorContainer = document.getElementById(buildIndicatorId);
+		if (!buildIndicatorContainer) { // prevent injecting build indicator twice
+			let buildSeparator = document.createElement("span");
+			buildSeparator.className = "file-info-divider";
+			info.appendChild(buildSeparator);
+
+			buildIndicatorContainer = document.createElement("span");
+			buildIndicatorContainer.id = "sourcegraph-build-indicator";
+			info.appendChild(buildIndicatorContainer);
+			injectComponent(<BuildIndicator path={infoFilePath} />, buildIndicatorContainer);
+		}
+	}
+}
+
+function injectBlobAnnotator() {
+	if (!isGitHubURL()) return;
+	// TODO
+}
+
+function injectComponent(component, mountElement) {
+	chrome.runtime.sendMessage(null, {type: "get"}, {}, (state) => {
+		render(<Provider store={createStore(state)}>{component}</Provider>, mountElement);
+	});
+}
+
+function bootstrapApp() {
+	chrome.runtime.sendMessage(null, {type: "get"}, {}, (state) => {
+		const app = document.createElement("div");
+		app.id = "sourcegraph-app-bootstrap";
+		app.style.display = "none";
+		render(<Provider store={createStore(state)}><InjectApp /></Provider>, app);
+
+		document.body.appendChild(app);
+
+		injectSearchApp();
+		injectBuildIndicators();
+	});
+}
+
 window.addEventListener("load", bootstrapApp);
+document.addEventListener("pjax:success", () => {
+	removeSearchFrame();
+
+	injectSearchApp();
+	injectBuildIndicators();
+});
