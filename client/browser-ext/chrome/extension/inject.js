@@ -102,11 +102,11 @@ function injectSearchApp() {
 function injectBuildIndicators() {
 	if (!isGitHubURL()) return;
 
-	const {user, repo, rev, path, isPullRequest} = parseGitHubURL();
+	const {user, repo, rev, path, isDelta} = parseGitHubURL();
 	const fileInfos = document.querySelectorAll(".file-info");
 	for (let i = 0; i < fileInfos.length; ++i) {
 		const info = fileInfos[i];
-		const infoFilePath = isPullRequest ? info.querySelector(".user-select-contain").title : path;
+		const infoFilePath = isDelta ? info.querySelector(".user-select-contain").title : path;
 		const buildIndicatorId = `sourcegraph-build-indicator-${infoFilePath}`;
 		let buildIndicatorContainer = document.getElementById(buildIndicatorId);
 		if (!buildIndicatorContainer) { // prevent injecting build indicator twice
@@ -135,13 +135,13 @@ function injectBackgroundApp() {
 function injectBlobAnnotator() {
 	if (!isGitHubURL()) return;
 
-	const {user, repo, rev, path, isPullRequest} = parseGitHubURL();
+	const {user, repo, rev, path, isDelta} = parseGitHubURL();
 	const fileInfos = document.querySelectorAll(".file-info");
 	const blobs = document.querySelectorAll(".blob-wrapper");
 
 	for (let i = 0; i < fileInfos.length; ++i) {
 		const info = fileInfos[i];
-		const infoFilePath = isPullRequest ? info.querySelector(".user-select-contain").title : path;
+		const infoFilePath = isDelta ? info.querySelector(".user-select-contain").title : path;
 		const blobAnnotatorId = `sourcegraph-blob-annotator-${infoFilePath}`;
 		let blobAnnotatorContainer = document.getElementById(blobAnnotatorId);
 		if (!blobAnnotatorContainer) { // prevent injecting build indicator twice

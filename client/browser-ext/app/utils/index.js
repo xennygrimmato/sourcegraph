@@ -13,15 +13,14 @@ export function parseGitHubURL(loc = window.location) {
 	let user = urlsplit[0];
 	let repo = urlsplit[1]
 	let rev;
-	if (urlsplit[3] && (urlsplit[2] === "tree" || urlsplit[2] === "blob")) {
-		// TODO(rothfels): safely handle "commit" and other routes
+	if (urlsplit[3] && (urlsplit[2] === "tree" || urlsplit[2] === "blob") || urlsplit[2] === "commit") {
 		rev = urlsplit[3];
 	}
 	let path;
 	if (urlsplit[2] === "blob") {
 		path = urlsplit.slice(4).join("/");
 	}
-	return {user, repo, rev, path, isPullRequest: urlsplit[2] === "pull"};
+	return {user, repo, rev, path, isDelta: urlsplit[2] === "pull" || urlsplit[2] === "commit"};
 }
 
 export function parseGitHubRepoURI(loc = window.location) {
