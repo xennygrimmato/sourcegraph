@@ -39,3 +39,6 @@
 	composes: b--light-gray normal-text from colors;
 	composes: pv3 from base;
 }
+.build-link {
+	composes: pl2 from base;
+}

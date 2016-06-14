@@ -16,7 +16,7 @@ const SearchBackend = {
 		case SearchActions.WantResults:
 			{
 				let results = SearchStore.results.get(action.query, action.repos, action.notRepos, action.limit, action.prefixMatch, action.includeRepos);
-				if (results === null) {
+				if (results === null || action.force) {
 					let limit = action.limit || RESULTS_LIMIT;
 
 					let q = [`Query=${encodeURIComponent(action.query)}`];

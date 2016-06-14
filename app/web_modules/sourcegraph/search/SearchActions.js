@@ -9,14 +9,16 @@ export class WantResults {
 	limit: ?number;
 	prefixMatch: ?bool;
 	includeRepos: ?bool;
+	force: ?bool;
 
-	constructor(query: string, repos: ?Array<string>, notRepos: ?Array<string>, limit: ?number, prefixMatch: ?bool, includeRepos: ?bool) {
+	constructor(query: string, repos: ?Array<string>, notRepos: ?Array<string>, limit: ?number, prefixMatch: ?bool, includeRepos: ?bool, force: ?bool) {
 		this.query = query;
 		this.repos = repos;
 		this.notRepos = notRepos;
 		this.limit = limit;
 		this.prefixMatch = prefixMatch;
 		this.includeRepos = includeRepos;
+		this.force = force;
 	}
 }
 
