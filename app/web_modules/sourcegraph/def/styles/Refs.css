@@ -11,7 +11,8 @@
 .container {
 	display: flex;
 	flex-direction: column;
-	composes: mb4 br2 from base;
+	composes: mt4 mb4 br2 ba bw1 from base;
+	border-color: #d8d8d8;
 }
 
 .repo {
@@ -37,7 +38,7 @@
 }
 
 .refs {
-	border-radius: 100px;
+	border-color: #d8d8d8;
 	flex: 1 1 auto;
 }
 
@@ -48,7 +49,7 @@
 }
 
 .filename {
-	composes: pr2 mt2 ba br1 from base;
+	composes: bb from base;
 	composes: f5 fw1 from typography;
 	composes: mid-gray from colors;
 	border-color: #d8d8d8;

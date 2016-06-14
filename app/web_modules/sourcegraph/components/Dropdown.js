@@ -76,7 +76,7 @@ class Dropdown extends React.Component {
 			<div onClick={this._onToggleDropdown} styleName={this.props.disabled ? "wrapper-disabled" : "wrapper"} className={this.props.className}
 				ref={(e) => this._wrapper = e}>
 				<span onClick={this.getMenuClickCallback(this.state.selectedValue)}>{this.props.icon} {this.props.title}</span>
-				<FaAngleDown className={`toggle ${this.state.open ? "open-arrow" : ""}`} />
+				<FaAngleDown styleName="center-icon" className={`toggle ${this.state.open ? "open-arrow" : ""}`} />
 				<div styleName="dropdown-menu">
 					<div role="menu"
 						styleName={this.state.open ? "dropdown-menu-open" : "dropdown-menu-closed"}>

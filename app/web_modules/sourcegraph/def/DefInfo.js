@@ -27,8 +27,6 @@ import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown, TabItem} from "sourcegraph/components";
 import stripDomain from "sourcegraph/util/stripDomain";
 import breadcrumb from "sourcegraph/util/breadcrumb";
-import {urlToBlob} from "sourcegraph/blob/routes";
-
 
 
 // Number of characters of the Docstring to show before showing the "collapse" options.
@@ -223,6 +221,7 @@ class DefInfo extends Container {
 			);
 		}
 		return (
+			<div styleName="bg">
 			<div styleName="container">
 			{/* NOTE: This should (roughly) be kept in sync with page titles in app/internal/ui. */}
 				<Helmet title={defTitleOK(def) ? `${defTitle(def)} · ${trimRepo(this.state.repo)}` : trimRepo(this.state.repo)} />
@@ -310,7 +309,7 @@ class DefInfo extends Container {
 								<div style={{float: "right"}}>
 										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "top"}}}>
 											<TabItem active={refsSorting === "top"}>Top</TabItem>
-										</Link>									
+										</Link>
 										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "local"}}}>
 											<TabItem active={refsSorting === "local"}>Local</TabItem>
 										</Link>
@@ -348,6 +347,7 @@ class DefInfo extends Container {
 						</div>
 					}
 				</div>
+			</div>
 			</div>
 		);
 	}

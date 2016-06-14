@@ -87,12 +87,12 @@ class DefContainer extends Container {
 	}
 
 	renderFileHeader(def) {
-		let path = stripDomain(def.Repo.concat("/", def.File))
+		let path = stripDomain(def.Repo.concat("/", def.File));
 		let pathBreadcrumb = breadcrumb(
 			path,
 			(j) => <span key={j} className={styles.sep}> / </span>,
-			(_, component, j, isLast) =>  {
-				let span = <span className={styles.pathPart} key={j}>{component}</span>
+			(_, component, j, isLast) => {
+				let span = <span className={styles.pathPart} key={j}>{component}</span>;
 				if (isLast) {
 					return <Link className={styles.pathEnd} to={urlToBlob(def.Repo, this.state.rev, def.File)} key={j}> {span} </Link>;
 				}

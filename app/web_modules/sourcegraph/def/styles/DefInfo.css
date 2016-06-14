@@ -4,13 +4,21 @@
 @value typography "sourcegraph/components/styles/_typography.css";
 @value headings "sourcegraph/components/styles/heading.css";
 @value vars "sourcegraph/components/styles/_vars.css";
+@value panel "sourcegraph/components/styles/panel.css";
 
-@value media-sm from vars;
+
 .container {
-	composes: center from base;
-	composes: col-11-ns from grid;
-	max-width: 68rem;
+	composes: high from panel;
+	composes: center pa4 mt5 from base;
+	composes: col-12-ns from grid;
+	max-width: 74rem;
 	min-height: 50vh;
+	background-color: white;
+}
+
+.bg {
+	composes: bg-cool-pale-gray-2 from colors;
+	flex: 1;
 }
 
 .def-title {
@@ -26,12 +34,12 @@
 }
 
 .authors {
-	composes: ma2 from base; 
+	composes: mt2 ml2 mb2 from base; 
 	display: flex;
 }
 
 .blob-link {
-	composes: mt2 mr2 mb2 from base; 
+	composes: mt2 ml2 mb2 from base; 
 }
 
 .section-label {
@@ -80,7 +88,7 @@
 
 .translation-dropdown {
 	/*Why is it that I can't set this to gray-5?*/
-	composes: bg-cool-pale-gray-8 from colors;
+	composes: bg-cool-pale-gray-5 from colors;
 	composes: fw6 from typography;
 	composes: pt2 pl3 pr3 pb2 from base;
 	border-bottom-right-radius: 2px;
@@ -89,6 +97,10 @@
 
 .refs-container{
 	border-top: 1px solid #eeeeee;
+}
+
+.def-header{
+	margin-top: 0;
 }
 
 @media screen and (max-width: 48em) {

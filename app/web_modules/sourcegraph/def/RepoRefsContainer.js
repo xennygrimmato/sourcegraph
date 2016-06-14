@@ -50,7 +50,7 @@ class RepoRefsContainer extends Container {
 		}
 		if (state.repoCallback && state.defRepos) {
 			// state.repoCallback(state.defRepos);
-		}	
+		}
 	}
 
 	onStateTransition(prevState, nextState) {

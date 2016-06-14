@@ -29,6 +29,10 @@
 	font-size: 1.5rem;
 }
 
+.center-icon{
+	vertical-align: middle;
+}
+
 .toggle {
 	padding-left: 5px;
 	fill: currentColor;
