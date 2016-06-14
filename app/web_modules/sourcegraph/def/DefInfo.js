@@ -91,6 +91,9 @@ class DefInfo extends Container {
 		let parser = new DOMParser();
 		let doc = parser.parseFromString(html, "text/html");
 
+		// lp recreates the HTML tree by doing a DFS traversal, keeping
+		// track of the consumed characters along the way
+		// lp breaks early if the # of consumed characters exceeds our cutoff
 		function lp(node, oldLength) {
 			let childrenCopy = [];
 			while (node.firstChild) {

@@ -102,6 +102,7 @@ class Blob extends Component {
 		expandedRanges: Range[];
 		visStartLine: number;
 		visEndLine: number;
+		displayLineExpanders: ?string;
 	} = {
 		repo: "",
 		rev: "",
@@ -124,6 +125,7 @@ class Blob extends Component {
 		endByte: null,
 		visStartLine: 0,
 		visEndLine: 0,
+		displayLineExpanders: null,
 	};
 
 	componentDidMount() {
