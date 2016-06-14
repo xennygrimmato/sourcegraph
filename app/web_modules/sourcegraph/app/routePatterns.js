@@ -103,7 +103,7 @@ export function getRoutePattern(routes: Array<Route>): string {
 	return routes.map((route) => route.path).join("").slice(1); // remove leading '/''
 }
 
-export function getRouteName(routes: Array<Route>): ?string {
+export function getRouteName(routes: Array<Route>): ?RouteName {
 	return routeNamesByPattern[getRoutePattern(routes)];
 }
 

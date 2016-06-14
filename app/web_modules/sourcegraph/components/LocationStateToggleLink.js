@@ -11,7 +11,7 @@ function isModifiedEvent(ev) { return Boolean(ev.metaKey || ev.altKey || ev.ctrl
 // reflected in the URL. Something else will have to read the location state
 // to determine whether to show it.
 export default function LocationStateToggleLink(props, {router}) {
-	const {location, children, modalName, ...other} = props;
+	const {location, children, modalName, noop, ...other} = props;
 	const active = location.state && location.state.modal === modalName;
 
 	// Copied from react-router Link.js.
@@ -22,6 +22,9 @@ export default function LocationStateToggleLink(props, {router}) {
 		if (props.target) return;
 
 		ev.preventDefault();
+
+		if (noop) return;
+
 		router.push({...location, state: {...location.state, modal: active ? null : modalName}});
 
 		if (props.onToggle) props.onToggle(!active);
@@ -48,6 +51,11 @@ LocationStateToggleLink.propTypes = {
 
 	// onToggle is called when the link is toggled ON.
 	onToggle: React.PropTypes.func,
+
+	// noop, if true, causes clicks to have no effect. It is useful when the link toggles
+	// a modal, but you don't want the modal to be shown on the same page that contains
+	// the same UI (e.g., not showing the search modal on the search page).
+	noop: React.PropTypes.bool,
 };
 LocationStateToggleLink.contextTypes = {
 	router: React.PropTypes.object.isRequired,

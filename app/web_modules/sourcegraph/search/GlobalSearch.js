@@ -29,16 +29,17 @@ export const RESULTS_LIMIT = 20;
 // should consider merging them at some point.
 class GlobalSearch extends Container {
 	static propTypes = {
-		location: React.PropTypes.object.isRequired,
 		query: React.PropTypes.string.isRequired,
+		includeRepos: React.PropTypes.bool.isRequired,
+		prefixMatch: React.PropTypes.bool.isRequired,
+		onChangeQuery: React.PropTypes.func.isRequired,
 	};
 
 	static contextTypes = {
-		router: React.PropTypes.object.isRequired,
 		eventLogger: React.PropTypes.object.isRequired,
 	};
 
-	constructor(props) {
+	constructor(props: GlobalSearch.props) {
 		super(props);
 
 		this.state = {
@@ -61,7 +62,15 @@ class GlobalSearch extends Container {
 		}, 200, {leading: false, trailing: true});
 	}
 
-	state: {
+	props: {
+		location: Location;
+		query: string;
+		includeRepos: bool;
+		prefixMatch: bool;
+		onChangeQuery: (query: {query?: string, includeRepos?: bool, prefixMatch?: bool}) => void;
+	};
+
+	state: GlobalSearch.props & {
 		query: string;
 		matchingResults: {
 			Repos: Array<Repo>,
@@ -94,14 +103,12 @@ class GlobalSearch extends Container {
 
 	reconcileState(state: GlobalSearch.state, props) {
 		Object.assign(state, props);
-		state.matchingResults = SearchStore.results.get(state.query, null, null, RESULTS_LIMIT,
-			this.props.location.query.prefixMatch, this.props.location.query.includeRepos);
+		state.matchingResults = SearchStore.results.get(state.query, null, null, RESULTS_LIMIT, this.state.prefixMatch, this.state.includeRepos);
 	}
 
 	onStateTransition(prevState, nextState) {
 		if (prevState.query !== nextState.query) {
-			Dispatcher.Backends.dispatch(new SearchActions.WantResults(nextState.query, null, null, RESULTS_LIMIT,
-			this.props.location.query.prefixMatch, this.props.location.query.includeRepos));
+			Dispatcher.Backends.dispatch(new SearchActions.WantResults(nextState.query, null, null, RESULTS_LIMIT, this.state.prefixMatch, this.state.includeRepos));
 		}
 	}
 
@@ -121,10 +128,11 @@ class GlobalSearch extends Container {
 	}
 
 	_onChangeQuery(query: string) {
-		this.context.router.replace({...this.props.location, query: {
+		setTimeout(() => this.state.onChangeQuery({
 			q: query || undefined, // eslint-disable-line no-undefined
-			prefixMatch: this.props.location.query.prefixMatch || undefined, // eslint-disable-line no-undefined
-			includeRepos: this.props.location.query.includeRepos || undefined}}); // eslint-disable-line no-undefined
+			prefixMatch: this.state.prefixMatch || undefined, // eslint-disable-line no-undefined
+			includeRepos: this.state.includeRepos || undefined, // eslint-disable-line no-undefined
+		}));
 	}
 
 	_navigateTo(url: string) {

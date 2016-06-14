@@ -16,6 +16,7 @@ import {withFeaturesContext} from "sourcegraph/app/features";
 import {withSiteConfigContext} from "sourcegraph/app/siteConfig";
 import {withUserContext} from "sourcegraph/app/user";
 import {withAppdashRouteStateRecording} from "sourcegraph/app/appdash";
+import withGlobalSearch from "sourcegraph/search/withGlobalSearch";
 import withChannelListener from "sourcegraph/channel/withChannelListener";
 
 const reactElement = React.PropTypes.oneOfType([
@@ -60,7 +61,9 @@ export const rootRoute: Route = {
 					withSiteConfigContext(
 						withUserContext(
 							withFeaturesContext(
-								CSSModules(App, styles)
+								withGlobalSearch(
+									CSSModules(App, styles)
+								)
 							)
 						)
 					)

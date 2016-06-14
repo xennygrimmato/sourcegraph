@@ -24,6 +24,11 @@ class GlobalSearchContainer extends React.Component {
 		router: React.PropTypes.object.isRequired,
 	};
 
+	constructor(props) {
+		super(props);
+		this._onChangeQuery = this._onChangeQuery.bind(this);
+	}
+
 	renderCTAButtons() {
 		return (
 			<div className={base.mt4} styleName="inline-block">
@@ -38,14 +43,23 @@ class GlobalSearchContainer extends React.Component {
 		);
 	}
 
+	_onChangeQuery(queryState) {
+		this.context.router.replace({...this.props.location, query: queryState});
+	}
+
 	render() {
+		const queryState = this.props.location.query || {};
 		return (
 			<div styleName="bg">
 				<div styleName="container-fixed" className={base.mt5}>
 					<Panel hoverLevel="low" className={`${base.mb4} ${base.pb4} ${base.ph4} ${base.pt3}`}>
-						<GlobalSearch query={this.props.location.query.q || ""} location={this.props.location} />
+						<GlobalSearch query={queryState.q || ""}
+							includeRepos={Boolean(queryState.includeRepos)}
+							prefixMatch={Boolean(queryState.prefixMatch)}
+							onChangeQuery={this._onChangeQuery}
+							location={this.props.location} />
 					</Panel>
-					{!this.props.location.query.q && <div>
+					{!queryState.q && <div>
 					{this.context.githubToken && <div styleName="tc" className={base.mv3}>
 							<p styleName="cool-mid-gray">Try some common searches:</p>
 							<Link to="github.com/golang/go@eb69476c66339ca494f98e65a78d315da99a9c79/-/info/GoPackage/net/http/-/Client/Get"><code>http.Get</code></Link>, <Link to="github.com/golang/go@eb69476c66339ca494f98e65a78d315da99a9c79/-/info/GoPackage/fmt/-/Sprintf"><code>Sprintf</code></Link>, <Link to="github.com/golang/go@b66b97e0a120880e37b03eba00c0c7679f0a70c1/-/info/GoPackage/image/-/Decode"><code>func Decode</code></Link>

@@ -11,17 +11,30 @@ import styles from "./styles/GlobalNav.css";
 import base from "sourcegraph/components/styles/_base.css";
 import {LoginForm} from "sourcegraph/user/Login";
 import {SignupForm} from "sourcegraph/user/Signup";
+import GlobalSearch from "sourcegraph/search/GlobalSearch";
 import {EllipsisHorizontal, CheckIcon} from "sourcegraph/components/Icons";
+import {SEARCH_MODAL_NAME} from "sourcegraph/search/withGlobalSearch";
 
 function GlobalNav({navContext, location, channelStatusCode}, {user, siteConfig, signedIn, router, eventLogger}) {
 	if (location.pathname === "/styleguide") return <span />;
 	return (
 		<nav styleName="navbar" role="navigation">
+			{location.state && location.state.modal === SEARCH_MODAL_NAME &&
+				<LocationStateModal modalName={SEARCH_MODAL_NAME} location={location}
+					onDismiss={(v) => eventLogger.logEvent("DismissSearchModal")}>
+					<div styleName="modal-wide">
+						<GlobalSearch query={location.state.q || ""}
+							includeRepos={Boolean(location.state.includeRepos)}
+							prefixMatch={Boolean(location.state.prefixMatch)}
+							onChangeQuery={(queryState) => router.replace({...location, state: {...location.state, ...queryState}})} />
+					</div>
+				</LocationStateModal>
+			}
 
 			{location.state && location.state.modal === "login" &&
 				<LocationStateModal modalName="login" location={location}
 					onDismiss={(v) => eventLogger.logEvent("DismissLoginModal")}>
-					<div styleName="modal">
+					<div styleName="modal-narrow">
 						<LoginForm
 							onLoginSuccess={dismissModal("login", location, router)}
 							location={location} />
@@ -32,7 +45,7 @@ function GlobalNav({navContext, location, channelStatusCode}, {user, siteConfig,
 			{location.state && location.state.modal === "signup" &&
 				<LocationStateModal modalName="signup" location={location}
 					onDismiss={(v) => eventLogger.logEvent("DismissSignupModal")}>
-					<div styleName="modal">
+					<div styleName="modal-narrow">
 						<SignupForm
 							onSignupSuccess={dismissModal("signup", location, router, {_onboarding: "new-user", _signupChannel: "email"})}
 							location={location} />
@@ -55,7 +68,7 @@ function GlobalNav({navContext, location, channelStatusCode}, {user, siteConfig,
 					<Link to="/tools">
 						<TabItem hideMobile={true} active={location.pathname === "/tools"} icon="tools">Tools</TabItem>
 					</Link>
-					<Link to="/">
+					<Link to="/search">
 						<TabItem active={location.pathname === "/search"} icon="search">
 							<span styleName="hidden-s">Code</span> Search
 						</TabItem>
