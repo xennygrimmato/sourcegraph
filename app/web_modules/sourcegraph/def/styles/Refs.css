@@ -9,10 +9,10 @@
 @value media-sm from vars;
 
 .container {
+	composes: mt4 mb4 br2 ba bw1 from base;
+	composes: b--light-gray-2 from colors;
 	display: flex;
 	flex-direction: column;
-	composes: mt4 mb4 br2 ba bw1 from base;
-	border-color: #d8d8d8;
 }
 
 .repo {
