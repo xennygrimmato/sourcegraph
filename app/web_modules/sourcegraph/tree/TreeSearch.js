@@ -9,34 +9,19 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import debounce from "lodash/function/debounce";
 import trimLeft from "lodash/string/trimLeft";
 import TreeStore from "sourcegraph/tree/TreeStore";
-import DefStore from "sourcegraph/def/DefStore";
-import SearchStore from "sourcegraph/search/SearchStore";
 import "sourcegraph/tree/TreeBackend";
-import "sourcegraph/def/DefBackend";
-import "sourcegraph/search/SearchBackend";
 import * as TreeActions from "sourcegraph/tree/TreeActions";
-import * as DefActions from "sourcegraph/def/DefActions";
-import * as SearchActions from "sourcegraph/search/SearchActions";
 import Header from "sourcegraph/components/Header";
-import {qualifiedNameAndType} from "sourcegraph/def/Formatter";
 import {urlToBlob} from "sourcegraph/blob/routes";
-import {urlToDef} from "sourcegraph/def/routes";
 import {urlToTree} from "sourcegraph/tree/routes";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
 import {urlToBuilds} from "sourcegraph/build/routes";
-import type {Def} from "sourcegraph/def";
 import type {Route} from "react-router";
-
-import {Input, Loader, RepoLink} from "sourcegraph/components";
+import {Input, Loader} from "sourcegraph/components";
 import {FileIcon, FolderIcon} from "sourcegraph/components/Icons";
-
-import breadcrumb from "sourcegraph/util/breadcrumb";
-
 import CSSModules from "react-css-modules";
 import styles from "./styles/Tree.css";
 
-const SYMBOL_LIMIT = 5;
-const GLOBAL_DEFS_LIMIT = 3;
 const FILE_LIMIT = 15;
 const EMPTY_PATH = [];
 
@@ -94,10 +79,7 @@ class TreeSearch extends Container {
 	state: TreeSearch.props & {
 		query: string;
 		focused: boolean;
-		matchingDefs: ?{Defs: Array<Def>};
-		xdefs: ?{Defs: Array<Def>};
 		selectionIndex: number;
-		defListFilePathPrefix: ?string;
 	};
 
 	static contextTypes = {
@@ -110,10 +92,7 @@ class TreeSearch extends Container {
 		this.state = {
 			query: "",
 			focused: !props.overlay,
-			matchingDefs: null,
-			xdefs: null,
 			selectionIndex: 0,
-			defListFilePathPrefix: null,
 		};
 		this._queryInput = null;
 		this._handleKeyDown = this._handleKeyDown.bind(this);
@@ -143,7 +122,7 @@ class TreeSearch extends Container {
 		if (this._srclibBuildingInterval) clearInterval(this._srclibBuildingInterval);
 	}
 
-	stores(): Array<Object> { return [TreeStore, DefStore, SearchStore]; }
+	stores(): Array<Object> { return [TreeStore]; }
 
 	reconcileState(state: TreeSearch.state, props: TreeSearch.props): void {
 		Object.assign(state, props);
@@ -153,16 +132,7 @@ class TreeSearch extends Container {
 		state.fileTree = TreeStore.fileTree.get(state.repo, state.commitID);
 		state.fileList = TreeStore.fileLists.get(state.repo, state.commitID);
 
-		// Limit defs to the current directory unless we're querying. That
-		// should be global to be consistent with file list behavior (for which
-		// searches are global).
-		state.defListFilePathPrefix = state.query || state.path === "/" ? null : `${state.path}/`;
-
 		state.srclibDataVersion = TreeStore.srclibDataVersions.get(state.repo, state.commitID);
-
-		state.matchingDefs = state.srclibDataVersion && state.srclibDataVersion.CommitID ? DefStore.defs.list(state.repo, state.srclibDataVersion.CommitID, state.query, state.defListFilePathPrefix) : null;
-
-		state.xdefs = SearchStore.results.get(state.query, null, [this.state.repo], GLOBAL_DEFS_LIMIT);
 	}
 
 	onStateTransition(prevState: TreeSearch.state, nextState: TreeSearch.state) {
@@ -186,38 +156,6 @@ class TreeSearch extends Container {
 		} else if (!pollSrclibVersion && this._srclibBuildingInterval) {
 			clearInterval(this._srclibBuildingInterval);
 			this._srclibBuildingInterval = null;
-		}
-
-		if (prevState.srclibDataVersion !== nextState.srclibDataVersion || prevState.query !== nextState.query || prevState.defListFilePathPrefix !== nextState.defListFilePathPrefix) {
-			// Only fetch on the client, not server, so that we don't
-			// cache stale def lists prior to the repo's first build.
-			if (typeof document !== "undefined" && nextState.srclibDataVersion && nextState.srclibDataVersion.CommitID) {
-				Dispatcher.Backends.dispatch(
-					new DefActions.WantDefs(nextState.repo, nextState.srclibDataVersion.CommitID, nextState.query, nextState.defListFilePathPrefix, nextState.overlay || false)
-				);
-			}
-		}
-
-		// Global search results only show up for admin users
-		if (this.context.user && this.context.user.Admin && (prevState.query !== nextState.query || prevState.repo !== nextState.repo)) {
-			Dispatcher.Backends.dispatch(new SearchActions.WantResults(nextState.query, null, [nextState.repo], GLOBAL_DEFS_LIMIT));
-		}
-
-		if (prevState.matchingDefs && prevState.matchingDefs !== nextState.matchingDefs) {
-			nextState.lastDefinedMatchingDefs = prevState.matchingDefs;
-		}
-
-		if (prevState.matchingDefs !== nextState.matchingDefs) {
-			// Keep selectionIndex on same file item even after def results are loaded. Prevents
-			// the selection from jumping around as more data comes in.
-			const prevNumDefs = Math.min(SYMBOL_LIMIT, prevState.matchingDefs && prevState.matchingDefs.Defs ? prevState.matchingDefs.Defs.filter(this._symbolFilter).length : 0);
-			const nextNumDefs = Math.min(SYMBOL_LIMIT, nextState.matchingDefs && nextState.matchingDefs.Defs ? nextState.matchingDefs.Defs.filter(this._symbolFilter).length : 0);
-			const defWasSelected = nextState.selectionIndex < prevNumDefs || (prevState.fileResults && prevState.fileResults.length === 0);
-			if (defWasSelected) {
-				nextState.selectionIndex = 0;
-			} else {
-				nextState.selectionIndex += (nextNumDefs - prevNumDefs);
-			}
 		}
 
 		if (prevState.path !== nextState.path || prevState.query !== nextState.query || prevState.fileList !== nextState.fileList || prevState.fileTree !== nextState.fileTree) {
@@ -341,17 +279,7 @@ class TreeSearch extends Container {
 		this._selectedItem = e;
 	}
 
-	_numSymbolResults(): number {
-		if (!this.state.matchingDefs || !this.state.matchingDefs.Defs) return 0;
-		return Math.min(this.state.matchingDefs.Defs.filter(this._symbolFilter).length, SYMBOL_LIMIT);
-	}
-
-	_numXDefResults(): number {
-		if (!this.state.xdefs || !this.state.xdefs.Defs) return 0;
-		return this.state.xdefs.Defs.length;
-	}
-
-	_numFileResults(): number {
+	_numResults(): number {
 		if (!this.state.fileResults) return 0;
 		let numFileResults = Math.min(this.state.fileResults.length, FILE_LIMIT);
 		// Override file results to show full directory tree on empty query, or when
@@ -360,66 +288,38 @@ class TreeSearch extends Container {
 		return numFileResults;
 	}
 
-	_numResults(): number {
-		return this._numFileResults() + this._numSymbolResults() + this._numXDefResults();
-	}
-
 	_normalizedSelectionIndex(): number {
 		return Math.min(this.state.selectionIndex, this._numResults() - 1);
 	}
 
 	_onSelection() {
 		const i = this._normalizedSelectionIndex();
-		if (i < this._numSymbolResults()) {
-			// Def result
-			if (!this.state.matchingDefs || !this.state.matchingDefs.Defs || this.state.matchingDefs.Defs.length === 0) return;
-			const def = this.state.matchingDefs.Defs.filter(this._symbolFilter)[i];
-			this._navigateTo(urlToDef(def, this.state.rev));
-		} else if (i >= this._numSymbolResults() && i < this._numSymbolResults() + this._numXDefResults()) {
-			// XDef result
-			if (!this.state.xdefs || !this.state.xdefs.Defs || this.state.xdefs.Defs.length === 0) return;
-			let d = i - this._numSymbolResults();
-			const def = this.state.xdefs.Defs[d];
-			this._navigateTo(urlToDef(def));
+		// File or dir result
+		if (!this.state.fileResults) return;
+		let result = this.state.fileResults[i];
+		if (!result) return;
+		if (result.isDirectory) {
+			this.state.onSelectPath(result.path);
 		} else {
-			// File or dir result
-			if (!this.state.fileResults) return;
-			let d = i - (this._numSymbolResults() + this._numXDefResults());
-			let result = this.state.fileResults[d];
-			if (!result) return;
-			if (result.isDirectory) {
-				this.state.onSelectPath(result.path);
-			} else {
-				this._navigateTo(result.url);
-			}
+			this._navigateTo(result.url);
 		}
 	}
 
 	// returns the selected directory name, or null
 	_getSelectedPathPart(): ?string {
-		const i = this._normalizedSelectionIndex();
-		if (i < this._numSymbolResults()) {
-			return null;
-		}
-
-		const result = this.state.fileResults[i - this._numSymbolResults()];
+		const result = this.state.fileResults[this._normalizedSelectionIndex()];
 		if (result.isDirectory) return result.name;
 		return null;
 	}
 
 	// returns the selected file name, or null
 	_getSelectedFile(): ?string {
-		const i = this._normalizedSelectionIndex();
-		if (i < this._numSymbolResults()) {
-			return null;
-		}
-
-		const result = this.state.fileResults[i - this._numSymbolResults()];
+		const result = this.state.fileResults[this._normalizedSelectionIndex()];
 		if (!result.isDirectory) return result.name;
 		return null;
 	}
 
-	_listItems(offset: number): Array<any> {
+	_listItems(): Array<any> {
 		const items = this.state.fileResults;
 		const emptyItem = <div styleName="list-item list-item-empty" key="_nofiles"><i>No matches.</i></div>;
 		if (!items || items.length === 0) return [emptyItem];
@@ -434,7 +334,7 @@ class TreeSearch extends Container {
 			let item = items[i],
 				itemURL = item.url;
 
-			const selected = this._normalizedSelectionIndex() - offset === i;
+			const selected = this._normalizedSelectionIndex() === i;
 
 			let icon;
 			if (item.isParentDirectory) icon = null;
@@ -444,7 +344,7 @@ class TreeSearch extends Container {
 			let key = `f:${itemURL}`;
 			list.push(
 				<Link styleName={`${selected ? "list-item-selected" : "list-item"} ${item.isParentDirectory ? "parent-dir" : ""}`}
-					onMouseOver={(ev) => this._mouseSelectItem(ev, i + this._numSymbolResults() + this._numXDefResults())}
+					onMouseOver={(ev) => this._mouseSelectItem(ev, i)}
 					ref={selected ? this._setSelectedItem : null}
 					to={itemURL}
 					key={key}>
@@ -485,132 +385,6 @@ class TreeSearch extends Container {
 		this._ignoreMouseSelection = true;
 	}
 
-	_symbolFilter(def) {
-		// Do not show package results.
-		return def.Kind !== "package";
-	}
-
-	_symbolItems(offset: number): ?Array<any> {
-		if (this.state.srclibDataVersion && !this.state.srclibDataVersion.CommitID) return null;
-
-		const contentPlaceholderItem = (i) => (
-			<div styleName="list-item" key={`_nosymbol${i}`}>
-				<div styleName="content-placeholder" style={{width: `${20 + ((i+1)*39)%60}%`}}><code>&nbsp;</code></div>
-			</div>
-		);
-		if (!this.state.matchingDefs) {
-			let numPlaceholders = 1;
-			if (!this.state.query) {
-				numPlaceholders = SYMBOL_LIMIT;
-			} else if (this.state.lastDefinedMatchingDefs && this.state.lastDefinedMatchingDefs.Defs) {
-				numPlaceholders = Math.min(Math.max(1, this.state.lastDefinedMatchingDefs.Defs.length), SYMBOL_LIMIT);
-			}
-			const placeholders = [];
-			for (let i = 0; i < numPlaceholders; i++) {
-				placeholders.push(contentPlaceholderItem(i));
-			}
-			return placeholders;
-		}
-
-		if (this.state.matchingDefs && (!this.state.matchingDefs.Defs || this.state.matchingDefs.Defs.filter(this._symbolFilter).length === 0)) {
-			return [<div styleName="list-item list-item-empty" key="_nosymbol"><i>No matches.</i></div>];
-		}
-
-		const defs = this.state.matchingDefs.Defs.filter(this._symbolFilter);
-		let list = [],
-			limit = defs.length > SYMBOL_LIMIT ? SYMBOL_LIMIT : defs.length;
-		for (let i = 0; i < limit; i++) {
-			let def = defs[i];
-			list.push(this._defToLink(def, this.state.rev, offset + i, "i"));
-		}
-
-		return list;
-	}
-
-	_xdefItems(offset: number): {items: ?Array<any>, count: number} {
-		let groups = [];
-		let groupToDefs = {};
-
-		if (!this.state.xdefs || !this.state.xdefs.Defs) {
-			return {items: [], count: 0};
-		}
-		let defs = this.state.xdefs.Defs;
-		for (let i = 0; i < defs.length; i++) {
-			let repo = defs[i].Repo;
-			if (!groupToDefs[repo]) {
-				let repoDefs = [];
-				groups.push(repo);
-				groupToDefs[repo] = repoDefs;
-			}
-			groupToDefs[repo].push(defs[i]);
-		}
-
-		let sections = [];
-		let idx = offset;
-		for (let i = 0; i < groups.length; i++) {
-			let items = [];
-			let repo = groups[i];
-			let rdefs = groupToDefs[repo];
-			for (let j = 0; j < rdefs.length; j++) {
-				let def = rdefs[j];
-				items.push(this._defToLink(def, null, idx, "x"));
-				idx++;
-			}
-			sections.push(
-				<div key={`group-header:${repo}`} styleName="list-header">Symbols in {repo}</div>,
-				<div key={`group:${repo}`} styleName="list-item-group">
-					{items}
-				</div>
-			);
-		}
-		return {items: sections, count: idx - offset};
-	}
-
-	_defToLink(def: Def, rev: ?string, i: number, prefix: string) {
-		const selected = this._normalizedSelectionIndex() === i;
-		let defURL = urlToDef(def, rev);
-		let key = `${prefix}:${defURL}`;
-		return (
-				<Link styleName={selected ? "list-item-selected" : "list-item"}
-					onMouseOver={(ev) => this._mouseSelectItem(ev, i)}
-					ref={selected ? this._setSelectedItem : null}
-					to={defURL}
-					key={key}>
-						<code>{qualifiedNameAndType(def)}</code>
-				</Link>
-		);
-	}
-
-	_overlayBreadcrumb() {
-		const urlToPathPrefix = (i) => {
-			const parts = pathSplit(this.state.path);
-			const pathPrefix = pathJoin(parts.splice(0, i + 1));
-			return urlToTree(this.state.repo, this.state.rev, pathPrefix);
-		};
-
-		let filepath = this.state.path;
-		if (filepath.indexOf("/") === 0) filepath = filepath.substring(1);
-
-		let fileBreadcrumb = breadcrumb(
-			filepath,
-			(i) => <span key={i} styleName="path-sep">/</span>,
-			(path, component, i, isLast) => (
-				<Link to={urlToPathPrefix(i)}
-					key={i}
-					styleName={isLast ? "path-active" : "path-inactive"}>
-					{component}
-				</Link>
-			),
-		);
-
-		return (
-			<span styleName="file-path">
-				<RepoLink repo={`${this.state.repo}/`} />
-				{fileBreadcrumb}
-			</span>
-		);
-	}
-
 	render() {
 		if (this.state.fileResults && this.state.fileResults.Error) {
 			let code = httpStatusCode(this.state.fileResults.Error);
@@ -621,9 +395,7 @@ class TreeSearch extends Container {
 			);
 		}
 
-		let symbolItems = this._symbolItems(0) || [];
-		let xdefInfo = this._xdefItems(this._numSymbolResults()) || {items: [], count: 0};
-		let listItems = this._listItems(this._numSymbolResults() + this._numXDefResults()) || [];
+		let listItems = this._listItems() || [];
 
 		return (
 			<div styleName="tree-common">
@@ -636,15 +408,11 @@ class TreeSearch extends Container {
 						onInput={this._handleInput}
 						autoFocus={true}
 						defaultValue={this.state.query}
-						placeholder="Jump to symbols or files..."
+						placeholder="Find file..."
 						spellCheck={false}
 						domRef={(e) => this._queryInput = e} />
 				</div>
-				<div styleName="list-header">
-					Symbols in current repository
-				</div>
 				<div>
-					{symbolItems}
 					{this.state.srclibDataVersion && !this.state.srclibDataVersion.CommitID &&
 						<div styleName="list-item list-item-empty">
 							<span style={{paddingRight: "1rem"}}><Loader /></span>
@@ -653,13 +421,6 @@ class TreeSearch extends Container {
 							</i>
 						</div>
 					}
-				</div>
-
-				{xdefInfo.items}
-
-				<div styleName="list-header">
-					Files in
-					{!this.state.query && this.state.overlay && this._overlayBreadcrumb()}
 				</div>
 				<div styleName="list-item-group">
 					{listItems}
