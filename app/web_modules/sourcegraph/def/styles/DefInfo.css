@@ -87,7 +87,6 @@
 }
 
 .translation-dropdown {
-	/*Why is it that I can't set this to gray-5?*/
 	composes: bg-cool-pale-gray-5 from colors;
 	composes: fw6 from typography;
 	composes: pt2 pl3 pr3 pb2 from base;
