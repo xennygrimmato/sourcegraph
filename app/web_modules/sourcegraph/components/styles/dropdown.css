@@ -8,6 +8,7 @@
 	float: right;
 	line-height: 1.45;
 	cursor: pointer;
+	vertical-align: middle !important;
 }
 
 .wrapper:hover{

@@ -76,12 +76,13 @@ class RepoRefsContainer extends Container {
 			<div>
 				<div styleName="section-label">
 					{refLocs && refLocs.TotalRepos &&
-						`Used in ${refLocs.TotalRepos} repositor${refLocs.TotalRepos === 1 ? "y" : "ies"}`
+						`Referenced in ${refLocs.TotalRepos} repositor${refLocs.TotalRepos === 1 ? "y" : "ies"}`
 					}
 					{refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
-						`Used in ${refLocs.RepoRefs.length}+ repositories`
+						`Referenced in ${refLocs.RepoRefs.length}+ repositories`
 					}
 				</div>
+				<hr style={{marginTop: 0, clear: "both"}}/>
 				{!refLocs && <i>Loading...</i>}
 				{refLocs && !refLocs.RepoRefs && <i>No references found</i>}
 				{refLocs && refLocs.RepoRefs && refLocs.RepoRefs.map((repoRefs, i) => <RefsContainer

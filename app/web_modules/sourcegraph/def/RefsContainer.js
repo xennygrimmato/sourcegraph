@@ -18,7 +18,7 @@ import lineFromByte from "sourcegraph/blob/lineFromByte";
 import {urlToBlob} from "sourcegraph/blob/routes";
 import Header from "sourcegraph/components/Header";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
-import {TriangleRightIcon, TriangleDownIcon} from "sourcegraph/components/Icons";
+import {FaAngleDown, FaAngleRight} from "sourcegraph/components/Icons";
 import breadcrumb from "sourcegraph/util/breadcrumb";
 import stripDomain from "sourcegraph/util/stripDomain";
 import styles from "./styles/Refs.css";
@@ -203,7 +203,9 @@ export default class RefsContainer extends Container {
 				if (e.button !== 0) return; // only expand on main button click
 				this._toggleFile(path);
 			}}>
-				{this.state.shownFiles.has(path) ? <TriangleDownIcon className={styles.toggleIcon} /> : <TriangleRightIcon className={styles.toggleIcon} />}
+				<div className={styles.breadcrumbIcon}>
+					{this.state.shownFiles.has(path) ? <FaAngleDown className={styles.toggleIcon} /> : <FaAngleRight className={styles.toggleIcon} />}
+				</div>
 				<div className={styles.pathContainer}>
 					{pathBreadcrumb}
 					{count &&
@@ -302,7 +304,7 @@ export default class RefsContainer extends Container {
 					</div>
 					{!this.state.showAllFiles && this.state.fileLocations && this.state.fileLocations.length > this.state.fileCollapseThreshold &&
 						<div className={styles.filename} onClick={() => this.setState({showAllFiles: true})}>
-							<TriangleRightIcon className={styles.toggleIcon} />
+							<FaAngleRight className={styles.toggleIcon} />
 							{this.paginatorText()}
 						</div>
 					}

@@ -28,11 +28,15 @@
 .authors {
 	composes: ma2 from base; 
 	display: flex;
-	align-items: center;
+}
+
+.blob-link {
+	composes: mt2 mr2 mb2 from base; 
 }
 
 .section-label {
 	composes: mt3 mr3 mb3 from base;
+	composes: b normal-text from typography;
 }
 
 .section-label:after {
@@ -56,20 +60,16 @@
 	composes: normal-text from typography;
 }
 
-.doc-string{
-	composes: pt4 pb1 from base;
-	composes: b normal-text from typography;
-}
-
 .description-expander{
 	composes: description;
 	composes: link from "sourcegraph/components/styles/link.css";
 	cursor: pointer; 
 }
 
-.filter {
-	margin-left: 0;
-	background-color: black;
+.link-and-authors {
+	composes: normal-text from typography;
+	display: flex;
+	justify-content: space-between;
 }
 
 .pagination {
@@ -88,30 +88,7 @@
 }
 
 .refs-container{
-	display: flex;
-	flex-direction: row-reverse; 
-}
-
-.refs-sidebar {
-	composes: ml4 from base;
-	flex: 1;
-	flex-shrink: 0;
-	border-left: 1px solid #eeeeee;
-}
-
-.filter-list {
-	composes: ml0 pl0 from base;
-	list-style: none;
-}
-
-.repoList {
-	composes: small-text from typography;
-}
-
-.refs-blobs {
-	flex: 3;
-	overflow-x: auto;
-	overflow-y: scroll;
+	border-top: 1px solid #eeeeee;
 }
 
 @media screen and (max-width: 48em) {

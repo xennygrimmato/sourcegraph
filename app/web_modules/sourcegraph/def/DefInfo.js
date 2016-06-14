@@ -5,6 +5,7 @@ import Helmet from "react-helmet";
 import AuthorList from "sourcegraph/def/AuthorList";
 import Container from "sourcegraph/Container";
 import DefStore from "sourcegraph/def/DefStore";
+import DefContainer from "sourcegraph/def/DefContainer";
 import RepoRefsContainer from "sourcegraph/def/RepoRefsContainer";
 import ExamplesContainer from "sourcegraph/def/ExamplesContainer";
 import {Link} from "react-router";
@@ -24,6 +25,11 @@ import {defTitle, defTitleOK} from "sourcegraph/def/Formatter";
 import "whatwg-fetch";
 import {GlobeIcon, LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown, TabItem} from "sourcegraph/components";
+import stripDomain from "sourcegraph/util/stripDomain";
+import breadcrumb from "sourcegraph/util/breadcrumb";
+import {urlToBlob} from "sourcegraph/blob/routes";
+
+
 
 // Number of characters of the Docstring to show before showing the "collapse" options.
 const DESCRIPTION_CHAR_CUTOFF = 500;
@@ -192,11 +198,11 @@ class DefInfo extends Container {
 		this.setState({globalRepos: repos});
 	}
 
-	renderRepos(repos) {
-		return (
-			<div styleName="repoList">
-				{repos.map(r => <li key={r}> {trimRepo(r)} </li>)}
-			</div>
+	renderDefBreadcrumb(def) {
+		return breadcrumb(
+			stripDomain(def.Repo.concat("/", def.File)),
+			(j) => "/",
+			(_, component, j, isLast) => component
 		);
 	}
 
@@ -206,6 +212,7 @@ class DefInfo extends Container {
 		let refLocs = this.state.refLocations;
 		let authors = this.state.authors;
 		let defInfoUrl = this.state.defObj ? urlToDefInfo(this.state.defObj, this.state.rev) : "";
+		let defBlobUrl = def ? urlToDef(def, this.state.rev) : "";
 		let refsSorting = this.props.location.query.refs || "top";
 
 		if (refLocs && refLocs.Error) {
@@ -221,13 +228,20 @@ class DefInfo extends Container {
 				<Helmet title={defTitleOK(def) ? `${defTitle(def)} · ${trimRepo(this.state.repo)}` : trimRepo(this.state.repo)} />
 				{def &&
 					<h1 styleName="def-header">
-						<Link title="View definition in code" to={urlToDef(def, this.state.rev)} className={`${colors["mid-gray"]}`}>
+						<Link title="View definition in code" to={defBlobUrl} className={`${colors["mid-gray"]}`}>
 							<code styleName="def-title">{qualifiedNameAndType(def, {unqualifiedNameClass: styles.def})}</code>
 						</Link>
 					</h1>
 				}
 				<div>
+					<div styleName = "link-and-authors">
+						{def &&
+							<div styleName="blob-link">
+								Defined in <Link title="View definition in code" to={defBlobUrl}>{this.renderDefBreadcrumb(def)}</Link>
+							</div>
+						}
 					{authors && Object.keys(authors).length > 0 && <AuthorList authors={authors} horizontal={true} styleName="authors"/>}
+					</div>
 					{def && def.DocHTML &&
 						<div styleName="description-wrapper">
 							<Dropdown
@@ -259,7 +273,7 @@ class DefInfo extends Container {
 							{this.state.showTranslatedString &&
 								<hr/>
 							}
-							<div styleName="doc-string">DocString</div>
+							<div styleName="section-label">DocString</div>
 							<div styleName="description"
 								dangerouslySetInnerHTML={hiddenDescr && {__html: this.splitHTMLDescr(def.DocHTML.__html, DESCRIPTION_CHAR_CUTOFF)} || def.DocHTML}></div>
 							{hiddenDescr &&
@@ -287,31 +301,23 @@ class DefInfo extends Container {
 								}
 							</div>
 						}
-
+					<div>
+						<div styleName="section-label"> Definition </div>
+						{def && !def.Error && <DefContainer {...this.props} />}
+					</div>
 					{def && !def.Error &&
 						<div styleName="refs-container">
-							<div styleName="refs-sidebar">
-								<ul styleName ="filter-list">
-									<li>
+								<div style={{float: "right"}}>
 										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "top"}}}>
-											<TabItem symmetrical={true} className="filter" size="small" direction="left" active={refsSorting === "top"}>Top refs</TabItem>
-										</Link>
-									</li>
-									<li>
+											<TabItem active={refsSorting === "top"}>Top</TabItem>
+										</Link>									
 										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "local"}}}>
-											<TabItem symmetrical={true} className="filter" size="small" direction="left" active={refsSorting === "local"}>LOCAL REFS</TabItem>
+											<TabItem active={refsSorting === "local"}>Local</TabItem>
 										</Link>
-									</li>
-									{this.renderRepos(this.state.localRepos)}
-									<li>
 										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "all"}}}>
-											<TabItem symmetrical={true} className="filter" size="small" direction="left" active={refsSorting === "all"}>GLOBAL REFS</TabItem>
+											<TabItem active={refsSorting === "all"}>All</TabItem>
 										</Link>
-									</li>
-									{this.renderRepos(this.state.globalRepos)}
-								</ul>
-							</div>
-							<div styleName="refs-blobs">
+								</div>
 								{refsSorting === "top" &&
 									<ExamplesContainer
 										repo={this.props.repo}
@@ -339,7 +345,6 @@ class DefInfo extends Container {
 										defObj={this.props.defObj}
 										repoCallback={(r) => this._updateGlobalRepos(r)} />
 								}
-							</div>
 						</div>
 					}
 				</div>

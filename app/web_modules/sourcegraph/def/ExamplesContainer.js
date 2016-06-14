@@ -55,6 +55,7 @@ class ExamplesContainer extends Container {
 				<div styleName="section-label">
 					{refLocs && refLocs.RepoRefs && `${refLocs.RepoRefs.length} ` || ""} Usage Examples
 				</div>
+				<hr style={{marginTop: 0, clear: "both"}}/>
 				{!refLocs && <i>Loading...</i>}
 				{refLocs && !refLocs.RepoRefs && <i>No examples found</i>}
 				{refLocs && refLocs.RepoRefs && refLocs.RepoRefs.map((repoRefs, i) => <RefsContainer

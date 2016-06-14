@@ -60,6 +60,10 @@ class Blob extends Component {
 		// actions when the text selection changes. It should be true for the main file view but
 		// not for secondary file views (e.g., usage examples).
 		dispatchSelections: React.PropTypes.bool,
+
+		// display line expanders is whether or not to show only the top line expander,
+		// the bottom line expander, or both
+		displayLineExpanders: React.PropTypes.string,
 	};
 
 	constructor(props: Blob.props) {
@@ -165,6 +169,7 @@ class Blob extends Component {
 		state.highlightSelectedLines = Boolean(props.highlightSelectedLines);
 		state.dispatchSelections = Boolean(props.dispatchSelections);
 		state.displayRanges = props.displayRanges ? this._consolidateRanges(props.displayRanges.concat(state.expandedRanges)) : null;
+		state.displayLineExpanders = props.displayLineExpanders || null;
 
 		let updateAnns = false;
 
@@ -371,7 +376,7 @@ class Blob extends Component {
 			if (this.state.displayRanges && !this._withinDisplayedRange(lineNumber)) {
 				return;
 			}
-			if (this.state.displayRanges && lastDisplayedLine !== lineNumber - 1) {
+			if (this.state.displayRanges && lastDisplayedLine !== lineNumber - 1 && (this.state.displayLineExpanders === null || this.state.displayLineExpanders !== "bottom")) {
 				// Prevent expanding above the last displayed range.
 				let expandTo = [Math.max(lastRangeEnd, lineNumber-30), lineNumber-1];
 				lines.push(
@@ -401,7 +406,7 @@ class Blob extends Component {
 			);
 			renderedLines += 1;
 		});
-		if (this.state.lines && lastDisplayedLine < this.state.lines.length) {
+		if (this.state.lines && lastDisplayedLine < this.state.lines.length && (this.state.displayLineExpanders === null || this.state.displayLineExpanders !== "top")) {
 			lines.push(
 				<BlobLineExpander key={`expand-${this.state.lines.length}`}
 					expandRange={[lastDisplayedLine, lastDisplayedLine+30]}
