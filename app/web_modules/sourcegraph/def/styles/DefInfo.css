@@ -9,7 +9,7 @@
 
 .container {
 	composes: high from panel;
-	composes: center pa4 mt5 from base;
+	composes: center pa4 mv5 from base;
 	composes: col-12-ns from grid;
 	max-width: 74rem;
 	min-height: 50vh;
