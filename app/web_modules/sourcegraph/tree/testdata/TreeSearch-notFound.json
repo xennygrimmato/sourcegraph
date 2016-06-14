@@ -8,11 +8,6 @@
 	},
 	"dispatched": [
 		{
-			"$constructor": "WantSrclibDataVersion",
-			"repo": "repo",
-			"commitID": "c"
-		},
-		{
 			"$constructor": "WantFileList",
 			"repo": "repo",
 			"commitID": "c"

@@ -28,11 +28,6 @@
 				{
 					"type": "div",
 					"key": ".1",
-					"props": {}
-				},
-				{
-					"type": "div",
-					"key": ".2",
 					"props": {
 						"styleName": "list-item-group",
 						"children": [
@@ -76,11 +71,6 @@
 		}
 	},
 	"dispatched": [
-		{
-			"$constructor": "WantSrclibDataVersion",
-			"repo": "repo",
-			"commitID": "c"
-		},
 		{
 			"$constructor": "WantFileList",
 			"repo": "repo",

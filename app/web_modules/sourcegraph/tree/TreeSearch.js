@@ -15,9 +15,8 @@ import Header from "sourcegraph/components/Header";
 import {urlToBlob} from "sourcegraph/blob/routes";
 import {urlToTree} from "sourcegraph/tree/routes";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
-import {urlToBuilds} from "sourcegraph/build/routes";
 import type {Route} from "react-router";
-import {Input, Loader} from "sourcegraph/components";
+import {Input} from "sourcegraph/components";
 import {FileIcon, FolderIcon} from "sourcegraph/components/Icons";
 import CSSModules from "react-css-modules";
 import styles from "./styles/Tree.css";
@@ -119,7 +118,6 @@ class TreeSearch extends Container {
 		if (global.document) {
 			document.removeEventListener("keydown", this._handleKeyDown);
 		}
-		if (this._srclibBuildingInterval) clearInterval(this._srclibBuildingInterval);
 	}
 
 	stores(): Array<Object> { return [TreeStore]; }
@@ -131,31 +129,14 @@ class TreeSearch extends Container {
 
 		state.fileTree = TreeStore.fileTree.get(state.repo, state.commitID);
 		state.fileList = TreeStore.fileLists.get(state.repo, state.commitID);
-
-		state.srclibDataVersion = TreeStore.srclibDataVersions.get(state.repo, state.commitID);
 	}
 
 	onStateTransition(prevState: TreeSearch.state, nextState: TreeSearch.state) {
 		const prefetch = nextState.prefetch && nextState.prefetch !== prevState.prefetch;
 		if (prefetch || nextState.repo !== prevState.repo || nextState.commitID !== prevState.commitID) {
 			if (nextState.commitID) {
-				Dispatcher.Backends.dispatch(new TreeActions.WantSrclibDataVersion(nextState.repo, nextState.commitID));
 				Dispatcher.Backends.dispatch(new TreeActions.WantFileList(nextState.repo, nextState.commitID));
 			}
-		}
-
-		// If there was previously a response from the server but no srclib
-		// data version, i.e., if the repository has not been built recently
-		// then poll against the server for an update periodically.
-		const pollSrclibVersion = nextState.srclibDataVersion && !nextState.srclibDataVersion.CommitID;
-		if (pollSrclibVersion && nextState.commitID && !this._srclibBuildingInterval) {
-			const pollInterval = 500;
-			this._srclibBuildingInterval = setInterval(() => {
-				Dispatcher.Backends.dispatch(new TreeActions.WantSrclibDataVersion(nextState.repo, nextState.commitID, null, true));
-			}, pollInterval);
-		} else if (!pollSrclibVersion && this._srclibBuildingInterval) {
-			clearInterval(this._srclibBuildingInterval);
-			this._srclibBuildingInterval = null;
 		}
 
 		if (prevState.path !== nextState.path || prevState.query !== nextState.query || prevState.fileList !== nextState.fileList || prevState.fileTree !== nextState.fileTree) {
@@ -411,16 +392,6 @@ class TreeSearch extends Container {
 						placeholder="Find file..."
 						spellCheck={false}
 						domRef={(e) => this._queryInput = e} />
-				</div>
-				<div>
-					{this.state.srclibDataVersion && !this.state.srclibDataVersion.CommitID &&
-						<div styleName="list-item list-item-empty">
-							<span style={{paddingRight: "1rem"}}><Loader /></span>
-							<i>Sourcegraph is analyzing your code &mdash;
-								<Link styleName="link" to={urlToBuilds(this.state.repo)}>results will be available soon!</Link>
-							</i>
-						</div>
-					}
 				</div>
 				<div styleName="list-item-group">
 					{listItems}
