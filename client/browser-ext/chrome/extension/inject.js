@@ -203,7 +203,7 @@ class InjectApp extends React.Component {
 		const pathParts = path.split("/");
 		let lang = pathParts[pathParts.length - 1].split(".")[1] || null;
 		lang = lang ? lang.toLowerCase() : null;
-		const supportedLang = lang === "go" || lang === "java";
+		const supportedLang = lang === "go" || lang === "java" || lang === "sh" || lang === "bash";
 		return window.location.href.split("/")[5] === "blob" && document.querySelector(".file") && supportedLang;
 	}
 
@@ -330,7 +330,7 @@ class InjectApp extends React.Component {
 		chrome.runtime.sendMessage(null, {type: "get"}, {}, (state) => {
 			const accessToken = state.accessToken;
 			if (accessToken) this.props.actions.setAccessToken(accessToken); // without this, access token may be overwritten to null
-			this.refreshState();
+			if (window.location.host === "github.com") this.refreshState();
 		});
 	}
 
