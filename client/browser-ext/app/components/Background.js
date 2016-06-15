@@ -164,6 +164,8 @@ export default class Background extends React.Component {
 			const accessToken = state.accessToken;
 			if (accessToken) this.props.actions.setAccessToken(accessToken);
 
+			if (isSourcegraphURL()) return;
+
 			let {user, repo, rev, path, defPath} = this.parseURL();
 			// This scrapes the latest commit ID and updates rev to the latest commit so we are never injecting
 			// outdated annotations.  If there is a new commit, srclib-data-version will return a 404, but the

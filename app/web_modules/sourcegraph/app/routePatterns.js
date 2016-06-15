@@ -7,8 +7,10 @@ export type RouteName = "styleguide" |
 	"search" |
 	"home" |
 	"tools" |
+	"tool" |
 	"myRepos" |
 	"tour" |
+	"commit" |
 	"def" |
 	"defInfo" |
 	"repo" |
@@ -44,6 +46,7 @@ export const rel: {[key: RouteName]: string} = {
 	styleguide: "styleguide",
 	home: "",
 	tools: "tools",
+	tool: "tools/*",
 	myRepos: "repositories",
 	tour: "tour",
 	login: "login",
@@ -51,6 +54,7 @@ export const rel: {[key: RouteName]: string} = {
 	forgot: "forgot",
 	reset: "reset",
 	admin: "-/",
+	commit: "commit",
 	def: "def/*",
 	defInfo: "info/*",
 	repo: "*", // matches both "repo" and "repo@rev"
@@ -72,6 +76,7 @@ export const abs: {[key: RouteName]: string} = {
 	styleguide: rel.styleguide,
 	home: rel.home,
 	tools: rel.tools,
+	tool: rel.tool,
 	myRepos: rel.myRepos,
 	tour: rel.tour,
 	login: rel.login,
@@ -81,6 +86,7 @@ export const abs: {[key: RouteName]: string} = {
 	admin: rel.admin,
 	adminBuilds: `${rel.admin}${rel.builds}`,
 	adminCoverage: `${rel.admin}${rel.coverage}`,
+	commit: `${rel.repo}/-/${rel.commit}`,
 	def: `${rel.repo}/-/${rel.def}`,
 	defInfo: `${rel.repo}/-/${rel.defInfo}`,
 	repo: rel.repo,

@@ -4,7 +4,7 @@ export function supportsAnnotatingFile(path) {
 	const pathParts = path.split("/");
 	let lang = pathParts[pathParts.length - 1].split(".")[1] || null;
 	lang = lang ? lang.toLowerCase() : null;
-	return lang === "go" || lang === "java";
+	return lang === "go" || lang === "java" || lang === "sh" || lang === "bash";
 }
 
 export function parseGitHubURL(loc = window.location) {

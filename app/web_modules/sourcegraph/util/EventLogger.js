@@ -5,12 +5,13 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import context from "sourcegraph/app/context";
 import type {SiteConfig} from "sourcegraph/app/siteConfig";
 import type {AuthInfo, User} from "sourcegraph/user";
-import {getViewName, getRoutePattern} from "sourcegraph/app/routePatterns";
+import {getViewName, getRoutePattern, getRouteParams} from "sourcegraph/app/routePatterns";
 import type {Route} from "react-router";
 import * as DashboardActions from "sourcegraph/dashboard/DashboardActions";
 import * as UserActions from "sourcegraph/user/UserActions";
 import * as DefActions from "sourcegraph/def/DefActions";
 import UserStore from "sourcegraph/user/UserStore";
+import {getLanguageExtensionForPath, defPathToLanguage} from "sourcegraph/util/inventory";
 
 export const EventLocation = {
 	Login: "Login",
@@ -220,7 +221,11 @@ export class EventLogger {
 				}
 			}
 			break;
-
+		case UserActions.EmailSubscriptionCompleted:
+			if (action.eventName) {
+				this.logEvent(action.eventName);
+			}
+			break;
 		case DefActions.DefsFetched:
 			if (action.eventName) {
 				let eventProps = {
@@ -230,6 +235,18 @@ export class EventLogger {
 				this.logEvent(action.eventName, eventProps);
 			}
 			break;
+
+		case DefActions.HighlightDef:
+			{
+				if (action.url) { // we also emit HighlightDef when the def is un-highlighted
+					let eventProps = {
+						language: action.language || "unknown",
+					};
+					this.logEvent(action.eventName, eventProps);
+				}
+				break;
+			}
+
 		default:
 			// All dispatched actions to stores will automatically be tracked by the eventName
 			// of the action (if set). Override this behavior by including another case above.
@@ -350,9 +367,13 @@ export function withViewEventsLogged(Component: ReactClass): ReactClass {
 		}
 
 		_logView(routes: Array<Route>, location: Location) {
-			let eventProps = {
-				url: location.pathname,
+			let eventProps: {
+				url: string;
+				referred_by_browser_ext?: string;
+				referred_by_sourcegraph_editor?: string;
+				language?: string;
 			};
+
 			// TODO:matt remove this once all plugins are switched to new version
 			// This is temporarily here for backwards compat
 			if (location.query && location.query["utm_source"] === "chromeext") {
@@ -370,15 +391,30 @@ export function withViewEventsLogged(Component: ReactClass): ReactClass {
 					url: location.pathname,
 					referred_by_sourcegraph_editor: location.query["editor_type"],
 				};
+			} else {
+				eventProps = {
+					url: location.pathname,
+				};
 			}
 
+			const routePattern = getRoutePattern(routes);
 			const viewName = getViewName(routes);
+			const routeParams = getRouteParams(routePattern, location.pathname);
 			if (viewName) {
+				if (viewName === "ViewBlob" && routeParams) {
+					const filePath = routeParams.splat[routeParams.splat.length - 1];
+					const lang = getLanguageExtensionForPath(filePath);
+					if (lang) eventProps.language = lang;
+				} else if ((viewName === "ViewDef" || viewName === "ViewDefInfo") && routeParams) {
+					const defPath = routeParams.splat[routeParams.splat.length - 1];
+					const lang = defPathToLanguage(defPath);
+					if (lang) eventProps.language = lang;
+				}
 				this.context.eventLogger.logEvent(viewName, eventProps);
 			} else {
 				this.context.eventLogger.logEvent("UnmatchedRoute", {
 					...eventProps,
-					pattern: getRoutePattern(routes),
+					pattern: routePattern,
 				});
 			}
 		}

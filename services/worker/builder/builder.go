@@ -14,7 +14,6 @@ import (
 	droneexec "github.com/drone/drone-exec/exec"
 	droneparser "github.com/drone/drone-exec/parser"
 	dronerunner "github.com/drone/drone-exec/runner"
-	droneyaml "github.com/drone/drone-exec/yaml"
 	"github.com/drone/drone/yaml/matrix"
 	"golang.org/x/net/context"
 	"gopkg.in/inconshreveable/log15.v2"
@@ -59,8 +58,6 @@ type Builder struct {
 	// configuration (.drone.yml) after inferred and srclib steps have
 	// been added.
 	FinalBuildConfig func(ctx context.Context, configYAML string) error
-
-	config droneyaml.Config // the .drone.yml config (possibly inferred)
 }
 
 // TaskState manages a task's state. An implementation could, for
@@ -200,6 +197,16 @@ func (b *Builder) plan(ctx context.Context) (finalConfig string, axes []matrix.A
 
 				if err == nil {
 					w := state.Log()
+					langs := make([]*inventory.Lang, 0, len(inv.Languages))
+					skipped := make([]*inventory.Lang, 0, len(inv.Languages))
+					for _, l := range inv.Languages {
+						if _, ok := skipLangs[l.Name]; ok {
+							skipped = append(skipped, l)
+						} else {
+							langs = append(langs, l)
+						}
+					}
+					inv.Languages = langs
 					if len(inv.Languages) == 0 {
 						if !b.DroneYMLFileExists {
 							fmt.Fprintln(w, "No recognized programming languages were detected in this repository.")
@@ -207,6 +214,12 @@ func (b *Builder) plan(ctx context.Context) (finalConfig string, axes []matrix.A
 					} else {
 						fmt.Fprintf(w, "Detected %d programming languages in use by this repository:\n", len(inv.Languages))
 						for _, lang := range inv.Languages {
+							fmt.Fprintf(w, " - %s\n", lang.Name)
+						}
+					}
+					if len(skipped) > 0 {
+						fmt.Fprintf(w, "\nFound %d languages in use by this repository that will not be built or analysed:\n", len(skipped))
+						for _, lang := range skipped {
 							fmt.Fprintf(w, " - %s\n", lang.Name)
 						}
 					}
@@ -410,12 +423,18 @@ func (noopMonitor) End(ok, allowFailure bool) {}
 
 func (noopMonitor) Logger() (stdout, stderr io.Writer) { return ioutil.Discard, ioutil.Discard }
 
+// skipLangs are languages we shouldn't build or analyse. They are usually
+// languages that are common in repos, but including them in warnings would be
+// noisy.
 var skipLangs = map[string]struct{}{
-	"Shell":     struct{}{},
-	"Makefile":  struct{}{},
-	"Batchfile": struct{}{},
-	"fish":      struct{}{},
-	"Tcsh":      struct{}{},
-	"SaltStack": struct{}{},
-	"PLpgSQL":   struct{}{},
+	"Ant Build System": struct{}{},
+	"Batchfile":        struct{}{},
+	"Dockerfile":       struct{}{},
+	"Graphviz (DOT)":   struct{}{},
+	"Makefile":         struct{}{},
+	"Markdown":         struct{}{},
+	"PLpgSQL":          struct{}{},
+	"SaltStack":        struct{}{},
+	"Tcsh":             struct{}{},
+	"fish":             struct{}{},
 }
