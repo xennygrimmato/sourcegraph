@@ -49,6 +49,7 @@
 @value c_cool-pale-gray rgba(213, 229, 242, 1);
 @value c_cool-pale-gray-8 rgba(213, 229, 242, 0.8);
 @value c_cool-pale-gray-5 rgba(213, 229, 242, 0.5);
+@value c_cool-pale-gray-3 hsla(207, 53%, 98%, 1);
 @value c_cool-pale-gray-2 rgba(213, 229, 242, 0.2);
 @value c_cool-pale-gray-1 rgba(213, 229, 242, 0.1);
 
@@ -214,6 +215,7 @@
 
 .bg-cool-pale-gray { background-color: c_cool-pale-gray; }
 .bg-cool-pale-gray-8 { background-color: c_cool-pale-gray-8; }
+.bg-cool-pale-gray-3 { background-color: c_cool-pale-gray-3; }
 .bg-cool-pale-gray-2 { background-color: c_cool-pale-gray-2; }
 .bg-cool-pale-gray-1 { background-color: c_cool-pale-gray-1; }
 
