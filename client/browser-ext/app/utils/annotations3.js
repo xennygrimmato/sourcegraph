@@ -24,8 +24,6 @@ export default function addAnnotations(el, anns) {
 		// This function is not idempotent; don't let it run twice.
 		return;
 	}
-	console.log('hello')
-
 	applyAnnotations(el, indexAnnotations(anns));
 
 	// Prevent double annotation on any file by adding some hidden
@@ -53,21 +51,26 @@ function indexAnnotations(anns) {
 
 // pre/post processing steps for strings
 function preProcess(str) {
-	return utf8.encode(_.unescape(str));
+	return utf8.encode(str);
 }
 
 function postProcess(str) {
-	return utf8.decode(_.escape(str));
+	return utf8.decode(str);
 }
 
 function convertTextNode(node, annsByStartByte, currOffset) {
 	let innerHTML = [];
 	let bytesConsumed = 0;
 
-	for (let char of preProcess(node.wholeText).split("")) {
+
+	const nodeText = preProcess(node.wholeText).split("");
+	console.log(nodeText, "currentOffset", currOffset);
+	for (let char of nodeText) {
+		if (bytesConsumed >= nodeText.length) break;
+
 		let matchDetails = annsByStartByte[currOffset + bytesConsumed];
 		if (!matchDetails) {
-			innerHTML.push(char);
+			innerHTML.push(_.escape(char));
 			++bytesConsumed;
 			continue;
 		}
@@ -76,11 +79,12 @@ function convertTextNode(node, annsByStartByte, currOffset) {
 		const url = defIsOnGitHub ? urlToDef(matchDetails.URL) : `https://sourcegraph.com${matchDetails.URL}`;
 
 		const annLen = matchDetails.EndByte - matchDetails.StartByte;
-		innerHTML.push(`<a href="${url}" ${defIsOnGitHub ? "data-sourcegraph-ref" : "target=tab"} data-src="https://sourcegraph.com${matchDetails.URL}" class=${styles.sgdef}>${nodeText.slice(byte + bytesConsumed, byte + bytesConsumed + annLen).join("")}`);
-		byte += annLen;
+		innerHTML.push(`<a href="${url}" ${defIsOnGitHub ? "data-sourcegraph-ref" : "target=tab"} data-src="https://sourcegraph.com${matchDetails.URL}" class=${styles.sgdef}>${nodeText.slice(bytesConsumed, bytesConsumed + annLen).join("")}</a>`);
+		bytesConsumed += annLen;
 	}
 
-	return {result: postProcess(r.innerHTML.join("")), bytesConsumed};
+	console.log("converted text node", node, postProcess(innerHTML.join("")))
+	return {result: postProcess(innerHTML.join("")), bytesConsumed};
 }
 
 function convertElementNode(node, annsByStartByte, currOffset) {
@@ -88,17 +92,26 @@ function convertElementNode(node, annsByStartByte, currOffset) {
 	let bytesConsumed = 0;
 
 	for (let node of iterable(node.childNodes)) {
-		const r2 = convertNode(node, annsByStartByte, currOffset + bytesConsumed);
+		const r2 = convertNode(node, annsByStartByte, currOffset + bytesConsumed, true);
 		innerHTML.push(r2.result);
 		bytesConsumed += r2.bytesConsumed;
+		// if (node.innerText === "\n") {
+		// 	console.log("here here");
+		// 	console.log("converted element node", {node}, wrap ? `${outerTag}${node.innerText}${endingTag}` : );
+		// 	return {result: `${outerTag}${node.innerText}${endingTag}`, bytesConsumed: 0};
+		// }
 	}
 
 	return {result: postProcess(innerHTML.join("")), bytesConsumed};
 }
 
-function convertNode(node, annsByStartByte, currOffset) {
+function convertNode(node, annsByStartByte, currOffset, wrap) {
 	if (node.nodeType === Node.ELEMENT_NODE) {
-		return convertElementNode(node, annsByStartByte, currOffset);
+		const outerTag = node.outerHTML.slice(0, node.outerHTML.indexOf(node.innerHTML));
+		const endingTag = node.outerHTML.slice(node.outerHTML.indexOf(node.innerHTML) + node.innerHTML.length, node.outerHTML.length);
+		const {result, bytesConsumed} = convertElementNode(node, annsByStartByte, currOffset);
+		console.log("converted element node", {node}, wrap ? `${outerTag}${result}${endingTag}` : result, bytesConsumed);
+		return {result: wrap ? `${outerTag}${result}${endingTag}` : result, bytesConsumed};
 	} else if (node.nodeType === Node.TEXT_NODE) {
 		return convertTextNode(node, annsByStartByte, currOffset);
 	}
@@ -116,14 +129,24 @@ function iterable(elList) {
 function applyAnnotations(el, {annsByStartByte, annsByEndByte}) {
 	const table = el.querySelector("table");
 
+	console.log(annsByStartByte)
+
 	let currOffset = 0;
 	for (let i = 0; i < table.rows.length; ++i) {
 		const row = table.rows[i];
 		const line = row.cells[0].dataset.lineNumber;
 		const codeCell = row.cells[1];
 
-		const {result, bytesConsumed} = convertNode(codeCell, annsByStartByte, 0).result;
-		coseCell.outerHTML = result;
+		console.log("starting a row, curr offset is", currOffset)
+		const {result, bytesConsumed} = convertNode(codeCell, annsByStartByte, currOffset, false);
+		codeCell.innerHTML = result;
+		console.log("new code cell", codeCell.innerText, codeCell.textContent === "\n");
+		// if (codeCell.textContent === "\n") {
+		// 	console.log("doing it")
+		// } else {
+		// 	currOffset += 1;
+		// 	console.log("not doing it")
+		// }
 		currOffset += bytesConsumed;
 	}
 	// 	// manipulate the DOM asynchronously so the page doesn't freeze while large

@@ -5,7 +5,7 @@ import createLogger from "redux-logger";
 import storage from "../utils/storage";
 
 const enhancer = compose(
-	applyMiddleware(thunk/*, createLogger()*/),
+	applyMiddleware(thunk, createLogger()),
 	storage(),
 	window.devToolsExtension ? window.devToolsExtension() : (nope) => nope
 );

@@ -126,7 +126,7 @@ export default class BlobAnnotator extends React.Component {
 						EventLogger.logEvent("ViewPrivateCodeError");
 						console.error("To use the Sourcegraph Chrome extension on private code, sign in at https://sourcegraph.com and add your repositories.");
 					} else {
-						addAnnotations(el, json.Annotations);
+						addAnnotations(props.blobElement, json.Annotations);
 					}
 				}
 			}
