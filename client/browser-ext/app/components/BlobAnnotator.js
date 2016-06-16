@@ -2,7 +2,7 @@ import React from "react";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
 
-import addAnnotations from "../utils/annotations";
+import addAnnotations from "../utils/annotations3";
 import addAnnotationsForPullRequest from "../utils/annotations2";
 
 import {supportsAnnotatingFile, parseGitHubURL} from "../utils";
@@ -115,10 +115,10 @@ export default class BlobAnnotator extends React.Component {
 	}
 
 	_addAnnotations(props) {
-		const srclibDataVersion = props.srclibDataVersion.content[keyFor(props.repo, props.rev, props.path)];
-		if (srclibDataVersion && srclibDataVersion.CommitID) {
-			const annotations = props.annotations.content[keyFor(props.repo, srclibDataVersion.CommitID, props.path)];
-			if (annotations) {
+		const dataVer = props.srclibDataVersion.content[keyFor(props.repo, props.rev, props.path)];
+		if (dataVer && dataVer.CommitID) {
+			const json = props.annotations.content[keyFor(props.repo, dataVer.CommitID, props.path)];
+			if (json) {
 				// TODO: use the blobElement passed as prop.
 				let fileElem = document.querySelector(".file .blob-wrapper");
 				if (fileElem) {
@@ -126,7 +126,7 @@ export default class BlobAnnotator extends React.Component {
 						EventLogger.logEvent("ViewPrivateCodeError");
 						console.error("To use the Sourcegraph Chrome extension on private code, sign in at https://sourcegraph.com and add your repositories.");
 					} else {
-						addAnnotations(annotations);
+						addAnnotations(el, json.Annotations);
 					}
 				}
 			}
