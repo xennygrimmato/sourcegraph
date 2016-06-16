@@ -19,15 +19,16 @@ describe("actions", () => {
 	const defPath = "defPath";
 	const query = "query";
 
-	const srclibDataVersionAPI = `https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path}`;
-	const srclibDataVersion = {CommitID: "foo"};
+	const dataVer = "dataVer";
+	const srclibDataVersionAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${rev}/-/srclib-data-version?Path=${path}`;
+	const srclibDataVersion = {CommitID: dataVer};
 
 	function errorResponse(status, url) {
 		return {response: {status, url}};
 	}
 
 	it("setAccessToken", () => {
-		expect(actions.setAccessToken("foo")).to.eql({type: types.SET_ACCESS_TOKEN, token: "foo"});
+		expect(actions.setAccessToken("token")).to.eql({type: types.SET_ACCESS_TOKEN, token: "token"});
 	});
 
 	it("setRepoRev", () => {
@@ -63,14 +64,14 @@ describe("actions", () => {
 	});
 
 	describe("refreshVCS", () => {
-		const refreshVCSAPI = `https://sourcegraph.com/.api/repos/${repo}/-/refresh`;
+		const refreshVCSAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}/-/refresh`;
 		function assertExpectedActions(initStore, expectedActions) {
 			let store = mockStore(initStore);
 		    return store.dispatch(actions.refreshVCS(repo))
 		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
 		}
 
-		it("completes successfully", () => {
+		it("200s", () => {
 			fetchMock.mock(refreshVCSAPI, "POST", 200);
 		    return assertExpectedActions({}, [{type: types.REFRESH_VCS}]);
 		});
@@ -89,7 +90,7 @@ describe("actions", () => {
 		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
 		}
 
-		it("completes successfully", () => {
+		it("200s", () => {
 			fetchMock.mock(repoCreateAPI, "POST", 200);
 		    return assertExpectedActions({createdRepos: {}}, [{type: types.CREATED_REPO, repo}]);
 		});
@@ -99,7 +100,7 @@ describe("actions", () => {
 		    return assertExpectedActions({createdRepos: {}}, [{type: types.CREATED_REPO, repo}]);
 		});
 
-		it("noops when repo is already created (and cached)", () => {
+		it("noops when status is cached", () => {
 			return assertExpectedActions({createdRepos: {[repo]: true}}, []);
 		});
 	});
@@ -111,7 +112,7 @@ describe("actions", () => {
 		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
 		}
 
-		it("resolves", () => {
+		it("200s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion);
 
 		    return assertExpectedActions({
@@ -133,7 +134,7 @@ describe("actions", () => {
 		    ]);
 		});
 
-		it("noops when srclib data version is cached", () => {
+		it("noops when dataVer is cached", () => {
 			return assertExpectedActions({
 				srclibDataVersion: {content: {[keyFor(repo, rev, path)]: srclibDataVersion}, fetches: {}, timestamps: {}}
 			}, []);
@@ -141,7 +142,7 @@ describe("actions", () => {
 	});
 
 	describe("getDefs", () => {
-		const defsAPI = `https://sourcegraph.com/.api/defs?RepoRevs=${encodeURIComponent(repo)}@${encodeURIComponent("foo")}&Nonlocal=true&Query=${encodeURIComponent(query)}&FilePathPrefix=${path ? encodeURIComponent(path) : ""}`;
+		const defsAPI = `https://sourcegraph.com/.api/defs?RepoRevs=${encodeURIComponent(repo)}@${dataVer}&Nonlocal=true&Query=${query}&FilePathPrefix=${path}`;
 		function assertExpectedActions(initStore, expectedActions) {
 			let store = mockStore(initStore);
 		    return store.dispatch(actions.getDefs(repo, rev, path, query))
@@ -157,8 +158,8 @@ describe("actions", () => {
 		    }, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
 		    	{type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json: srclibDataVersion},
-		    	{type: types.WANT_DEFS, repo, rev: "foo", path, query},
-		    	{type: types.FETCHED_DEFS, repo, rev: "foo", path, query, json: {Defs: []}},
+		    	{type: types.WANT_DEFS, repo, rev: dataVer, path, query},
+		    	{type: types.FETCHED_DEFS, repo, rev: dataVer, path, query, json: {Defs: []}},
 		    ]);
 		});
 
@@ -171,8 +172,8 @@ describe("actions", () => {
 		    }, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
 		    	{type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json: srclibDataVersion},
-		    	{type: types.WANT_DEFS, repo, rev: "foo", path, query},
-		    	{type: types.FETCHED_DEFS, repo, rev: "foo", path, query, err: errorResponse(404, defsAPI)},
+		    	{type: types.WANT_DEFS, repo, rev: dataVer, path, query},
+		    	{type: types.FETCHED_DEFS, repo, rev: dataVer, path, query, err: errorResponse(404, defsAPI)},
 		    ]);
 		});
 
@@ -180,7 +181,7 @@ describe("actions", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion);
 
 			return assertExpectedActions({
-				defs: {content: {[keyFor(repo, "foo", path, query)]: {Defs: []}}, fetches: {}, timestamps: {}},
+				defs: {content: {[keyFor(repo, dataVer, path, query)]: {Defs: []}}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 			}, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
@@ -190,7 +191,7 @@ describe("actions", () => {
 	});
 
 	describe("getDef", () => {
-		const defAPI = `https://sourcegraph.com/.api/repos/${repo}@${rev}/-/def/${defPath}?ComputeLineRange=true`;
+		const defAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${rev}/-/def/${defPath}?ComputeLineRange=true`;
 		function assertExpectedActions(initStore, expectedActions) {
 			let store = mockStore(initStore);
 		    return store.dispatch(actions.getDef(repo, rev, defPath))
@@ -227,7 +228,7 @@ describe("actions", () => {
 	});
 
 	describe("getAnnotations", () => {
-		const annotationsAPI = `https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${encodeURIComponent(repo)}&Entry.RepoRev.CommitID=${encodeURIComponent("foo")}&Entry.Path=${encodeURIComponent(path)}&Range.StartByte=0&Range.EndByte=0`;
+		const annotationsAPI = `https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${encodeURIComponent(repo)}&Entry.RepoRev.CommitID=${dataVer}&Entry.Path=${path}&Range.StartByte=0&Range.EndByte=0`;
 		function assertExpectedActions(initStore, expectedActions) {
 			let store = mockStore(initStore);
 		    return store.dispatch(actions.getAnnotations(repo, rev, path))
@@ -243,8 +244,8 @@ describe("actions", () => {
 		    }, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
 		    	{type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json: srclibDataVersion},
-		    	{type: types.WANT_ANNOTATIONS, repo, rev: "foo", path},
-		    	{type: types.FETCHED_ANNOTATIONS, repo, rev: "foo", path, json: {Annotations: []}},
+		    	{type: types.WANT_ANNOTATIONS, repo, rev: dataVer, path},
+		    	{type: types.FETCHED_ANNOTATIONS, repo, rev: dataVer, path, json: {Annotations: []}},
 		    ]);
 		});
 
@@ -257,8 +258,8 @@ describe("actions", () => {
 		    }, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
 		    	{type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json: srclibDataVersion},
-		    	{type: types.WANT_ANNOTATIONS, repo, rev: "foo", path},
-		    	{type: types.FETCHED_ANNOTATIONS, repo, rev: "foo", path, err: errorResponse(404, annotationsAPI)},
+		    	{type: types.WANT_ANNOTATIONS, repo, rev: dataVer, path},
+		    	{type: types.FETCHED_ANNOTATIONS, repo, rev: dataVer, path, err: errorResponse(404, annotationsAPI)},
 		    ]);
 		});
 
@@ -266,7 +267,7 @@ describe("actions", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion);
 
 			return assertExpectedActions({
-				defs: {content: {[keyFor(repo, "foo", path, query)]: {Annotations: []}}, fetches: {}, timestamps: {}},
+				defs: {content: {[keyFor(repo, dataVer, path, query)]: {Annotations: []}}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 			}, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
