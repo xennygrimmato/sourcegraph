@@ -8,7 +8,7 @@ browser-ext
 │	└── actions <-- methods to fetch from sourcegraph API & change state
 │	└── analytics <-- user event logger
 │	└── components <-- "receive" state from reducers as and re-render whenever a property it subscribes to
-│				 		are updated
+│						are updated
 │	└── constants <-- the names given to actions
 │	└── reducers <-- "holder" of current state: functions change current state when actions are dispatched
 │	└── store  <-- "persistence" of current state: browser local storage automatically syncs reducer state;
@@ -20,7 +20,7 @@ browser-ext
 │		└── background
 │			└── inject.js <-- for development only (hot reloading)
 │			└── storage.js <-- wrapper for chrome.storage get/set; necessary due to differences in
-│				 				Firefox/Chrome security models
+│								Firefox/Chrome security models
 │		└── background.js <-- loads scripts in ./background
 │		└── inject.js <-- injects app/components onto the page
 │	└── views <- these are just dumb script holders; jade templating is used to get build-time information
