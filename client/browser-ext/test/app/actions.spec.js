@@ -63,59 +63,50 @@ describe("actions", () => {
 		expect(actions.expireDefs(repo, rev, path, query)).to.eql({type: types.EXPIRE_DEFS, repo, rev, path, query});
 	});
 
+	function assertAsyncActionsDispatched(action, initStore, expectedActions) {
+		let store = mockStore(initStore);
+	    return store.dispatch(action)
+	    	.then(() => expect(store.getActions()).to.eql(expectedActions));
+	}
+
 	describe("refreshVCS", () => {
 		const refreshVCSAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}/-/refresh`;
-		function assertExpectedActions(initStore, expectedActions) {
-			let store = mockStore(initStore);
-		    return store.dispatch(actions.refreshVCS(repo))
-		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
-		}
 
 		it("200s", () => {
 			fetchMock.mock(refreshVCSAPI, "POST", 200);
-		    return assertExpectedActions({}, [{type: types.REFRESH_VCS}]);
+		    return assertAsyncActionsDispatched(actions.refreshVCS(repo), {}, [{type: types.REFRESH_VCS}]);
 		});
 
 		it("404s", () => {
 			fetchMock.mock(refreshVCSAPI, "POST", 404);
-		    return assertExpectedActions({}, [{type: types.REFRESH_VCS}]);
+		    return assertAsyncActionsDispatched(actions.refreshVCS(repo), {}, [{type: types.REFRESH_VCS}]);
 		});
 	});
 
 	describe("ensureRepoExists", () => {
 		const repoCreateAPI = `https://sourcegraph.com/.api/repos`;
-		function assertExpectedActions(initStore, expectedActions) {
-			let store = mockStore(initStore);
-		    return store.dispatch(actions.ensureRepoExists(repo))
-		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
-		}
 
 		it("200s", () => {
 			fetchMock.mock(repoCreateAPI, "POST", 200);
-		    return assertExpectedActions({createdRepos: {}}, [{type: types.CREATED_REPO, repo}]);
+		    return assertAsyncActionsDispatched(actions.ensureRepoExists(repo), {createdRepos: {}}, [{type: types.CREATED_REPO, repo}]);
 		});
 
 		it("409s", () => {
 			fetchMock.mock(repoCreateAPI, "POST", 409);
-		    return assertExpectedActions({createdRepos: {}}, [{type: types.CREATED_REPO, repo}]);
+		    return assertAsyncActionsDispatched(actions.ensureRepoExists(repo), {createdRepos: {}}, [{type: types.CREATED_REPO, repo}]);
 		});
 
 		it("noops when status is cached", () => {
-			return assertExpectedActions({createdRepos: {[repo]: true}}, []);
+			return assertAsyncActionsDispatched(actions.ensureRepoExists(repo), {createdRepos: {[repo]: true}}, []);
 		});
 	});
 
 	describe("getSrclibDataVersion", () => {
-		function assertExpectedActions(initStore, expectedActions) {
-			let store = mockStore(initStore);
-		    return store.dispatch(actions.getSrclibDataVersion(repo, rev, path))
-		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
-		}
 
 		it("200s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion);
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getSrclibDataVersion(repo, rev, path), {
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}}
 		    }, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
@@ -126,7 +117,7 @@ describe("actions", () => {
 		it("404s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", 404);
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getSrclibDataVersion(repo, rev, path), {
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}}
 		    }, [
 		    	{type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path},
@@ -135,7 +126,7 @@ describe("actions", () => {
 		});
 
 		it("noops when dataVer is cached", () => {
-			return assertExpectedActions({
+			return assertAsyncActionsDispatched(actions.getSrclibDataVersion(repo, rev, path), {
 				srclibDataVersion: {content: {[keyFor(repo, rev, path)]: srclibDataVersion}, fetches: {}, timestamps: {}}
 			}, []);
 		});
@@ -143,16 +134,11 @@ describe("actions", () => {
 
 	describe("getDefs", () => {
 		const defsAPI = `https://sourcegraph.com/.api/defs?RepoRevs=${encodeURIComponent(repo)}@${dataVer}&Nonlocal=true&Query=${query}&FilePathPrefix=${path}`;
-		function assertExpectedActions(initStore, expectedActions) {
-			let store = mockStore(initStore);
-		    return store.dispatch(actions.getDefs(repo, rev, path, query))
-		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
-		}
 
 		it("200s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion).mock(defsAPI, "GET", {Defs: []});
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getDefs(repo, rev, path, query), {
 		    	defs: {content: {}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 		    }, [
@@ -166,7 +152,7 @@ describe("actions", () => {
 		it("404s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion).mock(defsAPI, "GET", 404);
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getDefs(repo, rev, path, query), {
 		    	defs: {content: {}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 		    }, [
@@ -180,7 +166,7 @@ describe("actions", () => {
 		it("noops when defs are cached", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion);
 
-			return assertExpectedActions({
+			return assertAsyncActionsDispatched(actions.getDefs(repo, rev, path, query), {
 				defs: {content: {[keyFor(repo, dataVer, path, query)]: {Defs: []}}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 			}, [
@@ -192,16 +178,11 @@ describe("actions", () => {
 
 	describe("getDef", () => {
 		const defAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${rev}/-/def/${defPath}?ComputeLineRange=true`;
-		function assertExpectedActions(initStore, expectedActions) {
-			let store = mockStore(initStore);
-		    return store.dispatch(actions.getDef(repo, rev, defPath))
-		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
-		}
 
 		it("200s", () => {
 			fetchMock.mock(defAPI, "GET", {});
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getDef(repo, rev, defPath), {
 		    	def: {content: {}, fetches: {}, timestamps: {}},
 		    }, [
 		    	{type: types.WANT_DEF, repo, rev, defPath},
@@ -212,7 +193,7 @@ describe("actions", () => {
 		it("404s", () => {
 			fetchMock.mock(defAPI, "GET", 404);
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getDef(repo, rev, defPath), {
 		    	def: {content: {}, fetches: {}, timestamps: {}},
 		    }, [
 		    	{type: types.WANT_DEF, repo, rev, defPath},
@@ -221,7 +202,7 @@ describe("actions", () => {
 		});
 
 		it("noops when def is cached", () => {
-			return assertExpectedActions({
+			return assertAsyncActionsDispatched(actions.getDef(repo, rev, defPath), {
 				def: {content: {[keyFor(repo, rev, defPath)]: {}}, fetches: {}, timestamps: {}},
 			}, []);
 		});
@@ -229,16 +210,11 @@ describe("actions", () => {
 
 	describe("getAnnotations", () => {
 		const annotationsAPI = `https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${encodeURIComponent(repo)}&Entry.RepoRev.CommitID=${dataVer}&Entry.Path=${path}&Range.StartByte=0&Range.EndByte=0`;
-		function assertExpectedActions(initStore, expectedActions) {
-			let store = mockStore(initStore);
-		    return store.dispatch(actions.getAnnotations(repo, rev, path))
-		    	.then(() => expect(store.getActions()).to.eql(expectedActions));
-		}
 
 		it("200s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion).mock(annotationsAPI, "GET", {Annotations: []});
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getAnnotations(repo, rev, path), {
 		    	annotations: {content: {}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 		    }, [
@@ -252,7 +228,7 @@ describe("actions", () => {
 		it("404s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion).mock(annotationsAPI, "GET", 404);
 
-		    return assertExpectedActions({
+		    return assertAsyncActionsDispatched(actions.getAnnotations(repo, rev, path), {
 		    	annotations: {content: {}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 		    }, [
@@ -266,7 +242,7 @@ describe("actions", () => {
 		it("noops when annotations are cached", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion);
 
-			return assertExpectedActions({
+			return assertAsyncActionsDispatched(actions.getAnnotations(repo, rev, path), {
 				defs: {content: {[keyFor(repo, dataVer, path, query)]: {Annotations: []}}, fetches: {}, timestamps: {}},
 		    	srclibDataVersion: {content: {}, fetches: {}, timestamps: {}},
 			}, [
