@@ -25,7 +25,6 @@ function getSearchFrame() {
 function createSearchFrame() {
 	let searchFrame = getSearchFrame();
 	if (!searchFrame) {
-		console.log("not search frame")
 		searchFrame = document.createElement("div");
 		searchFrame.id = "sourcegraph-search-frame";
 		injectComponent(<SearchFrame />, searchFrame);
@@ -34,7 +33,7 @@ function createSearchFrame() {
 }
 
 function toggleSearchFrame() {
-	EventLogger.logEvent("ToggleSearchInput", {visibility: isSearchAppShown ? "hidden" : "visible"});
+	// EventLogger.logEvent("ToggleSearchInput", {visibility: isSearchAppShown ? "hidden" : "visible"});
 	function focusInput() {
 		const el = document.querySelector(".sg-input");
 		if (el) setTimeout(() => el.focus()); // Auto focus input, with slight delay so 'T' doesn't appear
@@ -128,6 +127,7 @@ function injectBackgroundApp() {
 		let backgroundContainer = document.createElement("div");
 		backgroundContainer.id = "sourcegraph-app-background";
 		backgroundContainer.style.display = "none";
+		document.body.appendChild(backgroundContainer);
 		injectComponent(<Background />, backgroundContainer);
 	}
 }
@@ -165,6 +165,14 @@ function injectModules() {
 	injectSearchApp();
 	injectBuildIndicators();
 	injectBlobAnnotator();
+
+	// Add invisible div to the page to indicate injection has completed.
+	if (!document.getElementById("sourcegraph-app-bootstrap")) {
+		let el = document.createElement("div");
+		el.id = "sourcegraph-app-bootstrap";
+		el.style.display = "none";
+		document.body.appendChild(el);
+	}
 }
 
 window.addEventListener("load", injectModules);

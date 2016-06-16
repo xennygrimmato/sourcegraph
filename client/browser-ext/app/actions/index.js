@@ -24,36 +24,44 @@ export function setQuery(query) {
 	return {type: types.SET_QUERY, query};
 }
 
-export function getSrclibDataVersion(repo, rev, path) {
-	return function (dispatch, getState) {
-		const state = getState();
-		// Before fetching defs, get the srclib data version.
-		const srclibDataVersion = state.srclibDataVersion.content[keyFor(repo, rev, path)];
-		if (srclibDataVersion) return Promise.resolve();
-
-		dispatch({type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path})
-		return fetch(`https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path ? encodeURIComponent(path) : ""}`)
-			.then((json) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json}); return json; })
-			.catch((err) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, err}); throw err; });
-	}
+export function expireAnnotations(repo, rev, path) {
+	return {type: types.EXPIRE_ANNOTATIONS, repo, rev, path};
 }
 
-function fetchSrclibDataVersion(dispatch, currJson, repo, rev, path) {
-	let promise;
-	// TODO: handle inflight / errored fetches of srclibDataVersion.
-	if (currJson) {
-		if (currJson.CommitID) {
-			promise = Promise.resolve(currJson);
-		} else {
-			promise = Promise.reject(new Error("no srclib data version"));
-		}
-	} else {
-		dispatch({type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path})
-		promise = fetch(`https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path ? encodeURIComponent(path) : ""}`)
-			.then((json) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json}); return json; })
-			.catch((err) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, err}); throw err; });
+export function expireSrclibDataVersion(repo, rev, path) {
+	return {type: types.EXPIRE_SRCLIB_DATA_VERSION, repo, rev, path};
+}
+
+export function expireDef(repo, rev, defPath) {
+	return {type: types.EXPIRE_DEF, repo, rev, defPath};
+}
+
+export function expireDefs(repo, rev, path, query) {
+	return {type: types.EXPIRE_DEFS, repo, rev, path, query};
+}
+
+// Utility method to fetch srclib data version, usually prior to hitting another API
+// (e.g. fetching annotations requires fetching srclib data version first).
+// It will dispatch actions unless a srclibDataVersion is already cached in browser
+// state for the specified repo/rev/path, and return a Promise.
+function _fetchSrclibDataVersion(dispatch, state, repo, rev, path) {
+	const srclibDataVersion = state.srclibDataVersion.content[keyFor(repo, rev, path)];
+	if (srclibDataVersion) {
+		if (srclibDataVersion.CommitID) return Promise.resolve(srclibDataVersion);
+		return Promise.reject(new Error("missing srclib data version CommitID"));
 	}
-	return promise;
+
+	dispatch({type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path})
+	return fetch(`https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path ? encodeURIComponent(path) : ""}`)
+		.then((json) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json}); return json; })
+		.catch((err) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, err}); throw err; });
+}
+
+export function getSrclibDataVersion(repo, rev, path) {
+	return function (dispatch, getState) {
+		return _fetchSrclibDataVersion(dispatch, getState(), repo, rev, path)
+			.catch((err) => {}); // no error handling
+	}
 }
 
 export function getDef(repo, rev, defPath) {
@@ -84,15 +92,10 @@ export function getDef(repo, rev, defPath) {
 export function getDefs(repo, rev, path, query) {
 	return function (dispatch, getState) {
 		const state = getState();
-		// Before fetching defs, get the srclib data version.
-		const srclibDataVersion = state.srclibDataVersion.content[keyFor(repo, rev, path)];
-		if (srclibDataVersion && srclibDataVersion.CommitID) {
-			if (state.defs.content[keyFor(repo, srclibDataVersion.CommitID, path, query)]) return Promise.resolve(); // nothing to do; already have defs
-		}
-
-		fetchSrclibDataVersion(dispatch, srclibDataVersion, repo, rev, path).then((json) => {
+		return _fetchSrclibDataVersion(dispatch, state, repo, rev, path).then((json) => {
 			rev = json.CommitID;
 			if (state.defs.content[keyFor(repo, rev, path, query)]) return Promise.resolve(); // nothing to do; already have defs
+
 			dispatch({type: types.WANT_DEFS, repo, rev, path, query})
 			return fetch(`https://sourcegraph.com/.api/defs?RepoRevs=${encodeURIComponent(repo)}@${encodeURIComponent(rev)}&Nonlocal=true&Query=${encodeURIComponent(query)}&FilePathPrefix=${path ? encodeURIComponent(path) : ""}`)
 				.then((json) => dispatch({type: types.FETCHED_DEFS, repo, rev, path, query, json}))
@@ -104,36 +107,16 @@ export function getDefs(repo, rev, path, query) {
 export function getAnnotations(repo, rev, path) {
 	return function (dispatch, getState) {
 		const state = getState();
-		const srclibDataVersion = state.srclibDataVersion.content[keyFor(repo, rev, path)];
-		if (srclibDataVersion && srclibDataVersion.CommitID) {
-			if (state.annotations.content[keyFor(repo, srclibDataVersion.CommitID, path)]) return Promise.resolve(); // nothing to do; already have annotations
-		}
-
-		fetchSrclibDataVersion(dispatch, srclibDataVersion, repo, rev, path).then((json) => {
+		return _fetchSrclibDataVersion(dispatch, state, repo, rev, path).then((json) => {
 			rev = json.CommitID;
 			if (state.annotations.content[keyFor(repo, rev, path)]) return Promise.resolve(); // nothing to do; already have annotations
+
 			dispatch({type: types.WANT_ANNOTATIONS, repo, rev, path});
 			return fetch(`https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${encodeURIComponent(repo)}&Entry.RepoRev.CommitID=${encodeURIComponent(rev)}&Entry.Path=${encodeURIComponent(path)}&Range.StartByte=0&Range.EndByte=0`)
 				.then((json) => dispatch({type: types.FETCHED_ANNOTATIONS, repo, rev, path, json}))
 				.catch((err) => dispatch({type: types.FETCHED_ANNOTATIONS, repo, rev, path, err}));
 		}).catch((err) => {}); // no error handling
 	}
-}
-
-export function expireAnnotations(repo, rev, path) {
-	return {type: types.EXPIRE_ANNOTATIONS, repo, rev, path};
-}
-
-export function expireSrclibDataVersion(repo, rev, path) {
-	return {type: types.EXPIRE_SRCLIB_DATA_VERSION, repo, rev, path};
-}
-
-export function expireDef(repo, rev, defPath) {
-	return {type: types.EXPIRE_DEF, repo, rev, defPath};
-}
-
-export function expireDefs(repo, rev, path, query) {
-	return {type: types.EXPIRE_DEFS, repo, rev, path, query};
 }
 
 export function refreshVCS(repo) {

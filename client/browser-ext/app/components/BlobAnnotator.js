@@ -5,7 +5,7 @@ import {connect} from "react-redux";
 import addAnnotations from "../utils/annotations";
 import addAnnotationsForPullRequest from "../utils/annotations2";
 
-import {supportsAnnotatingFile} from "../utils";
+import {supportsAnnotatingFile, parseGitHubURL} from "../utils";
 import * as Actions from "../actions";
 import {keyFor} from "../reducers/helpers";
 import EventLogger from "../analytics/EventLogger";
