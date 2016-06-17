@@ -20,7 +20,7 @@ describe("actions", () => {
 	const query = "query";
 
 	const dataVer = "dataVer";
-	const srclibDataVersionAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${rev}/-/srclib-data-version?Path=${path}`;
+	const srclibDataVersionAPI = `https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path}`;
 	const srclibDataVersion = {CommitID: dataVer};
 
 	function errorResponse(status, url) {
@@ -70,7 +70,7 @@ describe("actions", () => {
 	}
 
 	describe("refreshVCS", () => {
-		const refreshVCSAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}/-/refresh`;
+		const refreshVCSAPI = `https://sourcegraph.com/.api/repos/${repo}/-/refresh`;
 
 		it("200s", () => {
 			fetchMock.mock(refreshVCSAPI, "POST", 200);
@@ -133,7 +133,7 @@ describe("actions", () => {
 	});
 
 	describe("getDefs", () => {
-		const defsAPI = `https://sourcegraph.com/.api/defs?RepoRevs=${encodeURIComponent(repo)}@${dataVer}&Nonlocal=true&Query=${query}&FilePathPrefix=${path}`;
+		const defsAPI = `https://sourcegraph.com/.api/defs?RepoRevs=${repo}@${dataVer}&Nonlocal=true&Query=${query}&FilePathPrefix=${path}`;
 
 		it("200s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion).mock(defsAPI, "GET", {Defs: []});
@@ -177,7 +177,7 @@ describe("actions", () => {
 	});
 
 	describe("getDef", () => {
-		const defAPI = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${rev}/-/def/${defPath}?ComputeLineRange=true`;
+		const defAPI = `https://sourcegraph.com/.api/repos/${repo}@${rev}/-/def/${defPath}?ComputeLineRange=true`;
 
 		it("200s", () => {
 			fetchMock.mock(defAPI, "GET", {});
@@ -209,7 +209,7 @@ describe("actions", () => {
 	});
 
 	describe("getAnnotations", () => {
-		const annotationsAPI = `https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${encodeURIComponent(repo)}&Entry.RepoRev.CommitID=${dataVer}&Entry.Path=${path}&Range.StartByte=0&Range.EndByte=0`;
+		const annotationsAPI = `https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${repo}&Entry.RepoRev.CommitID=${dataVer}&Entry.Path=${path}&Range.StartByte=0&Range.EndByte=0`;
 
 		it("200s", () => {
 			fetchMock.mock(srclibDataVersionAPI, "GET", srclibDataVersion).mock(annotationsAPI, "GET", {Annotations: []});

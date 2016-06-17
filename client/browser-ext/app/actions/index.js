@@ -52,7 +52,7 @@ function _fetchSrclibDataVersion(dispatch, state, repo, rev, path) {
 	}
 
 	dispatch({type: types.WANT_SRCLIB_DATA_VERSION, repo, rev, path})
-	return fetch(`https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${encodeURIComponent(rev)}/-/srclib-data-version?Path=${path ? encodeURIComponent(path) : ""}`)
+	return fetch(`https://sourcegraph.com/.api/repos/${repo}@${rev}/-/srclib-data-version?Path=${path || ""}`)
 		.then((json) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, json}); return json; })
 		.catch((err) => { dispatch({type: types.FETCHED_SRCLIB_DATA_VERSION, repo, rev, path, err}); throw err; });
 }
@@ -74,7 +74,7 @@ export function getDef(repo, rev, defPath) {
 		// and immediately go there instead of going via the repo homepage.
 		//
 		// NOTE: Need to keep this in sync with the defCache key structure.
-		const cacheKey = `https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}/-/def/${encodeURIComponent(defPath)}?ComputeLineRange=true&Doc=true`;
+		const cacheKey = `https://sourcegraph.com/.api/repos/${repo}/-/def/${defPath}?ComputeLineRange=true&Doc=true`;
 		if (defCache[cacheKey]) {
 			// Dispatch FETCHED_DEF so it gets added to the normal def.content
 			// for next time.
@@ -83,7 +83,7 @@ export function getDef(repo, rev, defPath) {
 		}
 
 		dispatch({type: types.WANT_DEF, repo, rev, defPath})
-		return fetch(`https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}@${encodeURIComponent(rev)}/-/def/${encodeURIComponent(defPath)}?ComputeLineRange=true`)
+		return fetch(`https://sourcegraph.com/.api/repos/${repo}@${rev}/-/def/${defPath}?ComputeLineRange=true`)
 			.then((json) => dispatch({type: types.FETCHED_DEF, repo, rev, defPath, json}))
 			.catch((err) => dispatch({type: types.FETCHED_DEF, repo, rev, defPath, err}));
 	}
@@ -97,7 +97,7 @@ export function getDefs(repo, rev, path, query) {
 			if (state.defs.content[keyFor(repo, rev, path, query)]) return Promise.resolve(); // nothing to do; already have defs
 
 			dispatch({type: types.WANT_DEFS, repo, rev, path, query})
-			return fetch(`https://sourcegraph.com/.api/defs?RepoRevs=${encodeURIComponent(repo)}@${encodeURIComponent(rev)}&Nonlocal=true&Query=${encodeURIComponent(query)}&FilePathPrefix=${path ? encodeURIComponent(path) : ""}`)
+			return fetch(`https://sourcegraph.com/.api/defs?RepoRevs=${repo}@${rev}&Nonlocal=true&Query=${query}&FilePathPrefix=${path || ""}`)
 				.then((json) => dispatch({type: types.FETCHED_DEFS, repo, rev, path, query, json}))
 				.catch((err) => dispatch({type: types.FETCHED_DEFS, repo, rev, path, query, err}));
 		}).catch((err) => {}); // no error handling
@@ -112,7 +112,7 @@ export function getAnnotations(repo, rev, path) {
 			if (state.annotations.content[keyFor(repo, rev, path)]) return Promise.resolve(); // nothing to do; already have annotations
 
 			dispatch({type: types.WANT_ANNOTATIONS, repo, rev, path});
-			return fetch(`https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${encodeURIComponent(repo)}&Entry.RepoRev.CommitID=${encodeURIComponent(rev)}&Entry.Path=${encodeURIComponent(path)}&Range.StartByte=0&Range.EndByte=0`)
+			return fetch(`https://sourcegraph.com/.api/annotations?Entry.RepoRev.Repo=${repo}&Entry.RepoRev.CommitID=${rev}&Entry.Path=${path}&Range.StartByte=0&Range.EndByte=0`)
 				.then((json) => dispatch({type: types.FETCHED_ANNOTATIONS, repo, rev, path, json}))
 				.catch((err) => dispatch({type: types.FETCHED_ANNOTATIONS, repo, rev, path, err}));
 		}).catch((err) => {}); // no error handling
@@ -121,7 +121,7 @@ export function getAnnotations(repo, rev, path) {
 
 export function refreshVCS(repo) {
 	return function (dispatch) {
-		return fetch(`https://sourcegraph.com/.api/repos/${encodeURIComponent(repo)}/-/refresh`, {method: "POST"})
+		return fetch(`https://sourcegraph.com/.api/repos/${repo}/-/refresh`, {method: "POST"})
 			.then((json) => dispatch({type: types.REFRESH_VCS}))
 			.catch((err) => dispatch({type: types.REFRESH_VCS}));
 	}
