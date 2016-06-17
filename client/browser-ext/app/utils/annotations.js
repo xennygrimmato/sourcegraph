@@ -19,7 +19,6 @@ export default function addAnnotations(path, revSpec, el, anns, lineStartBytes) 
 		marker.style.display = "none";
 		el.appendChild(marker);
 	}
-	console.log("adding annotations", path, revSpec.rev);
 	_applyAnnotations(el, revSpec, indexAnnotations(anns).annsByStartByte, indexLineStartBytes(lineStartBytes));
 	_postProcess();
 }
@@ -33,7 +32,6 @@ function _postProcess() {
 }
 // _applyAnnotations is a helper function for addAnnotations
 export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startBytesByLine) {
-	console.log("startBytesByLine", startBytesByLine)
 	// The blob is represented by a table; the first column is the line number,
 	// the second is code. Each row is a line of code
 	const table = el.querySelector("table");
@@ -52,13 +50,15 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 		}
 
 		function addChar(cell, char) {
-			const blob = cell.querySelector(".blob-code-inner");
-			if (!blob.firstChild) {
-				blob.appendChild(document.createTextNode(char));
-			} else if (blob.firstChild.nodeType !== Node.TEXT_NODE) {
-				blob.insertBefore(document.createTextNode(char), blob.firstChild);
+			const innerBlob = cell.querySelector(".blob-code-inner");
+			if (!innerBlob) return;
+
+			if (!innerBlob.firstChild) {
+				innerBlob.appendChild(document.createTextNode(char));
+			} else if (innerBlob.firstChild.nodeType !== Node.TEXT_NODE) {
+				innerBlob.insertBefore(document.createTextNode(char), innerBlob.firstChild);
 			} else {
-				blob.firstChild.nodeValue = `${char}${blob.firstChild.nodeValue}`;
+				innerBlob.firstChild.nodeValue = `${char}${innerBlob.firstChild.nodeValue}`;
 			}
 		}
 
@@ -77,25 +77,20 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 			isAddition = codeCell.classList.contains("blob-code-addition");
 			isDeletion = codeCell.classList.contains("blob-code-deletion");
 			if (!isAddition && !isDeletion && !isBase) {
-				console.log("continuing (not base)");
 				continue; // careful; we don't need to put head AND base on unmodified parts
 			}
 			if (isDeletion && !isBase) {
-				console.log("continuing (deletion; not base)");
 				continue;
 			}
 			if (isAddition && isBase) {
-				console.log("continuing (addition; is base)");
 				continue;
 			}
 
 
 			if (isAddition) {
-				console.log("addition")
 				additions[i] = true;
 				removeLeadingChar(codeCell);
 			} else if (isDeletion) {
-				console.log("deletion")
 				deletions[i] = true;
 				removeLeadingChar(codeCell);
 			} else {
@@ -107,20 +102,14 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 			if (line === "..." || !line) {
 				continue;
 			}
-			console.log("line", line);
-			console.log("start bytes by line", startBytesByLine[line]);
 
 
-			console.log("code cell", codeCell)
 			let lineComment;
 			if (codeCell.children.length === 2) {
-				// console.log("removing line commend", codeCell, codeCell.children.length )
 				// The first element is the comment widget; keep a reference to it.
 				// let lineComment = codeCell.children[0]
-				// // console.log("line comment", lineComment);
 				// lineComments[i] = lineComment;
 				// codeCell.removeChild(lineComment);
-				// console.log("now code cell children length is", codeCell.children.length)
 			}
 
 
@@ -130,7 +119,6 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 		}
 
 		const offset = startBytesByLine[line];
-		console.log("offset before convert node", offset)
 
 		// result is the new (annotated) innerHTML of the code cell
 		const {result, bytesConsumed} = convertNode(codeCell, annsByStartByte, offset);
@@ -139,8 +127,13 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 		// code files are being annotated
 		let codeCell2 = codeCell;
 		setTimeout(() => {
-			console.log("got a linkified result", result.indexOf("<a") !== -1);
-			codeCell2.querySelector(".blob-code-inner").innerHTML = result;
+			const inner = codeCell2.querySelector(".blob-code-inner");
+			if (inner) {
+				inner.innerHTML = result;
+			} else {
+				codeCell2.innerHTML = result;
+			}
+			// codeCell2.querySelector(".blob-code-inner").innerHTML = result;
 			if (additions[i]) {
 				addChar(codeCell2, "+");
 			} else if (deletions[i]) {
@@ -244,10 +237,11 @@ export function convertNode(node, annsByStartByte, offset) {
 
 		const isTableCell = node.tagName === "TD";
 		if (isTableCell) {
-			// The initial table can have extraneous child (text) nodes of whitespace that shouldn't
+			// For diff blobs, the td can have extraneous child (text) nodes of whitespace that shouldn't
 			// be annotated; select the ".blob-code-inner" element which has only the code we
-			// care to annotate.
-			node = node.querySelector(".blob-code-inner");
+			// care to annotate. (For normal blobs, there is no .blob-code-inner).
+			const inner = node.querySelector(".blob-code-inner");
+			if (inner) node = inner;
 		}
 
 		c = isQuotedStringNode(node) ?
@@ -287,7 +281,6 @@ export function convertTextNode(node, annsByStartByte, offset) {
 	// Text could contain escaped character sequences (e.g. "&gt;") or UTF-8
 	// decoded characters (e.g. "˟") which need to be properly counted in terms of bytes.
 	const nodeText = utf8.encode(_.unescape(node.wholeText)).split("");
-	console.log("offset", offset, "node", node);
 	for (bytesConsumed = 0; bytesConsumed < nodeText.length;) {
 		const match = annGenerator(annsByStartByte, offset + bytesConsumed);
 		if (!match) {
@@ -299,8 +292,6 @@ export function convertTextNode(node, annsByStartByte, offset) {
 		bytesConsumed += match.annLen;
 	}
 
-	console.log("node text", nodeText);
-	console.log({result: utf8.decode(innerHTML.join("")), bytesConsumed});
 	return {result: utf8.decode(innerHTML.join("")), bytesConsumed};
 }
 
