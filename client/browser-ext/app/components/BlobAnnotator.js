@@ -89,7 +89,7 @@ export default class BlobAnnotator extends React.Component {
 			const dataVer = props.srclibDataVersion.content[keyFor(props.repo, rev, props.path)];
 			if (dataVer && dataVer.CommitID) {
 				const json = props.annotations.content[keyFor(props.repo, dataVer.CommitID, props.path)];
-				if (json && props.path === "main.go") {
+				if (json/* && props.path === "main.go"*/) {
 					console.log("annotations json", rev, json)
 					addAnnotations(props.path, {rev, isDelta, isBase}, props.blobElement, json.Annotations, json.LineStartBytes);
 				}

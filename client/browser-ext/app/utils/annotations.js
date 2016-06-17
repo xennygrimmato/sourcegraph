@@ -52,8 +52,14 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 		}
 
 		function addChar(cell, char) {
-			// const val = cell.querySelector(".blob-code-inner").firstChild.nodeValue;
-			// cell.querySelector(".blob-code-inner").firstChild.nodeValue = `${char}${val}`;
+			const blob = cell.querySelector(".blob-code-inner");
+			if (!blob.firstChild) {
+				blob.appendChild(document.createTextNode(char));
+			} else if (blob.firstChild.nodeType !== Node.TEXT_NODE) {
+				blob.insertBefore(document.createTextNode(char), blob.firstChild);
+			} else {
+				blob.firstChild.nodeValue = `${char}${blob.firstChild.nodeValue}`;
+			}
 		}
 
 		let line, codeCell, isAddition, isDeletion;
@@ -110,10 +116,10 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 			if (codeCell.children.length === 2) {
 				// console.log("removing line commend", codeCell, codeCell.children.length )
 				// The first element is the comment widget; keep a reference to it.
-				let lineComment = codeCell.children[0]
-				// console.log("line comment", lineComment);
-				lineComments[i] = lineComment;
-				codeCell.removeChild(lineComment);
+				// let lineComment = codeCell.children[0]
+				// // console.log("line comment", lineComment);
+				// lineComments[i] = lineComment;
+				// codeCell.removeChild(lineComment);
 				// console.log("now code cell children length is", codeCell.children.length)
 			}
 
@@ -131,19 +137,21 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 
 		// manipulate the DOM asynchronously so the page doesn't freeze while large
 		// code files are being annotated
+		let codeCell2 = codeCell;
 		setTimeout(() => {
 			console.log("got a linkified result", result.indexOf("<a") !== -1);
-			codeCell.innerHTML = result;
+			codeCell2.querySelector(".blob-code-inner").innerHTML = result;
 			if (additions[i]) {
-				addChar(codeCell, "+");
-			}
-			if (deletions[i]) {
-				addChar(codeCell, "-");
+				addChar(codeCell2, "+");
+			} else if (deletions[i]) {
+				addChar(codeCell2, "-");
+			} else {
+				addChar(codeCell2, " ");
 			}
 			if (lineComments[i]) {
-				codeCell.insertBefore(lineComments[i], codeCell.firstChild);
+				// codeCell2.insertBefore(lineComments[i], codeCell2.firstChild);
 			}
-			addPopover(codeCell);
+			addPopover(codeCell2);
 		});
 	}
 }
