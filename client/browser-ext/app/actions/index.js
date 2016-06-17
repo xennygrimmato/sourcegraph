@@ -109,6 +109,7 @@ export function getAnnotations(repo, rev, path) {
 		const state = getState();
 		return _fetchSrclibDataVersion(dispatch, state, repo, rev, path).then((json) => {
 			rev = json.CommitID;
+			console.log("got srclib data version", rev, json.CommitID);
 			if (state.annotations.content[keyFor(repo, rev, path)]) return Promise.resolve(); // nothing to do; already have annotations
 
 			dispatch({type: types.WANT_ANNOTATIONS, repo, rev, path});
