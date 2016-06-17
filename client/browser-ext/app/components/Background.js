@@ -9,7 +9,7 @@ import {keyFor, getExpiredSrclibDataVersion, getExpiredDef, getExpiredDefs, getE
 import {defaultBranchCache} from "../utils/annotations";
 import EventLogger from "../analytics/EventLogger";
 
-import {parseGitHubURL, isGitHubURL, isSourcegraphURL, getCurrentBranch, supportsAnnotatingFile} from "../utils";
+import * as utils from "../utils";
 
 @connect(
 	(state) => ({
@@ -52,7 +52,7 @@ export default class Background extends React.Component {
 		if (this.props.accessToken) useAccessToken(this.props.accessToken);
 
 		// Capture user's access token if on sourcegraph.com.
-		if (isSourcegraphURL()) {
+		if (utils.isSourcegraphURL()) {
 			const regexp = /accessToken\\":\\"([-A-Za-z0-9_.]+)\\"/;
 			const matchResult = document.head.innerHTML.match(regexp);
 			if (matchResult) this.props.actions.setAccessToken(matchResult[1]);
@@ -64,7 +64,7 @@ export default class Background extends React.Component {
 
 		document.addEventListener("click", this._clickRef);
 		document.addEventListener("pjax:success", this._refresh);
-		if (isGitHubURL()) {
+		if (utils.isGitHubURL()) {
 			window.addEventListener("focus", this._refresh);
 		}
 
@@ -128,14 +128,14 @@ export default class Background extends React.Component {
 
 	parseURL(loc = window.location) {
 		// TODO: this method has problems handling branch revisions with "/" character.
-		// TODO(rothfels): unify this with utils parseGitHubURL function.
+		// TODO(rothfels): unify this with utils utils.parseGitHubURL function.
 		const urlsplit = loc.pathname.slice(1).split("/");
 		let user = urlsplit[0];
 		let repo = urlsplit[1]
 		// We scrape the current branch and set rev to it so we stay on the same branch when doing jump-to-def.
 		// Need to use the branch selector button because _clickRef passes a pathname as the location which,
 		// only includes ${user}/${repo}, and no rev.
-		let currBranch = getCurrentBranch();
+		let currBranch = utils.getCurrentBranch();
 		let rev = currBranch;
 		if (urlsplit[3] && (urlsplit[2] === "tree" || urlsplit[2] === "blob")) { // what about "commit"
 			rev = urlsplit[3];
@@ -164,9 +164,10 @@ export default class Background extends React.Component {
 			const accessToken = state.accessToken;
 			if (accessToken) this.props.actions.setAccessToken(accessToken);
 
-			if (isSourcegraphURL()) return;
+			if (utils.isSourcegraphURL()) return;
 
 			let {user, repo, rev, path, defPath} = this.parseURL();
+			let {isDelta} = utils.parseGitHubURL();
 			// This scrapes the latest commit ID and updates rev to the latest commit so we are never injecting
 			// outdated annotations.  If there is a new commit, srclib-data-version will return a 404, but the
 			// refresh endpoint will update the version and the annotations will be up to date once the new build succeeds
@@ -183,16 +184,22 @@ export default class Background extends React.Component {
 				const hashLoc = path.indexOf("#");
 				if (hashLoc !== -1) path = path.substring(0, hashLoc);
 			}
+			if (isDelta) {
+				const branches = document.querySelectorAll(".commit-ref,.current-branch");
+				const base = branches[0].innerText;
+				const head = branches[1].innerText;
+				this.props.actions.setBaseHead(base, head);
+			}
 
 			this.props.actions.setRepoRev(repo, rev);
 			this.props.actions.setDefPath(defPath);
 			this.props.actions.setPath(path);
 
-			if (repo && defPath) {
+			if (repo && defPath && !isDelta) {
 				this.props.actions.getDef(repo, rev, defPath);
 			}
 
-			if (repo && supportsAnnotatingFile(path)) {
+			if (repo && utils.supportsAnnotatingFile(path)) {
 				this.props.actions.ensureRepoExists(repo);
 			}
 

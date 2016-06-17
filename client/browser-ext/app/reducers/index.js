@@ -29,6 +29,25 @@ const rev = function(state = "master", action) {
 	}
 }
 
+
+const base = function(state = "branch", action) {
+	switch (action.type) {
+	case ActionTypes.SET_BASE_HEAD:
+		return action.base ? action.base : state;
+	default:
+		return state;
+	}
+}
+
+const head = function(state = "branch", action) {
+	switch (action.type) {
+	case ActionTypes.SET_BASE_HEAD:
+		return action.head ? action.head : state;
+	default:
+		return state;
+	}
+}
+
  const lastRefresh = function(state = null, action) {
 	switch (action.type) {
 	case ActionTypes.REFRESH_VCS:
@@ -250,4 +269,4 @@ const annotations = function(state = {content: {}, fetches: {}, timestamps: {}},
 	}
 }
 
-export default combineReducers({accessToken, repo, rev, path, defPath, query, srclibDataVersion, def, defs, annotations, createdRepos, lastRefresh});
+export default combineReducers({accessToken, repo, rev, path, defPath, query, srclibDataVersion, def, defs, annotations, createdRepos, lastRefresh, base, head});

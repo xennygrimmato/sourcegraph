@@ -8,8 +8,8 @@ import EventLogger from "../analytics/EventLogger";
 // An invisible marker is appended to the document to indicate that annotation
 // has been completed; so this function expects that it will be called once all
 // repo/annotation data is resolved from the server.
-export default function addAnnotations(path, el, anns, lineStartBytes) {
-	const markerID = `sourcegraph-annotation-marker-${path}`;
+export default function addAnnotations(path, revSpec, el, anns, lineStartBytes) {
+	const markerID = `sourcegraph-annotation-marker-${path}-@${revSpec.rev}`;
 	if (document.getElementById(markerID)) {
 		// Don't let annotations be applied twice (it is not idempotent).
 		return;
@@ -19,7 +19,8 @@ export default function addAnnotations(path, el, anns, lineStartBytes) {
 		marker.style.display = "none";
 		el.appendChild(marker);
 	}
-	_applyAnnotations(el, indexAnnotations(anns).annsByStartByte, indexLineStartBytes(lineStartBytes));
+	console.log("adding annotations", path, revSpec.rev);
+	_applyAnnotations(el, revSpec, indexAnnotations(anns).annsByStartByte, indexLineStartBytes(lineStartBytes));
 	_postProcess();
 }
 
@@ -31,17 +32,99 @@ function _postProcess() {
 	_annURLs = [];
 }
 // _applyAnnotations is a helper function for addAnnotations
-export function _applyAnnotations(el, annsByStartByte, startBytesByLine) {
+export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startBytesByLine) {
+	console.log("startBytesByLine", startBytesByLine)
 	// The blob is represented by a table; the first column is the line number,
 	// the second is code. Each row is a line of code
 	const table = el.querySelector("table");
 
+	let lineComments = {}
+	let additions = {};
+	let deletions = {};
+
+	let cells = [];
 	for (let i = 0; i < table.rows.length; ++i) {
 		const row = table.rows[i];
-		const line = row.cells[0].dataset.lineNumber;
 
-		const codeCell = row.cells[1];
+		function removeLeadingChar(cell) {
+			const val = cell.querySelector(".blob-code-inner").firstChild.nodeValue;
+			cell.querySelector(".blob-code-inner").firstChild.nodeValue = val.substring(1, val.length);
+		}
+
+		function addChar(cell, char) {
+			// const val = cell.querySelector(".blob-code-inner").firstChild.nodeValue;
+			// cell.querySelector(".blob-code-inner").firstChild.nodeValue = `${char}${val}`;
+		}
+
+		let line, codeCell, isAddition, isDeletion;
+		if (isDelta) {
+			let metaCell = isBase ? row.cells[0] : row.cells[1];
+			if (metaCell.classList.contains("blob-num-expandable")) {
+				continue;
+			}
+
+			codeCell = row.cells[2];
+			if (!codeCell) {
+				continue;
+			}
+
+			isAddition = codeCell.classList.contains("blob-code-addition");
+			isDeletion = codeCell.classList.contains("blob-code-deletion");
+			if (!isAddition && !isDeletion && !isBase) {
+				console.log("continuing (not base)");
+				continue; // careful; we don't need to put head AND base on unmodified parts
+			}
+			if (isDeletion && !isBase) {
+				console.log("continuing (deletion; not base)");
+				continue;
+			}
+			if (isAddition && isBase) {
+				console.log("continuing (addition; is base)");
+				continue;
+			}
+
+
+			if (isAddition) {
+				console.log("addition")
+				additions[i] = true;
+				removeLeadingChar(codeCell);
+			} else if (isDeletion) {
+				console.log("deletion")
+				deletions[i] = true;
+				removeLeadingChar(codeCell);
+			} else {
+				// just whitespace
+				removeLeadingChar(codeCell);
+			}
+
+			line = metaCell.dataset.lineNumber;
+			if (line === "..." || !line) {
+				continue;
+			}
+			console.log("line", line);
+			console.log("start bytes by line", startBytesByLine[line]);
+
+
+			console.log("code cell", codeCell)
+			let lineComment;
+			if (codeCell.children.length === 2) {
+				// console.log("removing line commend", codeCell, codeCell.children.length )
+				// The first element is the comment widget; keep a reference to it.
+				let lineComment = codeCell.children[0]
+				// console.log("line comment", lineComment);
+				lineComments[i] = lineComment;
+				codeCell.removeChild(lineComment);
+				// console.log("now code cell children length is", codeCell.children.length)
+			}
+
+
+		} else {
+			line = row.cells[0].dataset.lineNumber;
+			codeCell = row.cells[1];
+		}
+
 		const offset = startBytesByLine[line];
+		console.log("offset before convert node", offset)
 
 		// result is the new (annotated) innerHTML of the code cell
 		const {result, bytesConsumed} = convertNode(codeCell, annsByStartByte, offset);
@@ -49,7 +132,17 @@ export function _applyAnnotations(el, annsByStartByte, startBytesByLine) {
 		// manipulate the DOM asynchronously so the page doesn't freeze while large
 		// code files are being annotated
 		setTimeout(() => {
+			console.log("got a linkified result", result.indexOf("<a") !== -1);
 			codeCell.innerHTML = result;
+			if (additions[i]) {
+				addChar(codeCell, "+");
+			}
+			if (deletions[i]) {
+				addChar(codeCell, "-");
+			}
+			if (lineComments[i]) {
+				codeCell.insertBefore(lineComments[i], codeCell.firstChild);
+			}
 			addPopover(codeCell);
 		});
 	}
@@ -141,11 +234,19 @@ export function convertNode(node, annsByStartByte, offset) {
 		//    - ^^ gives inner html; wrap this with the node's current syntax highlighting <span>
 		//    - ^^ but don't do that if the top-level tag is the <td> element (entrypoint)
 
+		const isTableCell = node.tagName === "TD";
+		if (isTableCell) {
+			// The initial table can have extraneous child (text) nodes of whitespace that shouldn't
+			// be annotated; select the ".blob-code-inner" element which has only the code we
+			// care to annotate.
+			node = node.querySelector(".blob-code-inner");
+		}
+
 		c = isQuotedStringNode(node) ?
 			convertQuotedStringNode(node, annsByStartByte, offset) :
 			convertElementNode(node, annsByStartByte, offset);
 
-		if (node.tagName !== "TD") {
+		if (!isTableCell) {
 			const openTag = getOpeningTag(node);
 			const closeTag = "</span>";
 			if (openTag.indexOf("<span") !== 0) {
@@ -178,6 +279,7 @@ export function convertTextNode(node, annsByStartByte, offset) {
 	// Text could contain escaped character sequences (e.g. "&gt;") or UTF-8
 	// decoded characters (e.g. "˟") which need to be properly counted in terms of bytes.
 	const nodeText = utf8.encode(_.unescape(node.wholeText)).split("");
+	console.log("offset", offset, "node", node);
 	for (bytesConsumed = 0; bytesConsumed < nodeText.length;) {
 		const match = annGenerator(annsByStartByte, offset + bytesConsumed);
 		if (!match) {
@@ -189,6 +291,8 @@ export function convertTextNode(node, annsByStartByte, offset) {
 		bytesConsumed += match.annLen;
 	}
 
+	console.log("node text", nodeText);
+	console.log({result: utf8.decode(innerHTML.join("")), bytesConsumed});
 	return {result: utf8.decode(innerHTML.join("")), bytesConsumed};
 }
 
@@ -217,7 +321,7 @@ export function convertElementNode(node, annsByStartByte, offset) {
 //        "fmt"
 //    )
 //
-// and creates for the "fmt" and creates this:
+// and creates this (for the "fmt"):
 //
 //    "<span class="pl-s"><span class="pl-pds">"</span>fmt<span class="pl-pds">"</span></span>"
 //
