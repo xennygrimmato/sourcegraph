@@ -2,8 +2,7 @@ import React from "react";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
 
-import addAnnotations from "../utils/annotations3";
-import addAnnotationsForPullRequest from "../utils/annotations2";
+import addAnnotations from "../utils/annotations";
 
 import {supportsAnnotatingFile, parseGitHubURL} from "../utils";
 import * as Actions from "../actions";
