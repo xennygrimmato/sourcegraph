@@ -4,42 +4,23 @@ import styles from "../components/App.css";
 import _ from "lodash";
 import EventLogger from "../analytics/EventLogger";
 
-// addAnnotations takes json annotation data returned from the
-// Sourcegraph annotations API and manipulates the DOM to add
-// hover-over tooltips and links.
-//
-// It assumes the caller has verified that the current view
-// is "ready" to be annotated (e.g. DOM elements have all been rendered)
-// and that there are no overlapping annotations in the json
-// returned by the Sourcegraph API.
-//
-// It assumes that the formatted html provided by the Sourcegraph API
-// for doc tooltips is "safe" to be injected into the page.
-//
-// It does *not* assume that the code that is being annotated is safe
-// to be executed in our script, so we take care to properly escape
-// characters during the annotation loop.
-export default function addAnnotations(el, anns) {
+export default function addAnnotations(el, anns, lineStartBytes) {
 	if (document.getElementById("sourcegraph-annotation-marker")) {
 		// This function is not idempotent; don't let it run twice.
 		return;
-	}
-	applyAnnotations(el, indexAnnotations(anns));
-
-	// Prevent double annotation on any file by adding some hidden
-	// state to the page.
-	if (el) {
+	} else {
 		const annotationMarker = document.createElement("div");
 		annotationMarker.id = "sourcegraph-annotation-marker";
 		annotationMarker.style.display = "none";
 		el.appendChild(annotationMarker);
 	}
+	applyAnnotations(el, indexAnnotations(anns), indexLineStartBytes(lineStartBytes));
 }
 
 function indexAnnotations(anns) {
 	let annsByStartByte = {};
 	let annsByEndByte = {};
-	for (let i = 0; i < anns.length; i++){
+	for (let i = 0; i < anns.length; i++) {
 		if (anns[i].URL) {
 			let ann = anns[i];
 			annsByStartByte[ann.StartByte] = ann;
@@ -47,6 +28,14 @@ function indexAnnotations(anns) {
 		}
 	}
 	return {annsByStartByte, annsByEndByte};
+}
+
+function indexLineStartBytes(lineStartBytes) {
+	let startBytesByLine = {};
+	for (let i = 0; i < lineStartBytes.length; i++) {
+		startBytesByLine[i + 1] = lineStartBytes[i];
+	}
+	return startBytesByLine;
 }
 
 // pre/post processing steps for strings
@@ -58,32 +47,36 @@ function postProcess(str) {
 	return utf8.decode(str);
 }
 
+function annGenerator(annsByStartByte, byte) {
+	const match = annsByStartByte[byte];
+	if (!match) return null;
+
+	const defIsOnGitHub = match.URL && match.URL.includes("github.com/");
+	const url = defIsOnGitHub ? urlToDef(match.URL) : `https://sourcegraph.com${match.URL}`;
+
+	const annLen = match.EndByte - match.StartByte;
+	const annGen = (innerHTML) => `<a href="${url}" ${defIsOnGitHub ? "data-sourcegraph-ref" : "target=tab"} data-src="https://sourcegraph.com${match.URL}" class=${styles.sgdef}>${innerHTML}</a>`;
+
+	return {annLen, annGen};
+}
+
 function convertTextNode(node, annsByStartByte, currOffset) {
 	let innerHTML = [];
 	let bytesConsumed = 0;
 
-
 	const nodeText = preProcess(node.wholeText).split("");
-	console.log(nodeText, "currentOffset", currOffset);
-	for (let char of nodeText) {
-		if (bytesConsumed >= nodeText.length) break;
-
-		let matchDetails = annsByStartByte[currOffset + bytesConsumed];
-		if (!matchDetails) {
-			innerHTML.push(_.escape(char));
-			++bytesConsumed;
+	// console.log(nodeText, "currentOffset", currOffset);
+	for (/* initialized outside */; bytesConsumed < nodeText.length; /* incremented inside */) {
+		const match = annGenerator(annsByStartByte, currOffset + bytesConsumed);
+		if (!match) {
+			innerHTML.push(_.escape(nodeText[bytesConsumed++]));
 			continue;
 		}
 
-		const defIsOnGitHub = matchDetails.URL && matchDetails.URL.includes("github.com/");
-		const url = defIsOnGitHub ? urlToDef(matchDetails.URL) : `https://sourcegraph.com${matchDetails.URL}`;
-
-		const annLen = matchDetails.EndByte - matchDetails.StartByte;
-		innerHTML.push(`<a href="${url}" ${defIsOnGitHub ? "data-sourcegraph-ref" : "target=tab"} data-src="https://sourcegraph.com${matchDetails.URL}" class=${styles.sgdef}>${nodeText.slice(bytesConsumed, bytesConsumed + annLen).join("")}</a>`);
-		bytesConsumed += annLen;
+		innerHTML.push(match.annGen(_.escape(nodeText.slice(bytesConsumed, bytesConsumed + match.annLen).join(""))));
+		bytesConsumed += match.annLen;
 	}
 
-	console.log("converted text node", node, postProcess(innerHTML.join("")))
 	return {result: postProcess(innerHTML.join("")), bytesConsumed};
 }
 
@@ -92,31 +85,67 @@ function convertElementNode(node, annsByStartByte, currOffset) {
 	let bytesConsumed = 0;
 
 	for (let node of iterable(node.childNodes)) {
-		const r2 = convertNode(node, annsByStartByte, currOffset + bytesConsumed, true);
+		const r2 = convertNode(node, annsByStartByte, currOffset + bytesConsumed);
 		innerHTML.push(r2.result);
 		bytesConsumed += r2.bytesConsumed;
-		// if (node.innerText === "\n") {
-		// 	console.log("here here");
-		// 	console.log("converted element node", {node}, wrap ? `${outerTag}${node.innerText}${endingTag}` : );
-		// 	return {result: `${outerTag}${node.innerText}${endingTag}`, bytesConsumed: 0};
-		// }
 	}
 
 	return {result: postProcess(innerHTML.join("")), bytesConsumed};
 }
 
-function convertNode(node, annsByStartByte, currOffset, wrap) {
-	if (node.nodeType === Node.ELEMENT_NODE) {
-		const outerTag = node.outerHTML.slice(0, node.outerHTML.indexOf(node.innerHTML));
-		const endingTag = node.outerHTML.slice(node.outerHTML.indexOf(node.innerHTML) + node.innerHTML.length, node.outerHTML.length);
-		const {result, bytesConsumed} = convertElementNode(node, annsByStartByte, currOffset);
-		console.log("converted element node", {node}, wrap ? `${outerTag}${result}${endingTag}` : result, bytesConsumed);
-		return {result: wrap ? `${outerTag}${result}${endingTag}` : result, bytesConsumed};
-	} else if (node.nodeType === Node.TEXT_NODE) {
-		return convertTextNode(node, annsByStartByte, currOffset);
-	}
+function isQuotedStringNode(node) {
+	return node.childNodes.length === 3 && node.querySelectorAll(".pl-pds").length === 2 &&
+		node.innerText.startsWith("\"") && node.innerText.endsWith("\"");
 }
 
+function convertQuotedStringNode(node, annsByStartByte, currOffset) {
+	const match = annGenerator(annsByStartByte, currOffset);
+	// match could be undefined; if so, assume there is no change that the inner quoted string
+	// will have annotations (or else that annotatins will be ignored)
+
+	if (!match) return {result: node.innerHTML, bytesConsumed: node.innerText.length};
+	if (match.annLen !== node.innerText.length) {
+		throw new Error(`annotation for quoted string node has length mismatch, got ${match.annLen} wanted ${node.innerText.length}`);
+	}
+	return {result: match.annGen(node.innerHTML), bytesConsumed: match.annLen};
+}
+
+function getOpeningTag(node) {
+	let i;
+	let inAttribute = false;
+	const outerHTML = node.outerHTML;
+	for (i = 0; i < outerHTML.length; ++i) {
+		if (outerHTML[i] === "\"") inAttribute = !inAttribute;
+		if (outerHTML[i] === ">" && !inAttribute) break;
+	}
+	return outerHTML.substring(0, i+1);
+}
+
+function convertNode(node, annsByStartByte, currOffset) {
+	let result, bytesConsumed, c;
+	if (node.nodeType === Node.ELEMENT_NODE) {
+		const wrap = node.tagName === "TD" ? false : true;
+
+		const outerTag = getOpeningTag(node);
+		const endTag = "</span>";
+		if (wrap && outerTag.indexOf("<span") !== 0) {
+			throw new Error(`element node tag is not SPAN: ${node.tagName}, outer tag is ${outerTag}`);
+		}
+
+		c = isQuotedStringNode(node) ?
+			convertQuotedStringNode(node, annsByStartByte, currOffset) :
+			convertElementNode(node, annsByStartByte, currOffset);
+		result = wrap ? `${outerTag}${c.result}${endTag}` : c.result;
+		bytesConsumed = c.bytesConsumed;
+	} else if (node.nodeType === Node.TEXT_NODE) {
+		c = convertTextNode(node, annsByStartByte, currOffset);
+		result = c.result;
+		bytesConsumed = c.bytesConsumed;
+	}
+
+	// console.log(`converted node (type=${node.nodeType === Node.ELEMENT_NODE ? "element" : "text"}), result(${result}), bytesConsumed(${bytesConsumed})`);
+	return {result, bytesConsumed};
+}
 
 function iterable(elList) {
 	const it = [];
@@ -126,28 +155,21 @@ function iterable(elList) {
 	return it;
 }
 
-function applyAnnotations(el, {annsByStartByte, annsByEndByte}) {
+function applyAnnotations(el, {annsByStartByte}, startBytesByLine) {
 	const table = el.querySelector("table");
 
-	console.log(annsByStartByte)
+	// console.log(annsByStartByte)
 
-	let currOffset = 0;
 	for (let i = 0; i < table.rows.length; ++i) {
 		const row = table.rows[i];
+
 		const line = row.cells[0].dataset.lineNumber;
+		let currOffset = startBytesByLine[line];
+
 		const codeCell = row.cells[1];
 
-		console.log("starting a row, curr offset is", currOffset)
-		const {result, bytesConsumed} = convertNode(codeCell, annsByStartByte, currOffset, false);
+		const {result, bytesConsumed} = convertNode(codeCell, annsByStartByte, currOffset);
 		codeCell.innerHTML = result;
-		console.log("new code cell", codeCell.innerText, codeCell.textContent === "\n");
-		// if (codeCell.textContent === "\n") {
-		// 	console.log("doing it")
-		// } else {
-		// 	currOffset += 1;
-		// 	console.log("not doing it")
-		// }
-		currOffset += bytesConsumed;
 	}
 	// 	// manipulate the DOM asynchronously so the page doesn't freeze while large
 	// 	// code files are being annotated
