@@ -50,7 +50,7 @@ function toggleSearchFrame() {
 		focusInput();
 	} else if (isSearchAppShown) {
 		// Toggle visibility off.
-		removeSearchFrame();
+		hideSearchFrame();
 	} else {
 		// Toggle visiblity on.
 		document.querySelector(".repository-content").style.display = "none";
@@ -60,7 +60,7 @@ function toggleSearchFrame() {
 	}
 };
 
-function removeSearchFrame() {
+function hideSearchFrame() {
 	const el = document.querySelector(".repository-content");
 	if (el) el.style.display = "block";
 	const frame = getSearchFrame();
@@ -177,6 +177,6 @@ function injectModules() {
 
 window.addEventListener("load", injectModules);
 document.addEventListener("pjax:success", () => {
-	removeSearchFrame();
+	hideSearchFrame();
 	injectModules();
 });
