@@ -43,6 +43,7 @@ export function _applyAnnotations(el, {isDelta, isBase}, annsByStartByte, startB
 	let cells = [];
 	for (let i = 0; i < table.rows.length; ++i) {
 		const row = table.rows[i];
+		if (row.classList && row.classList.contains("inline-comments")) continue;
 
 		function removeLeadingChar(cell) {
 			const val = cell.querySelector(".blob-code-inner").firstChild.nodeValue;
