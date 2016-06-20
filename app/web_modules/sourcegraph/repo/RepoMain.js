@@ -177,14 +177,33 @@ class RepoMain extends React.Component {
 			if (err.response && err.response.status === 401) {
 				msg = `Sign in to add repositories.`;
 			} else if (err.response && err.response.status === 404) {
-				msg = `Repository not found.`;
+				msg = `Sourcegraph doesn't know about local repositories.`;
+				return (
+					<div>
+					<Header
+						title={`${httpStatusCode(err)}`}
+						subtitle={msg} />
+						<div>
+							<div styleName="explanationheader">
+								<p> Some helpful links: </p>
+							</div>
+							<div styleName="explanation"> 
+								<p> Search local repos by <a href="https://sourcegraph.com/repositories">adding your repo</a> to Sourcegraph. </p>
+								<p> Try an example search of <a href="https://sourcegraph.com/github.com/golang/go/-/info/GoPackage/fmt/-/Sprintf?utm_source=sourcegraph-editor">sprintf</a> in Go. </p>
+								<p> Sign in to Sourcegraph to try global <a href="https://sourcegraph.com/search">search</a>. </p>
+							</div>
+						</div>
+					</div>
+				);
 			} else {
 				msg = `Repository is not available.`;
 			}
 			return (
+				<div>
 				<Header
 					title={`${httpStatusCode(err)}`}
 					subtitle={msg} />
+				</div>
 			);
 		}
 

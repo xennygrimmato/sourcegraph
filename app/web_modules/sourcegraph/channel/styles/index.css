@@ -9,6 +9,20 @@
 	text-align: center;
 }
 
+.explanationheader {
+	composes: col-10 from grid;
+	composes: heavy-text from typography;
+	composes: center from base;
+	composes: tc from typography;
+}
+
+.explanation {
+	composes: col-10 from grid;
+	composes: center from base;
+	composes: normal-text from typography;
+	composes: tc from typography;
+}
+
 .readme {
 	display: inline-block;
 	composes: pv1 ph2 br2 ba from base;

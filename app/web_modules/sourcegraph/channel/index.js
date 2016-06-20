@@ -54,7 +54,21 @@ class Channel extends React.Component {
 		}
 
 		return (
+			<div>
 			<Header title="Click on a symbol in your editor to get started!"/>
+			<body>
+				<div>
+					<div className={styles.explanationheader}>
+						<p> Some helpful links: </p>
+					</div>
+					<div className={styles.explanation}>
+						<p> Try an example search of <a href="https://sourcegraph.com/github.com/golang/go/-/info/GoPackage/fmt/-/Sprintf?utm_source=sourcegraph-editor">sprintf</a> in Go. </p>
+						<p> Sign in to Sourcegraph to try global <a href="https://sourcegraph.com/search">search</a>. </p>
+						<p> Search local repos by <a href="https://sourcegraph.com/repositories">adding your repo</a> to Sourcegraph. </p> 
+					</div>
+				</div>
+			</body>
+			</div>
 		);
 	}
 }

@@ -32,6 +32,20 @@
 	composes: pt6 from base;
 }
 
+.explanationheader {
+	composes: col-10 from grid;
+	composes: heavy-text from typography;
+	composes: center from base;
+	composes: tc from typography;
+}
+
+.explanation {
+	composes: col-10 from grid;
+	composes: center from base;
+	composes: normal-text from typography;
+	composes: tc from typography;
+}
+
 .cloning-title {
 	composes: header-center from typography;
 }
