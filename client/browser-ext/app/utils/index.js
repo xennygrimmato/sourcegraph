@@ -7,11 +7,9 @@ export function supportsAnnotatingFile(path) {
 	return lang === "go" || lang === "java" || lang === "sh" || lang === "bash";
 }
 
-export function parseGitHubURL(loc = window.location) {
+export function parseURL(loc = window.location) {
 	// TODO: this method has problems handling branch revisions with "/" character.
 	let user, repo, repoURI, rev, path, isDelta;
-	const isGitHub = isGitHubURL(loc);
-	if (!isGitHub) return {user, repo, repoURI, rev, path, isGitHub, isDelta};
 
 	const urlsplit = loc.pathname.slice(1).split("/");
 	user = urlsplit[0];
@@ -22,11 +20,11 @@ export function parseGitHubURL(loc = window.location) {
 	if (urlsplit[2] === "blob") {
 		path = urlsplit.slice(4).join("/");
 	}
-	return {user, repo, repoURI: user && repo ? `github.com/${user}/${repo}` : null, rev, path, isGitHub, isDelta: urlsplit[2] === "pull" || urlsplit[2] === "commit"};
+	return {user, repo, repoURI: user && repo ? `github.com/${user}/${repo}` : null, rev, path, isDelta: urlsplit[2] === "pull" || urlsplit[2] === "commit"};
 }
 
-export function parseURL(loc = window.location) {
-	let info = parseGitHubURL(loc);
+export function parseSourcegraphDef(loc) {
+	let info = parseURL(loc);
 
 	// We scrape the current branch and set rev to it so we stay on the same branch when doing jump-to-def.
 	// Need to use the branch selector button because _clickRef passes a pathname as the location which,

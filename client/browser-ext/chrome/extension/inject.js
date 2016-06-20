@@ -14,7 +14,7 @@ import BlobAnnotator from "../../app/components/BlobAnnotator";
 import styles from "../../app/components/App.css";
 import createStore from "../../app/store/configureStore";
 
-import {parseGitHubURL, isGitHubURL} from "../../app/utils";
+import {parseURL, isGitHubURL} from "../../app/utils";
 
 let isSearchAppShown = false; // global state indicating whether the search app is visible
 
@@ -116,7 +116,7 @@ function getFileName(info, {isDelta, path}) {
 function injectBuildIndicators() {
 	if (!isGitHubURL()) return;
 
-	const {user, repo, rev, path, isDelta} = parseGitHubURL();
+	const {user, repo, rev, path, isDelta} = parseURL();
 
 	const fileInfos = document.querySelectorAll(".file-info");
 	for (let i = 0; i < fileInfos.length; ++i) {
@@ -153,7 +153,7 @@ function injectBackgroundApp() {
 function injectBlobAnnotator() {
 	if (!isGitHubURL()) return;
 
-	const {user, repo, rev, path, isDelta} = parseGitHubURL();
+	const {user, repo, rev, path, isDelta} = parseURL();
 	const fileInfos = document.querySelectorAll(".file-info");
 	const blobs = document.querySelectorAll(".blob-wrapper");
 
