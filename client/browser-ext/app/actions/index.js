@@ -8,26 +8,6 @@ export function setAccessToken(token) {
 	return {type: types.SET_ACCESS_TOKEN, token};
 }
 
-export function setRepoRev(repo, rev) {
-	return {type: types.SET_REPO_REV, repo, rev};
-}
-
-export function setBaseHead(base, head) {
-	return {type: types.SET_BASE_HEAD, base, head};
-}
-
-export function setPath(path) {
-	return {type: types.SET_PATH, path};
-}
-
-export function setDefPath(defPath) {
-	return {type: types.SET_DEF_PATH, defPath};
-}
-
-export function setQuery(query) {
-	return {type: types.SET_QUERY, query};
-}
-
 export function expireAnnotations(repo, rev, path) {
 	return {type: types.EXPIRE_ANNOTATIONS, repo, rev, path};
 }
@@ -126,8 +106,8 @@ export function getAnnotations(repo, rev, path) {
 export function refreshVCS(repo) {
 	return function (dispatch) {
 		return fetch(`https://sourcegraph.com/.api/repos/${repo}/-/refresh`, {method: "POST"})
-			.then((json) => dispatch({type: types.REFRESH_VCS}))
-			.catch((err) => dispatch({type: types.REFRESH_VCS}));
+			.then((json) => {})
+			.catch((err) => {});
 	}
 }
 

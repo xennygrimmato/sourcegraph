@@ -8,6 +8,7 @@ import SearchInput from "./SearchInput";
 import DefSearchResult from "./DefSearchResult";
 import {keyFor} from "../reducers/helpers";
 import * as Actions from "../actions";
+import * as utils from "../utils";
 
 import _ from "lodash";
 
@@ -16,10 +17,6 @@ import styles from "./App.css";
 
 @connect(
 	(state) => ({
-		repo: state.repo,
-		rev: state.rev,
-		path: state.path,
-		query: state.query,
 		srclibDataVersion: state.srclibDataVersion,
 		defs: state.defs,
 	}),
@@ -30,10 +27,6 @@ import styles from "./App.css";
 @CSSModules(styles)
 export default class SearchFrame extends React.Component {
 	static propTypes = {
-		repo: React.PropTypes.string.isRequired,
-		rev: React.PropTypes.string.isRequired,
-		path: React.PropTypes.string,
-		query: React.PropTypes.string.isRequired,
 		srclibDataVersion: React.PropTypes.object.isRequired,
 		defs: React.PropTypes.object.isRequired,
 		actions: React.PropTypes.object.isRequired,
@@ -41,33 +34,55 @@ export default class SearchFrame extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.handleSubmit = _.debounce(this.handleSubmit, 50);
-		this.handleSubmit = this.handleSubmit.bind(this);
+		this._handleSubmit = _.debounce(this._handleSubmit, 50);
+		this._handleSubmit = this._handleSubmit.bind(this);
+		this._refresh = this._refresh.bind(this);
+
+		this.state = utils.parseURL();
+		this.state.query = "";
 	}
 
-	handleSubmit = (query) => {
-		this.props.actions.setQuery(query);
-		this.props.actions.getDefs(this.props.repo, this.props.rev, this.props.path, query);
+	componentDidMount() {
+		document.addEventListener("pjax:success", this._refresh);
+	}
+
+	componentWillUnmount() {
+		document.removeEventListener("pjax:success", this._refresh);
+	}
+
+	_refresh() {
+		const newState = utils.parseURL();
+		if (newState.repoURI !== this.state.repoURI) {
+			newState.query = "";
+		} else {
+			newState.query = this.state.query;
+		}
+		this.setState(newState);
+	}
+
+	_handleSubmit(query) {
+		this.props.actions.getDefs(this.state.repoURI, this.state.rev, this.state.path, query);
+		this.setState({query});
 	};
 
 	_srclibDataVersion() {
-		return this.props.srclibDataVersion.content[keyFor(this.props.repo, this.props.rev, this.props.path)];
+		return this.props.srclibDataVersion.content[keyFor(this.state.repoURI, this.state.rev, this.state.path)];
 	}
 
 	_srclibDataVersionFetch() {
-		return this.props.srclibDataVersion.fetches[keyFor(this.props.repo, this.props.rev, this.props.path)];
+		return this.props.srclibDataVersion.fetches[keyFor(this.state.repoURI, this.state.rev, this.state.path)];
 	}
 
 	_defs() {
 		const srclibDataVersion = this._srclibDataVersion();
 		if (!srclibDataVersion || !srclibDataVersion.CommitID) return null;
-		return this.props.defs.content[keyFor(this.props.repo, srclibDataVersion.CommitID, this.props.path, this.props.query)];
+		return this.props.defs.content[keyFor(this.state.repoURI, srclibDataVersion.CommitID, this.state.path, this.state.query)];
 	}
 
 	_defsFetch() {
 		const srclibDataVersion = this._srclibDataVersion();
 		if (!srclibDataVersion || !srclibDataVersion.CommitID) return null;
-		return this.props.defs.fetches[keyFor(this.props.repo, srclibDataVersion.CommitID, this.props.path, this.props.query)];
+		return this.props.defs.fetches[keyFor(this.state.repoURI, srclibDataVersion.CommitID, this.state.path, this.state.query)];
 	}
 
 	urlToDef(def, rev) {
@@ -84,14 +99,14 @@ export default class SearchFrame extends React.Component {
 			<div styleName="app">
 				<div styleName="full-column">
 					<div className="breadcrumb flex-table" styleName="input-box">
-						<span styleName="input-addon">{`${this.props.repo.split('/')[2]} /`}</span>
-						<SearchInput placeholder="Search for symbols..." onSubmit={this.handleSubmit} onChange={this.handleSubmit} />
+						<span styleName="input-addon">{`${this.state.repoURI.split('/')[2]} /`}</span>
+						<SearchInput placeholder="Search for symbols..." onSubmit={this._handleSubmit} onChange={this._handleSubmit} />
 					</div>
 					<div className="tree-finder clearfix" styleName="list">
 						<table className="tree-browser css-truncate">
 							<tbody className="tree-browser-result js-tree-browser-result">
 							{defs && defs.Defs && defs.Defs.map((item, i) =>
-								<DefSearchResult key={i} href={`https://sourcegraph.com/${this.urlToDef(item, this.props.rev)}`} query={this.props.query} qualifiedNameAndType={qualifiedNameAndType(item)} />
+								<DefSearchResult key={i} href={`https://sourcegraph.com/${this.urlToDef(item, this.state.rev)}`} query={this.state.query} qualifiedNameAndType={qualifiedNameAndType(item)} />
 							)}
 							</tbody>
 						</table>
@@ -102,7 +117,7 @@ export default class SearchFrame extends React.Component {
 							<h3 styleName="list-item-empty">Searching...</h3>
 						}
 						{srclibDataVersionFetch && srclibDataVersionFetch.response && srclibDataVersionFetch.response.status === 404 &&
-							<h3 styleName="list-item-empty">404 Not Found: This repository (or revision) has not been indexed by Sourcegraph.<br/><a href={`https://sourcegraph.com/${this.props.repo}@${this.props.rev}`}>Let Sourcegraph index this repository.</a></h3>
+							<h3 styleName="list-item-empty">404 Not Found: This repository (or revision) has not been indexed by Sourcegraph.<br/><a href={`https://sourcegraph.com/${this.state.repoURI}@${this.state.rev}`}>Let Sourcegraph index this repository.</a></h3>
 						}
 						{srclibDataVersionFetch && srclibDataVersionFetch.response && srclibDataVersionFetch.response.status === 401 &&
 							<h3 styleName="list-item-empty">401 Unauthorized: Log in to Sourcegraph to search private code</h3>

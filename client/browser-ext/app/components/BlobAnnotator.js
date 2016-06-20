@@ -4,7 +4,6 @@ import {connect} from "react-redux";
 
 import addAnnotations from "../utils/annotations";
 
-import {supportsAnnotatingFile, parseGitHubURL} from "../utils";
 import * as Actions from "../actions";
 import * as utils from "../utils";
 import {keyFor} from "../reducers/helpers";
@@ -12,17 +11,8 @@ import EventLogger from "../analytics/EventLogger";
 
 @connect(
 	(state) => ({
-		accessToken: state.accessToken,
-		repo: state.repo,
-		rev: state.rev,
-		base: state.base,
-		head: state.head,
-		defPath: state.defPath,
 		srclibDataVersion: state.srclibDataVersion,
-		def: state.def,
 		annotations: state.annotations,
-		defs: state.defs,
-		lastRefresh: state.lastRefresh,
 	}),
 	(dispatch) => ({
 		actions: bindActionCreators(Actions, dispatch)
@@ -30,19 +20,10 @@ import EventLogger from "../analytics/EventLogger";
 )
 export default class BlobAnnotator extends React.Component {
 	static propTypes = {
-		accessToken: React.PropTypes.string,
-		repo: React.PropTypes.string.isRequired,
-		rev: React.PropTypes.string.isRequired,
-		base: React.PropTypes.string.isRequired,
-		head: React.PropTypes.string.isRequired,
 		path: React.PropTypes.string.isRequired,
-		defPath: React.PropTypes.string,
 		srclibDataVersion: React.PropTypes.object.isRequired,
-		def: React.PropTypes.object.isRequired,
 		annotations: React.PropTypes.object.isRequired,
-		defs: React.PropTypes.object.isRequired,
 		actions: React.PropTypes.object.isRequired,
-		lastRefresh: React.PropTypes.number,
 		blobElement: React.PropTypes.object,
 	};
 
@@ -50,8 +31,15 @@ export default class BlobAnnotator extends React.Component {
 		super(props);
 		this._updateIntervalID = null;
 
-		props.actions.getAnnotations(props.repo, props.rev, props.path);
-		this._addAnnotations(props);
+		this.state = utils.parseURL();
+		if (this.state.isDelta) {
+			const branches = document.querySelectorAll(".commit-ref,.current-branch");
+			this.state.base = branches[0].innerText;
+			this.state.head = branches[1].innerText;
+		}
+
+		this._refresh();
+		this._addAnnotations(props, this.state);
 	}
 
 	componentDidMount() {
@@ -68,38 +56,35 @@ export default class BlobAnnotator extends React.Component {
 	}
 
 	_refresh() {
-		let {isDelta} = utils.parseGitHubURL();
-		if (isDelta) {
-			this.props.actions.getAnnotations(this.props.repo, this.props.base, this.props.path);
-			this.props.actions.getAnnotations(this.props.repo, this.props.head, this.props.path);
+		if (this.state.isDelta) {
+			this.props.actions.getAnnotations(this.state.repoURI, this.state.base, this.props.path);
+			this.props.actions.getAnnotations(this.state.repoURI, this.state.head, this.props.path);
 		} else {
-			this.props.actions.getAnnotations(this.props.repo, this.props.rev, this.props.path);
+			this.props.actions.getAnnotations(this.state.repoURI, this.state.rev, this.props.path);
 		}
 	}
 
 
 	componentWillReceiveProps(nextProps) {
-		this._addAnnotations(nextProps);
+		this._addAnnotations(nextProps, this.state);
 	}
 
-	_addAnnotations(props) {
-		let {isDelta} = utils.parseGitHubURL();
-
+	_addAnnotations(props, state) {
 		function apply(rev, isBase) {
-			const dataVer = props.srclibDataVersion.content[keyFor(props.repo, rev, props.path)];
+			const dataVer = props.srclibDataVersion.content[keyFor(state.repoURI, rev, props.path)];
 			if (dataVer && dataVer.CommitID) {
-				const json = props.annotations.content[keyFor(props.repo, dataVer.CommitID, props.path)];
+				const json = props.annotations.content[keyFor(state.repoURI, dataVer.CommitID, props.path)];
 				if (json) {
-					addAnnotations(props.path, {rev, isDelta, isBase}, props.blobElement, json.Annotations, json.LineStartBytes);
+					addAnnotations(props.path, {rev, isDelta: state.isDelta, isBase}, props.blobElement, json.Annotations, json.LineStartBytes);
 				}
 			}
 		}
 
-		if (isDelta) {
-			apply(props.base, true);
-			apply(props.head, false);
+		if (state.isDelta) {
+			apply(state.base, true);
+			apply(state.head, false);
 		} else {
-			apply(props.rev, false);
+			apply(state.rev, false);
 		}
 	}
 

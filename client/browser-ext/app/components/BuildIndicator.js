@@ -5,14 +5,12 @@ import {connect} from "react-redux";
 import * as Actions from "../actions";
 import {SourcegraphIcon} from "../components/Icons";
 import {keyFor} from "../reducers/helpers";
-import {supportsAnnotatingFile} from "../utils";
+import * as utils from "../utils";
+
 
 @connect(
 	(state) => ({
-		repo: state.repo,
-		rev: state.rev,
 		srclibDataVersion: state.srclibDataVersion,
-		lastRefresh: state.lastRefresh,
 	}),
 	(dispatch) => ({
 		actions: bindActionCreators(Actions, dispatch)
@@ -20,17 +18,15 @@ import {supportsAnnotatingFile} from "../utils";
 )
 export default class BuildIndicator extends React.Component {
 	static propTypes = {
-		repo: React.PropTypes.string.isRequired,
-		rev: React.PropTypes.string.isRequired,
 		path: React.PropTypes.string.isRequired,
 		srclibDataVersion: React.PropTypes.object.isRequired,
 		actions: React.PropTypes.object.isRequired,
-		lastRefresh: React.PropTypes.number,
 	};
 
 	constructor(props) {
 		super(props);
 		this._updateIntervalID = null;
+		this.state = utils.parseURL();
 	}
 
 	componentDidMount() {
@@ -48,14 +44,14 @@ export default class BuildIndicator extends React.Component {
 
 	_refresh() {
 		// TODO(rothfels): use build status (not srclib data version).
-		this.props.actions.getSrclibDataVersion(this.props.repo, this.props.rev, this.props.path);
+		this.props.actions.getSrclibDataVersion(this.state.repoURI, this.state.rev, this.props.path);
 	}
 
 	render() {
 		let indicatorText = "";
-		if (this.props.srclibDataVersion.content[keyFor(this.props.repo, this.props.rev, this.props.path)]) {
+		if (this.props.srclibDataVersion.content[keyFor(this.state.repoURI, this.state.rev, this.props.path)]) {
 			indicatorText = "Indexed";
-		} else if (!supportsAnnotatingFile(this.props.path)) {
+		} else if (!utils.supportsAnnotatingFile(this.props.path)) {
 			indicatorText = "Unsupported file"
 		} else {
 			indicatorText = "Indexing...";

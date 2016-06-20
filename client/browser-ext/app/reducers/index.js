@@ -11,79 +11,6 @@ const accessToken = function(state = null, action) {
 	}
 }
 
-const repo = function(state = "github.com/gorilla/mux", action) {
-	switch (action.type) {
-	case ActionTypes.SET_REPO_REV:
-		return action.repo ? action.repo : state;
-	default:
-		return state;
-	}
-}
-
-const rev = function(state = "master", action) {
-	switch (action.type) {
-	case ActionTypes.SET_REPO_REV:
-		return action.rev ? action.rev : state;
-	default:
-		return state;
-	}
-}
-
-
-const base = function(state = "branch", action) {
-	switch (action.type) {
-	case ActionTypes.SET_BASE_HEAD:
-		return action.base ? action.base : state;
-	default:
-		return state;
-	}
-}
-
-const head = function(state = "branch", action) {
-	switch (action.type) {
-	case ActionTypes.SET_BASE_HEAD:
-		return action.head ? action.head : state;
-	default:
-		return state;
-	}
-}
-
- const lastRefresh = function(state = null, action) {
-	switch (action.type) {
-	case ActionTypes.REFRESH_VCS:
-		return Date.now();
-	default:
-		return state;
-	}
- }
-
-const path = function(state = null, action) {
-	switch (action.type) {
-	case ActionTypes.SET_PATH:
-		return action.path ? action.path : null;
-	default:
-		return state;
-	}
-}
-
-const defPath = function(state = null, action) {
-	switch (action.type) {
-	case ActionTypes.SET_DEF_PATH:
-		return action.defPath ? action.defPath : null;
-	default:
-		return state;
-	}
-}
-
-const query = function(state = "", action) {
-	switch (action.type) {
-	case ActionTypes.SET_QUERY:
-		return action.query;
-	default:
-		return state;
-	}
-}
-
 const createdRepos = function(state = {}, action) {
 	switch (action.type) {
 	case ActionTypes.CREATED_REPO:
@@ -269,4 +196,4 @@ const annotations = function(state = {content: {}, fetches: {}, timestamps: {}},
 	}
 }
 
-export default combineReducers({accessToken, repo, rev, path, defPath, query, srclibDataVersion, def, defs, annotations, createdRepos, lastRefresh, base, head});
+export default combineReducers({accessToken, srclibDataVersion, def, defs, annotations, createdRepos});

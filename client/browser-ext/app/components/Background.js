@@ -14,10 +14,6 @@ import * as utils from "../utils";
 @connect(
 	(state) => ({
 		accessToken: state.accessToken,
-		repo: state.repo,
-		rev: state.rev,
-		path: state.path,
-		defPath: state.defPath,
 		srclibDataVersion: state.srclibDataVersion,
 		def: state.def,
 		annotations: state.annotations,
@@ -30,10 +26,6 @@ import * as utils from "../utils";
 export default class Background extends React.Component {
 	static propTypes = {
 		accessToken: React.PropTypes.string,
-		repo: React.PropTypes.string.isRequired,
-		rev: React.PropTypes.string.isRequired,
-		path: React.PropTypes.string,
-		defPath: React.PropTypes.string,
 		srclibDataVersion: React.PropTypes.object.isRequired,
 		def: React.PropTypes.object.isRequired,
 		annotations: React.PropTypes.object.isRequired,
@@ -45,7 +37,10 @@ export default class Background extends React.Component {
 		super(props);
 		this._refresh = this._refresh.bind(this);
 		this._clickRef = this._clickRef.bind(this);
+		this._directURLToDef = this._directURLToDef.bind(this);
 		this._updateIntervalID = null;
+
+		this.state = utils.parseURL();
 	}
 
 	componentDidMount() {
@@ -72,14 +67,14 @@ export default class Background extends React.Component {
 		this._refresh();
 	}
 
-	componentWillReceiveProps(nextProps) {
+	componentWillUpdate(nextProps, nextState) {
 		// Show/hide def info.
-		if (nextProps.defPath &&
-			(nextProps.repo !== this.props.repo ||
-				nextProps.rev !== this.props.rev ||
-				nextProps.defPath !== this.props.defPath ||
-				nextProps.def !== this.props.def)) {
-			this._renderDefInfo(nextProps);
+		if (nextState.defPath &&
+			(nextState.repoURI !== this.state.repoURI ||
+				nextState.rev !== this.state.rev ||
+				nextState.defPath !== this.state.defPath ||
+				nextState.def !== this.state.def)) {
+			this._renderDefInfo(nextProps, nextState);
 		}
 	}
 
@@ -105,57 +100,20 @@ export default class Background extends React.Component {
 	}
 
 	_clickRef(ev) {
-		if (typeof ev.target.dataset.sourcegraphRef !== "undefined") {
-			let urlProps = this.parseURL({pathname: ev.target.pathname, hash: ev.target.hash});
-			urlProps.repo = `github.com/${urlProps.user}/${urlProps.repo}`;
+		if (ev.target.dataset && typeof ev.target.dataset.sourcegraphRef !== "undefined") {
+			let urlProps = utils.parseURL({pathname: ev.target.pathname, hash: ev.target.hash});
+			this.props.actions.getDef(urlProps.repoURI, urlProps.rev, urlProps.defPath);
 
-			this.props.actions.getDef(urlProps.repo, urlProps.rev, urlProps.defPath);
-
-			const props = {...urlProps, def: this.props.def}
-			const info = this._directURLToDef(props);
-			if (info) {
-				EventLogger.logEvent("ClickedDef", {defPath: props.defPath, repo: props.repo, user: props.user, direct: "true"});
-				// Fast path. Uses PJAX if possible (automatically).
-				const {pathname, hash} = info;
-				ev.target.href = `${pathname}${hash}`;
-				this._renderDefInfo(props);
+			const directURLToDef = this._directURLToDef(urlProps);
+			if (directURLToDef) {
+				EventLogger.logEvent("ClickedDef", {defPath: urlProps.defPath, repo: urlProps.repoURI, user: urlProps.user, direct: "true"});
+				ev.target.href = `${directURLToDef.pathname}${directURLToDef.hash}`;
+				this._renderDefInfo(this.props, urlProps);
 			} else {
-				EventLogger.logEvent("ClickedDef", {defPath: props.defPath, repo: props.repo, user: props.user, direct: "false"});
-				pjaxGoTo(ev.target.href, urlProps.repo === this.props.repo);
+				EventLogger.logEvent("ClickedDef", {defPath: urlProps.defPath, repo: urlProps.repoURI, user: urlProps.user, direct: "false"});
+				pjaxGoTo(ev.target.href, urlProps.repoURI === this.state.repoURI);
 			}
 		}
-	}
-
-	parseURL(loc = window.location) {
-		// TODO: this method has problems handling branch revisions with "/" character.
-		// TODO(rothfels): unify this with utils utils.parseGitHubURL function.
-		const urlsplit = loc.pathname.slice(1).split("/");
-		let user = urlsplit[0];
-		let repo = urlsplit[1]
-		// We scrape the current branch and set rev to it so we stay on the same branch when doing jump-to-def.
-		// Need to use the branch selector button because _clickRef passes a pathname as the location which,
-		// only includes ${user}/${repo}, and no rev.
-		let currBranch = utils.getCurrentBranch();
-		let rev = currBranch;
-		if (urlsplit[3] && (urlsplit[2] === "tree" || urlsplit[2] === "blob")) { // what about "commit"
-			rev = urlsplit[3];
-		}
-		let path = urlsplit.slice(4).join("/");
-
-		const info = {user, repo, rev, path};
-		// Check for URL hashes like "#sourcegraph&def=...".
-		if (loc.hash.startsWith("#sourcegraph&")) {
-			const parts = loc.hash.slice(1).split("&").slice(1); // omit "sourcegraph" sentinel
-			parts.forEach((p) => {
-				const kv = p.split("=", 2);
-				if (kv.length != 2) return;
-				let k = kv[0];
-				const v = kv[1];
-				if (k === "def") k = "defPath"; // disambiguate with def obj
-				if (!info[k]) info[k] = v; // don't clobber
-			});
-		}
-		return info;
 	}
 
 	_refresh() {
@@ -166,78 +124,53 @@ export default class Background extends React.Component {
 
 			if (utils.isSourcegraphURL()) return;
 
-			let {user, repo, rev, path, defPath} = this.parseURL();
-			let {isDelta} = utils.parseGitHubURL();
+			let urlProps = utils.parseURL();
 			// This scrapes the latest commit ID and updates rev to the latest commit so we are never injecting
 			// outdated annotations.  If there is a new commit, srclib-data-version will return a 404, but the
 			// refresh endpoint will update the version and the annotations will be up to date once the new build succeeds
-			let latestRev = document.getElementsByClassName("js-permalink-shortcut")[0] ? document.getElementsByClassName("js-permalink-shortcut")[0].href.split("/")[6] : rev;
+			let latestRev = document.getElementsByClassName("js-permalink-shortcut")[0] ? document.getElementsByClassName("js-permalink-shortcut")[0].href.split("/")[6] : urlProps.rev;
 			// TODO: Branches that are not built on Sourcegraph will not get annotations, need to trigger
-			rev = latestRev;
-			const repoName = repo;
-			if (repo) {
-				repo = `github.com/${user}/${repo}`;
-				this.props.actions.refreshVCS(repo);
+			urlProps.rev = latestRev;
+			if (urlProps.repoURI) {
+				this.props.actions.refreshVCS(urlProps.repoURI);
 			}
-			if (path) {
+			if (urlProps.path) {
 				// Strip hash (e.g. line location) from path.
-				const hashLoc = path.indexOf("#");
-				if (hashLoc !== -1) path = path.substring(0, hashLoc);
-			}
-			if (isDelta) {
-				const branches = document.querySelectorAll(".commit-ref,.current-branch");
-				const base = branches[0].innerText;
-				const head = branches[1].innerText;
-				this.props.actions.setBaseHead(base, head);
+				const hashLoc = urlProps.path.indexOf("#");
+				if (hashLoc !== -1) urlProps.path = urlProps.path.substring(0, hashLoc);
 			}
 
-			this.props.actions.setRepoRev(repo, rev);
-			this.props.actions.setDefPath(defPath);
-			this.props.actions.setPath(path);
-
-			if (repo && defPath && !isDelta) {
-				this.props.actions.getDef(repo, rev, defPath);
+			if (urlProps.repoURI && urlProps.defPath && !urlProps.isDelta) {
+				this.props.actions.getDef(urlProps.repoURI, urlProps.rev, urlProps.defPath);
 			}
 
-			if (repo && utils.supportsAnnotatingFile(path)) {
-				this.props.actions.ensureRepoExists(repo);
+			if (urlProps.repoURI && utils.supportsAnnotatingFile(urlProps.path)) {
+				this.props.actions.ensureRepoExists(urlProps.repoURI);
 			}
 
-			this._renderDefInfo(this.props);
+			this.setState(urlProps);
 		});
 	}
 
 	_refreshVCS() {
-		if (this.props.repo) {
-			this.props.actions.refreshVCS(this.props.repo);
+		if (this.state.repoURI) {
+			this.props.actions.refreshVCS(this.state.repoURI);
 		}
 	}
 
-	// _checkNavigateToDef checks for a URL fragment of the form "#sourcegraph&def=..."
-	// and redirects to the def's definition in code on GitHub.com.
-	_checkNavigateToDef({repo, rev, defPath, def}) {
-		const info = this._directURLToDef({repo, rev, defPath, def});
-		if (info) {
-			const {pathname, hash} = info;
-			if (!(window.location.pathname === pathname && window.location.hash === hash)) {
-				pjaxGoTo(`${pathname}${hash}`, repo === this.props.repo);
-			}
-		}
-	}
-
-	_directURLToDef({repo, rev, defPath, def}) {
-		const defObj = def ? def.content[keyFor(repo, rev, defPath)] : null;
+	_directURLToDef({repoURI, rev, defPath}) {
+		const defObj = this.props.def.content[keyFor(repoURI, rev, defPath)];
 		if (defObj) {
-			if (repo !== this.props.repo) rev = defaultBranchCache[repo] || "master";
-			const pathname = `/${repo.replace("github.com/", "")}/blob/${rev}/${defObj.File}`;
+			if (repoURI !== this.state.repoURI) rev = defaultBranchCache[repoURI] || "master";
+			const pathname = `/${repoURI.replace("github.com/", "")}/blob/${rev}/${defObj.File}`;
 			const hash = `#sourcegraph&def=${defPath}&L${defObj.StartLine || 0}-${defObj.EndLine || 0}`;
 			return {pathname, hash};
 		}
 		return null;
 	}
 
-	_renderDefInfo(props) {
-		const def = props.def.content[keyFor(props.repo, props.rev, props.defPath)];
+	_renderDefInfo(props, state) {
+		const def = props.def.content[keyFor(state.repoURI, state.rev, state.defPath)];
 
 		const id = "sourcegraph-def-info";
 		let e = document.getElementById(id);
@@ -266,7 +199,7 @@ export default class Background extends React.Component {
 			e.appendChild(a);
 		}
 
-		a.href = `https://sourcegraph.com/${props.repo}@${props.rev}/-/info/${props.defPath}?utm_source=browser-ext&browser_type=chrome`;
+		a.href = `https://sourcegraph.com/${state.repoURI}@${state.rev}/-/info/${state.defPath}?utm_source=browser-ext&browser_type=chrome`;
 		a.dataset.content = "Find Usages";
 		a.target = "tab";
 		a.title = `Sourcegraph: View cross-references to ${def.Name}`;

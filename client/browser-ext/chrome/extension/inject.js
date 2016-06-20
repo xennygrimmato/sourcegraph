@@ -98,14 +98,32 @@ function injectSearchApp() {
 	}
 }
 
+function getFileName(info, {isDelta, path}) {
+	if (isDelta) {
+		const userSelect = info.querySelector(".user-select-contain");
+		if (userSelect) {
+			return userSelect.title;
+		} else if (info.title) {
+			return info.title;
+		} else {
+			return null;
+		}
+	} else {
+		return path;
+	}
+}
+
 function injectBuildIndicators() {
 	if (!isGitHubURL()) return;
 
 	const {user, repo, rev, path, isDelta} = parseGitHubURL();
+
 	const fileInfos = document.querySelectorAll(".file-info");
 	for (let i = 0; i < fileInfos.length; ++i) {
 		const info = fileInfos[i];
-		const infoFilePath = isDelta ? info.querySelector(".user-select-contain").title : path;
+		const infoFilePath = getFileName(info, {isDelta, path});
+		if (!infoFilePath) continue;
+
 		const buildIndicatorId = `sourcegraph-build-indicator-${infoFilePath}`;
 		let buildIndicatorContainer = document.getElementById(buildIndicatorId);
 		if (!buildIndicatorContainer) { // prevent injecting build indicator twice
@@ -141,7 +159,9 @@ function injectBlobAnnotator() {
 
 	for (let i = 0; i < fileInfos.length; ++i) {
 		const info = fileInfos[i];
-		const infoFilePath = isDelta ? info.querySelector(".user-select-contain").title : path;
+		const infoFilePath = getFileName(info, {isDelta, path});
+		if (!infoFilePath) continue;
+
 		const blobAnnotatorId = `sourcegraph-blob-annotator-${infoFilePath}`;
 		let blobAnnotatorContainer = document.getElementById(blobAnnotatorId);
 		if (!blobAnnotatorContainer) { // prevent injecting build indicator twice

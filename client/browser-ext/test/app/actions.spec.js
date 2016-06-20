@@ -31,22 +31,6 @@ describe("actions", () => {
 		expect(actions.setAccessToken("token")).to.eql({type: types.SET_ACCESS_TOKEN, token: "token"});
 	});
 
-	it("setRepoRev", () => {
-		expect(actions.setRepoRev(repo, rev)).to.eql({type: types.SET_REPO_REV, repo, rev});
-	});
-
-	it("setPath", () => {
-		expect(actions.setPath(path)).to.eql({type: types.SET_PATH, path});
-	});
-
-	it("setQuery", () => {
-		expect(actions.setQuery(query)).to.eql({type: types.SET_QUERY, query});
-	});
-
-	it("setDefPath", () => {
-		expect(actions.setDefPath(defPath)).to.eql({type: types.SET_DEF_PATH, defPath});
-	});
-
 	it("expireAnnotations", () => {
 		expect(actions.expireAnnotations(repo, rev, path)).to.eql({type: types.EXPIRE_ANNOTATIONS, repo, rev, path});
 	});

@@ -9,23 +9,43 @@ export function supportsAnnotatingFile(path) {
 
 export function parseGitHubURL(loc = window.location) {
 	// TODO: this method has problems handling branch revisions with "/" character.
+	let user, repo, repoURI, rev, path, isDelta;
+	const isGitHub = isGitHubURL(loc);
+	if (!isGitHub) return {user, repo, repoURI, rev, path, isGitHub, isDelta};
+
 	const urlsplit = loc.pathname.slice(1).split("/");
-	let user = urlsplit[0];
-	let repo = urlsplit[1]
-	let rev;
+	user = urlsplit[0];
+	repo = urlsplit[1]
 	if (urlsplit[3] && (urlsplit[2] === "tree" || urlsplit[2] === "blob") || urlsplit[2] === "commit") {
 		rev = urlsplit[3];
 	}
-	let path;
 	if (urlsplit[2] === "blob") {
 		path = urlsplit.slice(4).join("/");
 	}
-	return {user, repo, rev, path, isDelta: urlsplit[2] === "pull" || urlsplit[2] === "commit"};
+	return {user, repo, repoURI: user && repo ? `github.com/${user}/${repo}` : null, rev, path, isGitHub, isDelta: urlsplit[2] === "pull" || urlsplit[2] === "commit"};
 }
 
-export function parseGitHubRepoURI(loc = window.location) {
-	const {user, repo} = parseGitHubURL(loc);
-	return `github.com/${user}/${repo}`;
+export function parseURL(loc = window.location) {
+	let info = parseGitHubURL(loc);
+
+	// We scrape the current branch and set rev to it so we stay on the same branch when doing jump-to-def.
+	// Need to use the branch selector button because _clickRef passes a pathname as the location which,
+	// only includes ${user}/${repo}, and no rev.
+	let currBranch = getCurrentBranch();
+	info.rev = currBranch;
+
+	// Check for URL hashes like "#sourcegraph&def=...".
+	if (loc.hash.startsWith("#sourcegraph&")) {
+		loc.hash.slice(1).split("&").slice(1).forEach((p) => { // omit "sourcegraph" sentinel
+			const kv = p.split("=", 2);
+			if (kv.length != 2) return;
+			let k = kv[0];
+			const v = kv[1];
+			if (k === "def") k = "defPath"; // disambiguate with def obj
+			if (!info[k]) info[k] = v; // don't clobber
+		});
+	}
+	return info;
 }
 
 export function isGitHubURL(loc = window.location) {
