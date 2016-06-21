@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -19,6 +20,7 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/randstring"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
+	"sourcegraph.com/sqs/pbtypes"
 )
 
 // accounts is a DB-backed implementation of the Accounts store.
@@ -120,9 +122,12 @@ func init() {
 }
 
 type passwordResetRequest struct {
-	Token string
-	UID   int32
+	Token     string
+	UID       int32
+	ExpiresAt time.Time `db:"expires_at"`
 }
+
+const PasswordReset time.Duration = 4 * time.Hour
 
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
 	if err := accesscontrol.VerifyUserSelfOrAdmin(ctx, "Accounts.RequestPasswordReset", user.UID); err != nil {
@@ -136,15 +141,20 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.U
 		return nil, errors.New("UID must be set")
 	}
 	token := randstring.NewLen(tokenLength)
+	expiration := time.Now().Add(PasswordReset)
 	req := passwordResetRequest{
-		Token: token,
-		UID:   user.UID,
+		Token:     token,
+		UID:       user.UID,
+		ExpiresAt: expiration,
 	}
 	if err := appDBH(ctx).Insert(&req); err != nil {
 		return nil, fmt.Errorf("Error saving password reset token: %s", err)
 	}
-	return &sourcegraph.PasswordResetToken{Token: token}, nil
+	expirationTS := pbtypes.NewTimestamp(expiration)
+	return &sourcegraph.PasswordResetToken{Token: token, ExpiresAt: &expirationTS}, nil
 }
+
+var epoch = time.Unix(0, 0)
 
 func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPassword) error {
 	genericErr := grpc.Errorf(codes.InvalidArgument, "error reseting password") // don't need to reveal everything
@@ -155,14 +165,21 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 	} else if err != nil {
 		return genericErr
 	}
-	log15.Info("Resetting password", "store", "Accounts", "UID", req.UID)
-	if err := (password{}).SetPassword(ctx, req.UID, newPass.Password); err != nil {
-		return fmt.Errorf("Error changing password: %s", err)
-	}
-
-	if _, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE Token=$1`, newPass.Token.Token); err != nil {
-		log15.Warn("Error deleting token", "store", "Accounts", "error", err)
+	if time.Now().Before(req.ExpiresAt) {
+		log15.Info("Resetting password", "store", "Accounts", "UID", req.UID)
+		if err := (password{}).SetPassword(ctx, req.UID, newPass.Password); err != nil {
+			return fmt.Errorf("Error changing password: %s", err)
+		}
+		// Updating the expiration date of the token to the epoch will permanently expire it.
+		req.ExpiresAt = epoch
+		count, err := appDBH(ctx).Update(&req)
+		if err != nil {
+			log15.Warn("Error updating token", "store", "Accounts", "error", err)
+		}
+		if count > 1 {
+			log15.Warn("Updated more than one token", "store", "Accounts", "error")
+		}
 		return nil
 	}
-	return nil
+	return grpc.Errorf(codes.InvalidArgument, "this token has expired")
 }
