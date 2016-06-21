@@ -27,6 +27,108 @@ func sortedRepoURIs(repos []*sourcegraph.Repo) []string {
 	return uris
 }
 
+func TestRepos_Get(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	t.Parallel()
+
+	var s repos
+	ctx, _, done := testContext()
+	defer done()
+
+	want := s.mustCreate(ctx, t, &sourcegraph.Repo{URI: "r"})
+
+	repo, err := s.Get(ctx, want[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !jsonutil.JSONEqual(t, repo, want[0]) {
+		t.Errorf("got %v, want %v", repo, want[0])
+	}
+}
+
+func TestRepos_Get_origin(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	t.Parallel()
+
+	var s repos
+	ctx, _, done := testContext()
+	defer done()
+
+	wantOrigin := &sourcegraph.Origin{ID: "id", Service: sourcegraph.Origin_GitHub, APIBaseURL: "u"}
+	want := s.mustCreate(ctx, t, &sourcegraph.Repo{URI: "r", Origin: wantOrigin})
+
+	repo, err := s.Get(ctx, want[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !jsonutil.JSONEqual(t, repo, want[0]) {
+		t.Errorf("got %v, want %v", repo, want[0])
+	}
+	if !reflect.DeepEqual(repo.Origin, wantOrigin) {
+		t.Errorf("got origin %v, want %v", repo.Origin, wantOrigin)
+	}
+}
+
+// Test that GitHub repos that don't have the OriginRepoID, etc.,
+// fields set are auto-migrated by the Get method to have those fields
+// set.
+//
+// NOTE: We can remove this auto-migration when the database has
+// numeric repo IDs set for all GitHub repos.
+func TestRepos_Get_migration_setGitHubOriginRepoID(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	t.Parallel()
+
+	var s repos
+	ctx, _, done := testContext()
+	defer done()
+	ctx = store.WithRepos(ctx, &repos{})
+
+	calledGet := false
+	client := gogithub.NewClient(&http.Client{})
+	ctx = github.NewContextWithMockClient(ctx, true, client, client, mockGitHubRepos{
+		Get_: func(owner, repo string) (*gogithub.Repository, *gogithub.Response, error) {
+			if want := "a"; owner != want {
+				t.Errorf("want owner %q, got %q", owner, want)
+			}
+			if want := "b"; repo != want {
+				t.Errorf("want repo %q, got %q", repo, want)
+			}
+			calledGet = true
+			return &gogithub.Repository{
+				ID:       gogithub.Int(123),
+				Name:     gogithub.String("repo"),
+				FullName: gogithub.String("owner/repo"),
+				Owner:    &gogithub.User{ID: gogithub.Int(1)},
+				CloneURL: gogithub.String("https://github.com/owner/repo.git"),
+				Private:  gogithub.Bool(false),
+			}, nil, nil
+		}})
+
+	wantOrigin := &sourcegraph.Origin{ID: "123", Service: sourcegraph.Origin_GitHub, APIBaseURL: "https://api.github.com"}
+	created := s.mustCreate(ctx, t, &sourcegraph.Repo{URI: "github.com/a/b", Mirror: true})
+
+	repo, err := s.Get(ctx, created[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(repo.Origin, wantOrigin) {
+		t.Errorf("got origin %v, want %v", repo.Origin, wantOrigin)
+	}
+	if !calledGet {
+		t.Error("!calledGet")
+	}
+}
+
 func TestRepos_List(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
