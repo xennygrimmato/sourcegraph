@@ -67,12 +67,18 @@ func (s *repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 		return nil, grpc.Errorf(codes.NotFound, "github repo not found: %s", repo)
 	}
 
-	if cached, err := getFromCache(ctx, repo); err == nil {
-		reposGithubPublicCacheCounter.WithLabelValues("hit").Inc()
-		if cached.PublicNotFound {
-			return nil, grpc.Errorf(codes.NotFound, "github repo not found: %s", repo)
+	// Don't memory-cache responses for authed users, since the repos'
+	// Permissions fields will differ among the different users.
+	isAuthed := client(ctx).isAuthedUser
+
+	if !isAuthed {
+		if cached, err := getFromCache(ctx, repo); err == nil {
+			reposGithubPublicCacheCounter.WithLabelValues("hit").Inc()
+			if cached.PublicNotFound {
+				return nil, grpc.Errorf(codes.NotFound, "github repo not found: %s", repo)
+			}
+			return &cached.RemoteRepo, nil
 		}
-		return &cached.RemoteRepo, nil
 	}
 
 	remoteRepo, err := getFromAPI(ctx, owner, repoName)
@@ -87,8 +93,8 @@ func (s *repos) Get(ctx context.Context, repo string) (*sourcegraph.RemoteRepo, 
 		return nil, err
 	}
 
-	// We are allowed to cache public repos
-	if !remoteRepo.Private {
+	// We are allowed to cache public repos for anonymous users.
+	if !remoteRepo.Private && !isAuthed {
 		_ = reposGithubPublicCache.Add(repo, remoteRepo, reposGithubPublicCacheTTL)
 		reposGithubPublicCacheCounter.WithLabelValues("miss").Inc()
 	} else {
@@ -177,6 +183,14 @@ func toRemoteRepo(ghrepo *github.Repository) *sourcegraph.RemoteRepo {
 	}
 	if ghrepo.WatchersCount != nil {
 		repo.Stars = int32(*ghrepo.WatchersCount)
+	}
+	if pp := ghrepo.Permissions; pp != nil {
+		p := *pp
+		repo.Permissions = &sourcegraph.RepoPermissions{
+			Pull:  p["pull"],
+			Push:  p["push"],
+			Admin: p["admin"],
+		}
 	}
 	return &repo
 }
