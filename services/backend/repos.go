@@ -121,6 +121,7 @@ func repoSetFromRemote(repo *sourcegraph.Repo, ghrepo *sourcegraph.RemoteRepo) {
 	repo.Private = ghrepo.Private
 	repo.UpdatedAt = ghrepo.UpdatedAt
 	repo.PushedAt = ghrepo.PushedAt
+	repo.Permissions = ghrepo.Permissions
 }
 
 func (s *repos) Create(ctx context.Context, op *sourcegraph.ReposCreateOp) (repo *sourcegraph.Repo, err error) {

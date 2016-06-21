@@ -21,9 +21,11 @@ func TestReposService_Get(t *testing.T) {
 		ID:      1,
 		URI:     "r",
 		HTMLURL: "http://example.com/r",
+
+		Permissions: &sourcegraph.RepoPermissions{Pull: true, Push: true},
 	}
 
-	calledGet := mock.stores.Repos.MockGet_Path(t, 1, "r")
+	calledGet := mock.stores.Repos.MockGet_Return(t, wantRepo)
 
 	repo, err := s.Get(ctx, &sourcegraph.RepoSpec{ID: 1})
 	if err != nil {
