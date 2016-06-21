@@ -12,6 +12,7 @@ export const TriangleLeftIcon = iconWrapper(require("react-icons/lib/go/triangle
 export const TriangleRightIcon = iconWrapper(require("react-icons/lib/go/triangle-right"));
 export const PencilIcon = iconWrapper(require("react-icons/lib/go/pencil"));
 export const CheckIcon = iconWrapper(require("react-icons/lib/go/check"));
+export const GearIcon = iconWrapper(require("react-icons/lib/go/gear"));
 export const GlobeIcon = iconWrapper(require("react-icons/lib/fa/globe"));
 export const LanguageIcon = iconWrapper(require("react-icons/lib/fa/language"));
 export const MagnifyingGlassIcon = iconWrapper(require("react-icons/lib/fa/search"));

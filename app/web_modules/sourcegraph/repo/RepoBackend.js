@@ -17,7 +17,19 @@ const RepoBackend = {
 	fetch: singleflightFetch(defaultFetch),
 
 	__onDispatch(action) {
-		if (action instanceof RepoActions.WantCommit) {
+		if (action instanceof RepoActions.WantConfig) {
+			let config = RepoStore.config.get(action.repo);
+			if (config === null) {
+				RepoBackend.fetch(`/.api/repos/${action.repo}/-/config`)
+					.then(checkStatus)
+					.then((resp) => resp.json())
+					.catch((err) => ({Error: err}))
+					.then((data) => {
+						Dispatcher.Stores.dispatch(new RepoActions.FetchedConfig(action.repo, data));
+					});
+			}
+			return;
+		} else if (action instanceof RepoActions.WantCommit) {
 			let commit = RepoStore.commits.get(action.repo, action.rev);
 			if (commit === null) {
 				RepoBackend.fetch(`/.api/repos/${action.repo}${action.rev ? `@${action.rev}` : ""}/-/commit`)

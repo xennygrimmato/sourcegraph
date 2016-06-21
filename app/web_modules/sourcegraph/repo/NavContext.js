@@ -1,12 +1,14 @@
 // @flow
 
 import React from "react";
-
 import RepoLink from "sourcegraph/components/RepoLink";
 import {Label} from "sourcegraph/components";
 import RevSwitcherContainer from "sourcegraph/repo/RevSwitcherContainer";
 import CSSModules from "react-css-modules";
 import styles from "./styles/Repo.css";
+import {Link} from "react-router";
+import {GearIcon} from "sourcegraph/components/Icons";
+import {urlToRepoSettings} from "sourcegraph/repo/settings/routes";
 
 class NavContext extends React.Component {
 	static propTypes = {
@@ -48,6 +50,9 @@ class NavContext extends React.Component {
 					routes={this.props.routes}
 					routeParams={this.props.routeParams}
 					isCloning={this.props.isCloning} />}
+				{this.props.repoObj && this.props.repoObj.Permissions && (this.props.repoObj.Permissions.Pull || this.props.repoObj.Permissions.Admin) && <div styleName="nav-settings">
+					<Link to={urlToRepoSettings(this.props.repo)}><GearIcon styleName="icon" /> Settings</Link>
+				</div>}
 			</div>
 		);
 	}

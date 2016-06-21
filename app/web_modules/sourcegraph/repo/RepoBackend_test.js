@@ -6,6 +6,15 @@ import * as RepoActions from "sourcegraph/repo/RepoActions";
 import immediateSyncPromise from "sourcegraph/util/immediateSyncPromise";
 
 describe("RepoBackend", () => {
+	it("should handle WantConfig", () => {
+		RepoBackend.fetch = function(url, options) {
+			expect(url).to.be("/.api/repos/r/-/config");
+			return immediateSyncPromise({status: 200, json: () => ({A: 1})});
+		};
+		expect(Dispatcher.Stores.catchDispatched(() => {
+			RepoBackend.__onDispatch(new RepoActions.WantConfig("r"));
+		})).to.eql([new RepoActions.FetchedConfig("r", {A: 1})]);
+	});
 	it("should handle WantCreateRepo for mirror repo", () => {
 		RepoBackend.fetch = function(url, options) {
 			expect(url).to.be("/.api/repos");

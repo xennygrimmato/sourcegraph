@@ -19,6 +19,14 @@
 
 .repo-nav-context { display: inline-block; }
 
+.nav-settings {
+	flex: 1 1 auto;
+	text-align: right;
+}
+.icon {	
+	font-size: 1.5rem;
+}
+
 /* Hide filename on narrow screens. */
 @media screen and media-sm {
 	.repo-nav-context {

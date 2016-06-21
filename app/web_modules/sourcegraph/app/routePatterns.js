@@ -14,6 +14,7 @@ export type RouteName = "styleguide" |
 	"def" |
 	"defInfo" |
 	"repo" |
+	"repoSettings" |
 	"tree" |
 	"blob" |
 	"build" |
@@ -58,6 +59,7 @@ export const rel: {[key: RouteName]: string} = {
 	def: "def/*",
 	defInfo: "info/*",
 	repo: "*", // matches both "repo" and "repo@rev"
+	repoSettings: "settings",
 	tree: "tree/*",
 	blob: "blob/*",
 	build: "builds/:id",
@@ -90,6 +92,7 @@ export const abs: {[key: RouteName]: string} = {
 	def: `${rel.repo}/-/${rel.def}`,
 	defInfo: `${rel.repo}/-/${rel.defInfo}`,
 	repo: rel.repo,
+	repoSettings: `${rel.repo}/-/${rel.repoSettings}`,
 	tree: `${rel.repo}/-/${rel.tree}`,
 	blob: `${rel.repo}/-/${rel.blob}`,
 	build: `${rel.repo}/-/${rel.build}`,
