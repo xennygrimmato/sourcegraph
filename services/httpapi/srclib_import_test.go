@@ -37,7 +37,8 @@ func TestSrclibImport(t *testing.T) {
 		URI: wantRepo,
 	})
 	calledReposResolveRev := mock.Repos.MockResolveRev_NoCheck(t, wantCommitID)
-	calledRefreshIndexes := mock.Async.MockRefreshIndexes(t, &sourcegraph.AsyncRefreshIndexesOp{Repo: wantRepoID})
+	calledRefreshIndexes := mock.Async.MockRefreshIndexes(t, &sourcegraph.AsyncRefreshIndexesOp{Repo: wantRepoID, Source: "import " + wantCommitID, Force: true})
+	calledRefreshIndex := mock.Defs.MockRefreshIndex(t, &sourcegraph.DefsRefreshIndexOp{Repo: wantRepoID, CommitID: wantCommitID})
 
 	// Mock the srclib store interface (and replace the old
 	// newSrclibStoreClient value when done).
@@ -127,6 +128,9 @@ func TestSrclibImport(t *testing.T) {
 	}
 	if !*calledRefreshIndexes {
 		t.Error("!calledRefreshIndexes")
+	}
+	if !*calledRefreshIndex {
+		t.Error("!calledRefreshIndex")
 	}
 }
 

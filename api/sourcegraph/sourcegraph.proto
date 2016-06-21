@@ -145,7 +145,6 @@ message RepoListOptions {
 	bool NoFork = 7 [(gogoproto.moretags) = "url:\",omitempty\""];
 	string Type = 8 [(gogoproto.moretags) = "url:\",omitempty\""];
 	string Owner = 10 [(gogoproto.moretags) = "url:\",omitempty\""];
-	bool SlowlyIncludePublicGitHubRepos = 12 [(gogoproto.moretags) = "url:\",omitempty\""];
 	ListOptions ListOptions = 11 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
 }
 
@@ -438,6 +437,18 @@ message ReposUpdateOp {
 
 	// DefaultBranch is the repo's new default branch.
 	string DefaultBranch = 6;
+
+	enum BoolType {
+		NONE = 0;
+		TRUE = 1;
+		FALSE = 2;
+	}
+
+	// Fork is whether this repository is a fork.
+	BoolType Fork = 7;
+
+	// Private is whether this repository is private.
+	BoolType Private = 8;
 };
 
 message ReposListCommitsOp {
@@ -1740,6 +1751,9 @@ message DefsRefreshIndexOp {
 	// Force ensures we reindex, even if we have already indexed the latest
 	// commit for repo
 	bool Force = 3;
+
+	// CommitID is the commit for which defs should be synced from srclib-store to DB.
+	string CommitID = 4;
 }
 
 // DefsService communicates with the def- and graph-related endpoints in the
@@ -2109,6 +2123,11 @@ message SearchOptions {
 	// (func, var, etc) from the returned results.
 	repeated string NotKinds = 9;
 
+	// CommitID is the Git commit ID to restrict the results to. This option is
+	// only used when filtering by a specific set of repositories.
+	// If empty, the latest indexed revision is implied.
+	string CommitID = 10;
+
 	// ListOptions specifies options for paginating
 	// the result.
 	ListOptions ListOptions = 3 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
@@ -2118,6 +2137,11 @@ message SearchOptions {
 
 	// PrefixMatch indicates whether to include defs prefix match on search results.
 	bool PrefixMatch = 5;
+
+	// Fast specifies that the client would like results returned more quickly at
+	// the cost of missing lower ranked results. If there are no high-ranking results
+	// and Fast is set to true, there may be no results returned at all.
+	bool Fast = 11;
 }
 
 // SearchOp holds the options for global search for a given query.

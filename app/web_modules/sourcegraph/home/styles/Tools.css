@@ -60,6 +60,12 @@
 	composes: pt4 pb4 from base;
 }
 
+.multiple-install {
+	display: inline-flex;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
 .img {
 	min-width: 60px;
 	height: 60px;
@@ -83,11 +89,17 @@
 	text-align: left;
 }
 
-.tool-img {
+.large-img {
+	width: 100px;
+	height: 100px;
+}
+
+.tool-img-container {
 	display: block;
 	min-width: 100px;
+	max-width: 100px;
 	height: 100px;
-	align-self: center;
+	align-self: flex-start;
 	composes: pl5 pr3 pt4 pb3 hidden-s from base;
 }
 
@@ -116,7 +128,7 @@
 }
 
 .dont-see-div {
-	composes: mb3 from base;
+	composes: pb3 from base;
 }
 
 .required {
@@ -148,4 +160,8 @@
 	composes: green-8 from colors;
 	vertical-align: middle;
 	padding-right: 5px;
+}
+
+@media media-sm {
+	.mv2-sm { composes: mv2 from base; }
 }

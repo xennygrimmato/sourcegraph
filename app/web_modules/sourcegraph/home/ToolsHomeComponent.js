@@ -6,6 +6,7 @@ import {Heading, Hero, Panel, Button} from "sourcegraph/components";
 import Component from "sourcegraph/Component";
 import {urlToGitHubOAuth} from "sourcegraph/util/urlTo";
 import ToolComponent from "./ToolComponent";
+import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
 
 class ToolsHomeComponent extends Component {
 
@@ -24,7 +25,7 @@ class ToolsHomeComponent extends Component {
 	constructor(props, context) {
 		super(props);
 		this.state = {
-			showChromeExtensionCTA: !window.localStorage["installed_chrome_extension"],
+			showChromeExtensionCTA: !document.getElementById("sourcegraph-app-bootstrap"),
 		};
 		this.supportedTools = {
 			browser: {
@@ -34,7 +35,7 @@ class ToolsHomeComponent extends Component {
 					paragraph: "This extension enhances code pages on GitHub by making every identifier a jump-to-definition link. Hovering over identifiers displays a tooltip with documentation and type information. The new keyboard shortcut Shift-T allows you to search for functions, types, and other definitions. After installing it, view some code on GitHub and hover your mouse over identifiers.",
 					img: "/img/Dashboard/GoogleChromeAsset.svg",
 				},
-				primaryButton: this._browserCTA(),
+				primaryButton: this._browserCTA.bind(this),
 			},
 			editor: {
 				hero: {
@@ -42,7 +43,7 @@ class ToolsHomeComponent extends Component {
 					subtitle: "See usage examples for Go code instantly, as you type. Currently in beta.",
 					paragraph: "When Sourcegraph is installed in your editor you get real usage examples from GitHub, immediate access to source code, and documentation as you type. It’s like pair programming with the smartest developer in the world. Sourcegraph currently supports Go in Vim and Sublime Text. More languages and editors are coming soon.",
 				},
-				primaryButton: this._sfyeCTA(context),
+				primaryButton: this._sfyeCTA.bind(this),
 				youtube: "https://www.youtube.com/embed/ssON7dfaDZo",
 				interestForm: {
 					title: "Use another editor or language? Get early access to Sourcegraph for your editor and language of choice.",
@@ -66,7 +67,7 @@ class ToolsHomeComponent extends Component {
 	}
 
 	_toolClicked(toolType) {
-		this.context.eventLogger.logEventForPage("ToolCTAClicked", "DashboardTools", {toolType: toolType});
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_CLICK, "ToolCTAClicked", {toolType: toolType, page_name: AnalyticsConstants.PAGE_TOOLS});
 		this.context.router.replace({pathname: `/tools/${toolType}`});
 	}
 
@@ -89,26 +90,24 @@ class ToolsHomeComponent extends Component {
 	}
 
 	_browserLearnMoreCTAClicked() {
-		this.context.eventLogger.logEventForPage("ChromeExtensionStoreCTAClicked", "DashboardTools");
-		window.location.href("https://chrome.google.com/webstore/detail/sourcegraph-for-github/dgjhfomjieaadpoljlnidmbgkdffpack?hl=en");
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_CLICK, "ChromeExtensionStoreCTAClicked", {page_name: AnalyticsConstants.PAGE_TOOLS});
+		window.location.assign("https://chrome.google.com/webstore/detail/sourcegraph-for-github/dgjhfomjieaadpoljlnidmbgkdffpack?hl=en");
 	}
 
 	_successHandler() {
-		this.context.eventLogger.logEventForPage("ChromeExtensionInstalled", "DashboardTools");
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_SUCCESS, "ChromeExtensionInstalled", {page_name: AnalyticsConstants.PAGE_TOOLS});
 		this.context.eventLogger.setUserProperty("installed_chrome_extension", "true");
 		this.setState({showChromeExtensionCTA: false});
-		window.localStorage["installed_chrome_extension"] = true;
 	}
 
 	_failHandler() {
-		this.context.eventLogger.logEventForPage("ChromeExtensionInstallFailed", "DashboardTools");
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_ERROR, "ChromeExtensionInstallFailed", {page_name: AnalyticsConstants.PAGE_TOOLS});
 		this.context.eventLogger.setUserProperty("installed_chrome_extension", "false");
 		this.setState({showChromeExtensionCTA: true});
-		window.localStorage.removeItem("installed_chrome_extension");
 	}
 
 	_installChromeExtensionClicked() {
-		this.context.eventLogger.logEventForPage("ChromeExtensionCTAClicked", "DashboardTools");
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_CLICK, "ChromeExtensionCTAClicked", {page_name: AnalyticsConstants.PAGE_TOOLS});
 		if (global.chrome) {
 			global.chrome.webstore.install("https://chrome.google.com/webstore/detail/dgjhfomjieaadpoljlnidmbgkdffpack", this._successHandler.bind(this), this._failHandler.bind(this));
 		}
@@ -123,30 +122,35 @@ class ToolsHomeComponent extends Component {
 	}
 
 	_installEditorForSublimeCTAClicked() {
-		this.context.eventLogger.logEventForPage("SourcegraphLiveCTAClicked", "DashboardTools", {editorType: "Sublime"});
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_CLICK, "SourcegraphLiveCTAClicked", {page_name: AnalyticsConstants.PAGE_TOOLS, editorType: AnalyticsConstants.INTEGRATION_EDITOR_SUBLIME});
 		window.location.assign("https://github.com/sourcegraph/sourcegraph-sublime");
 	}
 
 	_installEditorForVimCTAClicked() {
-		this.context.eventLogger.logEventForPage("SourcegraphLiveCTAClicked", "DashboardTools", {editorType: "Vim"});
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_TOOLS, AnalyticsConstants.ACTION_CLICK, "SourcegraphLiveCTAClicked", {page_name: AnalyticsConstants.PAGE_TOOLS, editorType: AnalyticsConstants.INTEGRATION_EDITOR_VIM});
 		window.location.assign("https://github.com/sourcegraph/sourcegraph-vim");
 	}
 
-	_sfyeCTA(context) {
+	_sfyeCTA() {
 		return (
-			<div>
-				<span className={base.ph1}>
-					<Button color="purple" imageUrl={`${context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphSublime.svg`} onClick={this._installEditorForSublimeCTAClicked.bind(this)}>Install for Sublime</Button>
-				</span>
-				<span className={base.ph1}>
-					<Button color="purple" imageUrl={`${context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphVim.svg`} onClick={this._installEditorForVimCTAClicked.bind(this)}>Install for Vim</Button>
-				</span>
+			<div styleName="multiple-install">
+				<div className={base.ph1} styleName={"mv2-sm"}>
+					<Button color="purple" imageUrl={`${this.context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphSublime.svg`} onClick={this._installEditorForSublimeCTAClicked.bind(this)}>Install for Sublime</Button>
+				</div>
+				<div className={base.ph1} styleName={"mv2-sm"}>
+					<Button color="purple" imageUrl={`${this.context.siteConfig.assetsRoot}/img/Dashboard/SourcegraphVim.svg`} onClick={this._installEditorForVimCTAClicked.bind(this)}>Install for Vim</Button>
+				</div>
 			</div>
 		);
 	}
 
+	_installAlfredClicked() {
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_AUTH, AnalyticsConstants.ACTION_CLICK, "AlfredCTAClicked", {page_name: AnalyticsConstants.PAGE_TOOLS});
+		window.open("https://github.com/sourcegraph/sourcegraph-alfred");
+	}
+
 	_connectGitHubClicked() {
-		this.context.eventLogger.logEventForPage("InitiateGitHubOAuth2Flow", "DashboardTools", {scopes: "", upgrade: true});
+		this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_AUTH, AnalyticsConstants.ACTION_CLICK, "InitiateGitHubOAuth2Flow", {page_name: AnalyticsConstants.PAGE_TOOLS, scopes: "", upgrade: true});
 		window.open(urlToGitHubOAuth);
 	}
 
@@ -198,6 +202,20 @@ class ToolsHomeComponent extends Component {
 							</p>
 							<div styleName="button-container">
 								<Button onClick={this._toolClicked.bind(this, "editor")} color="purple">
+									Install
+								</Button>
+							</div>
+						</Panel>
+					</div>
+					<div styleName="panel-item">
+						<Panel hoverLevel="high">
+							<img styleName="img" src={`${this.context.siteConfig.assetsRoot}/img/Dashboard/AlfredLogo.png`}></img>
+							<Heading align="center" level="4" className={base.ph4}>For your launcher</Heading>
+							<p styleName="cool-mid-gray" className={base.ph4}>
+								Instant access to global code search from Alfred.
+							</p>
+							<div styleName="button-container">
+								<Button onClick={this._installAlfredClicked.bind(this)} color="purple">
 									Install
 								</Button>
 							</div>

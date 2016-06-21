@@ -10,6 +10,7 @@ import CSSModules from "react-css-modules";
 import styles from "./styles/DefInfo.css";
 import {RefLocsPerPage} from "sourcegraph/def";
 import "whatwg-fetch";
+import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
 
 class RepoRefsContainer extends Container {
 	static propTypes = {
@@ -59,7 +60,7 @@ class RepoRefsContainer extends Container {
 	_onNextPage() {
 		let nextPage = this.state.currPage + 1;
 		this.setState({currPage: nextPage, nextPageLoading: true});
-		if (this.context.eventLogger) this.context.eventLogger.logEvent("RefsPaginatorClicked", {page: nextPage});
+		if (this.context.eventLogger) this.context.eventLogger.logEventForCategory(AnalyticsConstants.CATEGORY_DEF_INFO, AnalyticsConstants.ACTION_CLICK, "RefsPaginatorClicked", {next_page: nextPage, repo: this.props.repo, def: this.props.def});
 	}
 
 	render() {
@@ -71,10 +72,10 @@ class RepoRefsContainer extends Container {
 			<div>
 				<div styleName="section-label">
 					{refLocs && refLocs.TotalRepos &&
-						`Used in ${refLocs.TotalRepos} repositor${refLocs.TotalRepos === 1 ? "y" : "ies"}`
+						`Referenced in ${refLocs.TotalRepos} repositor${refLocs.TotalRepos === 1 ? "y" : "ies"}`
 					}
 					{refLocs && !refLocs.TotalRepos && refLocs.RepoRefs &&
-						`Used in ${refLocs.RepoRefs.length}+ repositories`
+						`Referenced in ${refLocs.RepoRefs.length}+ repositories`
 					}
 				</div>
 				<hr style={{marginTop: 0, clear: "both"}}/>
@@ -90,7 +91,8 @@ class RepoRefsContainer extends Container {
 					repoRefs={repoRefs}
 					prefetch={i === 0}
 					initNumSnippets={i === 0 ? 1 : 0}
-					fileCollapseThreshold={5} />)}
+					fileCollapseThreshold={5}
+					showRepoTitle={true}/>)}
 				{/* Display the paginator if we have more files repos or repos to show. */}
 				{refLocs && refLocs.RepoRefs &&
 					(fileCount >= RefLocsPerPage || refLocs.TotalRepos > refLocs.RepoRefs.length || !refLocs.TotalRepos) &&
