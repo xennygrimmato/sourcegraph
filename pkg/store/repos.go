@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/rsa"
 	"time"
 
 	"golang.org/x/net/context"
@@ -72,6 +73,15 @@ type RepoStatuses interface {
 	GetCombined(ctx context.Context, repo int32, commitID string) (*sourcegraph.CombinedStatus, error)
 	GetCoverage(ctx context.Context) (*sourcegraph.RepoStatusList, error)
 	Create(ctx context.Context, repo int32, commitID string, status *sourcegraph.RepoStatus) error
+}
+
+// RepoKeyPairs defines the interface for stores that persist and
+// fetch repository SSH keys (e.g., to access private repos on some
+// external origin server that we mirror from).
+type RepoKeyPairs interface {
+	Create(ctx context.Context, repo int32, privKey *rsa.PrivateKey) error
+	GetPEM(ctx context.Context, repo int32) ([]byte, error)
+	Delete(ctx context.Context, repo int32) error
 }
 
 type RepoVCS interface {

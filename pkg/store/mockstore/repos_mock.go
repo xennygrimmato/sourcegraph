@@ -3,6 +3,8 @@
 package mockstore
 
 import (
+	"crypto/rsa"
+
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/gitproto"
@@ -85,6 +87,24 @@ func (s *RepoStatuses) Create(ctx context.Context, repo int32, commitID string, 
 }
 
 var _ store.RepoStatuses = (*RepoStatuses)(nil)
+
+type RepoKeyPairs struct {
+	Create_ func(ctx context.Context, repo int32, privKey *rsa.PrivateKey) error
+	GetPEM_ func(ctx context.Context, repo int32) ([]byte, error)
+	Delete_ func(ctx context.Context, repo int32) error
+}
+
+func (s *RepoKeyPairs) Create(ctx context.Context, repo int32, privKey *rsa.PrivateKey) error {
+	return s.Create_(ctx, repo, privKey)
+}
+
+func (s *RepoKeyPairs) GetPEM(ctx context.Context, repo int32) ([]byte, error) {
+	return s.GetPEM_(ctx, repo)
+}
+
+func (s *RepoKeyPairs) Delete(ctx context.Context, repo int32) error { return s.Delete_(ctx, repo) }
+
+var _ store.RepoKeyPairs = (*RepoKeyPairs)(nil)
 
 type RepoVCS struct {
 	Open_             func(ctx context.Context, repo int32) (vcs.Repository, error)

@@ -70,6 +70,11 @@ func (s *mirrorRepos) RefreshVCS(ctx context.Context, op *sourcegraph.MirrorRepo
 		return nil, err
 	}
 
+	keyPair, err := store.RepoKeyPairsFromContext(ctx).GetPEM(ctx, repo.ID)
+	if grpc.Code( err) == codes.NotFound {
+		// TODO(sqs): need to automatically add/update deploy keys if the repo is configured such
+		log15.Error("
+
 	vcsRepo, err := store.RepoVCSFromContext(ctx).Open(ctx, repo.ID)
 	if err != nil {
 		log15.Error("RefreshVCS: failed to open VCS", "error", err, "URI", repo.URI)

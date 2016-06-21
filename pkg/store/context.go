@@ -35,6 +35,7 @@ type Stores struct {
 	Password           Password
 	Queue              Queue
 	RepoConfigs        RepoConfigs
+	RepoKeyPairs       RepoKeyPairs
 	RepoStatuses       RepoStatuses
 	RepoVCS            RepoVCS
 	Repos              Repos
@@ -60,6 +61,7 @@ const (
 	_PasswordKey
 	_QueueKey
 	_RepoConfigsKey
+	_RepoKeyPairsKey
 	_RepoStatusesKey
 	_RepoVCSKey
 	_ReposKey
@@ -115,6 +117,9 @@ func WithStores(ctx context.Context, s Stores) context.Context {
 	}
 	if s.RepoConfigs != nil {
 		ctx = WithRepoConfigs(ctx, s.RepoConfigs)
+	}
+	if s.RepoKeyPairs != nil {
+		ctx = WithRepoKeyPairs(ctx, s.RepoKeyPairs)
 	}
 	if s.RepoStatuses != nil {
 		ctx = WithRepoStatuses(ctx, s.RepoStatuses)
@@ -351,6 +356,20 @@ func RepoConfigsFromContext(ctx context.Context) RepoConfigs {
 	s, ok := ctx.Value(_RepoConfigsKey).(RepoConfigs)
 	if !ok || s == nil {
 		panic("no RepoConfigs set in context")
+	}
+	return s
+}
+
+// WithRepoKeyPairs returns a copy of parent with the given RepoKeyPairs store.
+func WithRepoKeyPairs(parent context.Context, s RepoKeyPairs) context.Context {
+	return context.WithValue(parent, _RepoKeyPairsKey, s)
+}
+
+// RepoKeyPairsFromContext gets the context's RepoKeyPairs store. If the store is not present, it panics.
+func RepoKeyPairsFromContext(ctx context.Context) RepoKeyPairs {
+	s, ok := ctx.Value(_RepoKeyPairsKey).(RepoKeyPairs)
+	if !ok || s == nil {
+		panic("no RepoKeyPairs set in context")
 	}
 	return s
 }
