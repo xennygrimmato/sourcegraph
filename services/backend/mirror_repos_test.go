@@ -14,7 +14,7 @@ import (
 
 func TestRefreshVCS(t *testing.T) {
 	ctx, mock := testContext()
-	var updatedEverything bool
+	var updatedEverything, calledInternalUpdate bool
 	mock.servers.Repos.MockGet(t, 1)
 	mock.stores.RepoVCS.MockOpen(t, 1, vcstest.MockRepository{
 		Branches_: func(_ vcs.BranchesOptions) ([]*vcs.Branch, error) {
@@ -28,6 +28,10 @@ func TestRefreshVCS(t *testing.T) {
 	mock.servers.Auth.GetExternalToken_ = func(v0 context.Context, v1 *sourcegraph.ExternalTokenSpec) (*sourcegraph.ExternalToken, error) {
 		return nil, errors.New("mock")
 	}
+	mock.stores.Repos.InternalUpdate_ = func(ctx context.Context, repo int32, op store.InternalRepoUpdate) error {
+		calledInternalUpdate = true
+		return nil
+	}
 
 	_, err := MirrorRepos.RefreshVCS(ctx, &sourcegraph.MirrorReposRefreshVCSOp{Repo: 1})
 	if !updatedEverything {
@@ -36,11 +40,14 @@ func TestRefreshVCS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RefreshVCS call failed: %s", err)
 	}
+	if !calledInternalUpdate {
+		t.Error("!calledInternalUpdate")
+	}
 }
 
 func TestRefreshVCS_cloneRepo(t *testing.T) {
 	ctx, mock := testContext()
-	var cloned, built bool
+	var cloned, built, calledInternalUpdate bool
 	mock.servers.Repos.MockGet(t, 1)
 	mock.servers.Repos.MockResolveRev_NoCheck(t, "deadbeef")
 	mock.stores.RepoVCS.MockOpen(t, 1, vcstest.MockRepository{
@@ -59,6 +66,10 @@ func TestRefreshVCS_cloneRepo(t *testing.T) {
 	mock.servers.Auth.GetExternalToken_ = func(v0 context.Context, v1 *sourcegraph.ExternalTokenSpec) (*sourcegraph.ExternalToken, error) {
 		return nil, errors.New("mock")
 	}
+	mock.stores.Repos.InternalUpdate_ = func(ctx context.Context, repo int32, op store.InternalRepoUpdate) error {
+		calledInternalUpdate = true
+		return nil
+	}
 
 	_, err := MirrorRepos.RefreshVCS(ctx, &sourcegraph.MirrorReposRefreshVCSOp{Repo: 1})
 	if !cloned {
@@ -70,11 +81,14 @@ func TestRefreshVCS_cloneRepo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RefreshVCS call failed: %s", err)
 	}
+	if !calledInternalUpdate {
+		t.Error("!calledInternalUpdate")
+	}
 }
 
 func TestRefreshVCS_cloneRepoExists(t *testing.T) {
 	ctx, mock := testContext()
-	var built bool
+	var built, calledInternalUpdate bool
 	mock.servers.Repos.MockGet(t, 1)
 	mock.servers.Repos.MockResolveRev_NoCheck(t, "deadbeef")
 	mock.stores.RepoVCS.MockOpen(t, 1, vcstest.MockRepository{
@@ -92,6 +106,10 @@ func TestRefreshVCS_cloneRepoExists(t *testing.T) {
 	mock.servers.Auth.GetExternalToken_ = func(v0 context.Context, v1 *sourcegraph.ExternalTokenSpec) (*sourcegraph.ExternalToken, error) {
 		return nil, errors.New("mock")
 	}
+	mock.stores.Repos.InternalUpdate_ = func(ctx context.Context, repo int32, op store.InternalRepoUpdate) error {
+		calledInternalUpdate = true
+		return nil
+	}
 
 	_, err := MirrorRepos.RefreshVCS(ctx, &sourcegraph.MirrorReposRefreshVCSOp{Repo: 1})
 	if !built {
@@ -99,5 +117,8 @@ func TestRefreshVCS_cloneRepoExists(t *testing.T) {
 	}
 	if err != nil {
 		t.Fatalf("RefreshVCS call failed: %s", err)
+	}
+	if !calledInternalUpdate {
+		t.Error("!calledInternalUpdate")
 	}
 }

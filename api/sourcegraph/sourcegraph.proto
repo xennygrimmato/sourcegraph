@@ -174,6 +174,26 @@ message Repo {
 	// Origin describes the repo's canonical location. It is only
 	// populated for mirror repos; for non-mirror repos, it is null.
 	Origin Origin = 19;
+
+	// Permissions describes the actions that the current user (who
+	// retrieved this repository from the API) may perform on the
+	// repository. For public repositories retrieved by
+	// non-contributors, the Permissions field may be null and the
+	// Pull permission is implied (because it's a public repository).
+	//
+	// TODO(sqs): Currently these map directly to the user's GitHub
+	// permissions for GitHub repositories; all other repositories
+	// report that all users have the Pull permission only.
+	RepoPermissions Permissions = 21;
+}
+
+// RepoPermissions describes the actions that a user may perform on a
+// repo. Currently, the definition of these permissions directly maps
+// to GitHub permissions, except for "Pull", which means read access.
+message RepoPermissions {
+	bool Pull = 1;
+	bool Push = 2;
+	bool Admin = 3;
 }
 
 message RepoListOptions {
