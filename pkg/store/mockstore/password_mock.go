@@ -3,8 +3,8 @@
 package mockstore
 
 import (
+	"github.com/sourcegraph/sourcegraph/pkg/store"
 	"golang.org/x/net/context"
-	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 )
 
 type Password struct {
