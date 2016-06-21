@@ -39,6 +39,7 @@ export const routes: Array<Route> = [
 					...require("sourcegraph/build/routes").routes,
 					...require("sourcegraph/def/routes").routes,
 					...require("sourcegraph/tree/routes").routes,
+					...require("sourcegraph/repo/settings/routes").routes,
 				]);
 			});
 		},

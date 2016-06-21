@@ -11,6 +11,19 @@ export class FetchedRepo {
 	}
 }
 
+export class WantConfig {
+	constructor(repo) {
+		this.repo = repo;
+	}
+}
+
+export class FetchedConfig {
+	constructor(repo, config) {
+		this.repo = repo;
+		this.config = config;
+	}
+}
+
 export class WantResolveRev {
 	constructor(repo, rev, force) {
 		this.repo = repo;

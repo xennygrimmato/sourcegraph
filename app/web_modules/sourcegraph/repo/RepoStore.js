@@ -11,7 +11,7 @@ function keyFor(repo, rev) {
 }
 
 export class RepoStore extends Store {
-	reset(data?: {repos: any, resolvedRevs: any, resolutions: any, branches: any, tags: any}) {
+	reset(data?: {repos: any, config: any, resolvedRevs: any, resolutions: any, branches: any, tags: any}) {
 		this.repos = deepFreeze({
 			content: data && data.repos ? data.repos.content : {},
 			get(repo) {
@@ -20,6 +20,12 @@ export class RepoStore extends Store {
 			cloning: data && data.repos ? data.repos.cloning : {},
 			isCloning(repo) {
 				return this.cloning[keyFor(repo)] || false;
+			},
+		});
+		this.config = deepFreeze({
+			content: data && data.config ? data.config.content : {},
+			get(repo) {
+				return this.content[keyFor(repo)] || null;
 			},
 		});
 		this.resolvedRevs = deepFreeze({
@@ -67,6 +73,7 @@ export class RepoStore extends Store {
 	toJSON(): any {
 		return {
 			repos: this.repos,
+			config: this.config,
 			resolvedRevs: this.resolvedRevs,
 			resolutions: this.resolutions,
 			branches: this.branches,
@@ -76,7 +83,15 @@ export class RepoStore extends Store {
 	}
 
 	__onDispatch(action) {
-		if (action instanceof RepoActions.ResolvedRev) {
+		if (action instanceof RepoActions.FetchedConfig) {
+			this.config = deepFreeze({...this.config,
+				content: {...this.config.content,
+					[keyFor(action.repo)]: action.config,
+				},
+			});
+			this.__emitChange();
+			return;
+		} else if (action instanceof RepoActions.ResolvedRev) {
 			this.resolvedRevs = deepFreeze({...this.resolvedRevs,
 				content: {...this.resolvedRevs.content,
 					[keyFor(action.repo, action.rev)]: action.commitID,
