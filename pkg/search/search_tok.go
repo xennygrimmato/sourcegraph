@@ -21,6 +21,16 @@ func BagOfWords(def *graph.Def) map[string]int {
 	unitParts := strings.Split(def.Unit, "/")
 	defParts := delims.Split(def.Path, -1)
 	fileParts := strings.Split(filepath.ToSlash(def.File), "/")
+	var docParts []string
+	for i, _ := range def.Docs {
+		docParts = append(docParts, strings.Split(def.Docs[i].Data, " ")...)
+	}
+	for _, w := range docParts {
+		words[w]++
+		if name := defParts[len(defParts)-1]; w == name {
+			words[w] += 20
+		}
+	}
 	for i, w := range repoParts {
 		words[w]++
 		if len(repoParts)-1 == i {
