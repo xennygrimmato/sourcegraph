@@ -296,6 +296,10 @@ class DefInfo extends Container {
 					{def && !def.Error &&
 						<div styleName="refs-container">
 								<div styleName="ref-tabs">
+										<a id="openSublime" onclick="document.sublime()" href="javascript:document.sublime()">
+											<TabItem active={refsSorting === "sublime"}>Open in Sublime Sublime</TabItem>
+										</a>
+
 										<Link to={{pathname: defInfoUrl, query: {...this.props.location.query, refs: "top"}}}>
 											<TabItem active={refsSorting === "top"}>Top</TabItem>
 										</Link>
