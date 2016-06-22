@@ -253,6 +253,8 @@ func TestAccounts_ResetPassword_badtoken(t *testing.T) {
 	}
 }
 
+// TestAccounts_CleanExpiredResets tests that expired password reset requests are removed from the
+// database whenever cleanExpiredResets is called.
 func TestAccounts_CleanExpiredResets(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
