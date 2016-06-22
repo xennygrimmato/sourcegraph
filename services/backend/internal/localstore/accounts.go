@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/amortize"
 	authpkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/dbutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/randstring"
@@ -127,9 +128,16 @@ type passwordResetRequest struct {
 	ExpiresAt time.Time `db:"expires_at"`
 }
 
-const PasswordReset time.Duration = 4 * time.Hour
+const passwordReset time.Duration = 4 * time.Hour
 
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
+	clean, err := amortize.ShouldAmortize(1, 1000)
+	if err != nil {
+		return nil, err
+	}
+	if clean {
+		s.cleanExpiredResets(ctx)
+	}
 	if err := accesscontrol.VerifyUserSelfOrAdmin(ctx, "Accounts.RequestPasswordReset", user.UID); err != nil {
 		return nil, err
 	}
@@ -141,7 +149,7 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.U
 		return nil, errors.New("UID must be set")
 	}
 	token := randstring.NewLen(tokenLength)
-	expiration := time.Now().Add(PasswordReset)
+	expiration := time.Now().Add(passwordReset)
 	req := passwordResetRequest{
 		Token:     token,
 		UID:       user.UID,
@@ -177,9 +185,19 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 			log15.Warn("Error updating token", "store", "Accounts", "error", err)
 		}
 		if count > 1 {
-			log15.Warn("Updated more than one token", "store", "Accounts", "error")
+			log15.Warn("Updated more than one token", "store", "Accounts", "updated", count)
 		}
 		return nil
 	}
 	return grpc.Errorf(codes.InvalidArgument, "this token has expired")
+}
+
+// cleanExpiredResets deletes password reset requests from the DB whose expiration date has passed.
+func (s *accounts) cleanExpiredResets(ctx context.Context) error {
+	rows, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE expires_at < now()`)
+	if err != nil {
+		return fmt.Errorf("Error when cleaning up expired password resets: %s", err)
+	}
+	log15.Info("Cleaned up expired password reset requests", "store", "Accounts", "removed", rows)
+	return nil
 }
