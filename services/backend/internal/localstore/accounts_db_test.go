@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
@@ -176,6 +177,7 @@ func TestAccounts_RequestPasswordReset(t *testing.T) {
 	ctx, _, done := testContext()
 	defer done()
 
+	before := time.Now()
 	s := &accounts{}
 	u := &sourcegraph.User{UID: 123}
 	token, err := s.RequestPasswordReset(ctx, u)
@@ -186,6 +188,10 @@ func TestAccounts_RequestPasswordReset(t *testing.T) {
 	r := regexp.MustCompile(p)
 	if !r.MatchString(token.Token) {
 		t.Errorf("token should match %s", p)
+	}
+
+	if !token.ExpiresAt.Time().After(before) {
+		t.Errorf("token's expiration date: %v should be at some point in the future", token.ExpiresAt)
 	}
 }
 
