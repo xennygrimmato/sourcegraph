@@ -1,6 +1,7 @@
 package localstore
 
 import (
+	"database/sql"
 	"reflect"
 	"regexp"
 	"strings"
@@ -239,5 +240,31 @@ func TestAccounts_ResetPassword_badtoken(t *testing.T) {
 	newPass := &sourcegraph.NewPassword{Password: "a", Token: &sourcegraph.PasswordResetToken{Token: "b"}}
 	if err := s.ResetPassword(ctx, newPass); err == nil {
 		t.Errorf("Should have gotten error reseting password, got nil instead")
+	}
+}
+
+func TestAccounts_CleanExpiredResets(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	ctx, _, done := testContext()
+	defer done()
+
+	s := &accounts{}
+	u := &sourcegraph.User{UID: 123}
+	token, err := s.RequestPasswordReset(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newPass := &sourcegraph.NewPassword{Password: "a", Token: &sourcegraph.PasswordResetToken{Token: token.Token}}
+	if err := s.ResetPassword(ctx, newPass); err != nil {
+		t.Fatal(err)
+	}
+	s.cleanExpiredResets(ctx)
+	var req passwordResetRequest
+	if err = appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, newPass.Token.Token); err != sql.ErrNoRows {
+		t.Fatalf("Should have gotten a NoRow error when trying to retrieve a cleaned reset request, got this error instead: %s", err)
+
 	}
 }
