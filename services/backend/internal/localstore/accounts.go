@@ -21,7 +21,6 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/randstring"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
-	"sourcegraph.com/sqs/pbtypes"
 )
 
 // accounts is a DB-backed implementation of the Accounts store.
@@ -158,8 +157,7 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.U
 	if err := appDBH(ctx).Insert(&req); err != nil {
 		return nil, fmt.Errorf("Error saving password reset token: %s", err)
 	}
-	expirationTS := pbtypes.NewTimestamp(expiration)
-	return &sourcegraph.PasswordResetToken{Token: token, ExpiresAt: &expirationTS}, nil
+	return &sourcegraph.PasswordResetToken{Token: token}, nil
 }
 
 var epoch = time.Unix(0, 0)
