@@ -192,10 +192,15 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 
 // cleanExpiredResets deletes password reset requests from the DB whose expiration date has passed.
 func (s *accounts) cleanExpiredResets(ctx context.Context) error {
-	rows, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE expires_at < now()`)
+	res, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE expires_at < now()`)
 	if err != nil {
 		return fmt.Errorf("Error when cleaning up expired password resets: %s", err)
 	}
-	log15.Info("Cleaned up expired password reset requests", "store", "Accounts", "removed", rows)
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log15.Warn("Error when counting the expired password reset requests that we cleaned", "store", "Accounts", "error", err)
+	} else {
+		log15.Info("Cleaned up expired password reset requests", "store", "Accounts", "removed", rows)
+	}
 	return nil
 }
