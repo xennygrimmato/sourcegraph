@@ -130,11 +130,11 @@ type passwordResetRequest struct {
 const passwordReset time.Duration = 4 * time.Hour
 
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
-	clean, err := amortize.ShouldAmortize(1, 1000)
+	doClean, err := amortize.ShouldAmortize(1, 1000)
 	if err != nil {
 		return nil, err
 	}
-	if clean {
+	if doClean {
 		s.cleanExpiredResets(ctx)
 	}
 	if err := accesscontrol.VerifyUserSelfOrAdmin(ctx, "Accounts.RequestPasswordReset", user.UID); err != nil {
