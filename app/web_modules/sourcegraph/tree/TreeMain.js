@@ -9,6 +9,8 @@ import CSSModules from "react-css-modules";
 import styles from "./styles/Tree.css";
 import Helmet from "react-helmet";
 
+import {renderTreeSearch} from "sourcegraph/jump/TreeSearch";
+
 class TreeMain extends React.Component {
 	static propTypes = {
 		location: React.PropTypes.object,
@@ -33,23 +35,15 @@ class TreeMain extends React.Component {
 
 	render() {
 		if (!this.props.commitID) return null;
-
 		const path = treeParam(this.props.routeParams.splat);
+
+		// TODO: update router URL
 
 		return (
 			<div styleName="tree-container">
 				{/* Let RepoMain set title for the root path. */}
 				{path !== "/" && <Helmet title={`${path} · ${trimRepo(this.props.repo)}`} />}
-				<TreeSearch
-					repo={this.props.repo}
-					rev={this.props.rev}
-					commitID={this.props.commitID}
-					path={path}
-					query={this.props.location.query.q || ""}
-					location={this.props.location}
-					route={this.props.route}
-					onChangeQuery={this._onChangeQuery.bind(this)}
-					onSelectPath={this._onSelectPath.bind(this)}/>
+				{renderTreeSearch(this.props.repo, this.props.rev, this.props.commitID, path, true, true, this.context.router)}
 			</div>
 		);
 	}

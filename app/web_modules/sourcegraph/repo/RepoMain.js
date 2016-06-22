@@ -16,6 +16,21 @@ import context from "sourcegraph/app/context";
 import {guessBranchName} from "sourcegraph/build/Build";
 import Header from "sourcegraph/components/Header";
 import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
+import SearchStore from "sourcegraph/search/SearchStore";
+
+import * as TreeActions from "sourcegraph/tree/TreeActions";
+import TreeStore from "sourcegraph/tree/TreeStore";
+import * as SearchActions from "sourcegraph/search/SearchActions";
+import {qualifiedNameAndType} from "sourcegraph/def/Formatter";
+import JumpTable from "sourcegraph/jump/JumpTable";
+import type {Section, Row} from "sourcegraph/jump/JumpTable";
+import fuzzysearch from "fuzzysearch";
+import {urlToBlob} from "sourcegraph/blob/routes";
+import {urlToTree} from "sourcegraph/tree/routes";
+import {urlToDef, urlToDefInfo} from "sourcegraph/def/routes";
+import trimLeft from "lodash/string/trimLeft";
+
+import {renderTreeSearch} from "sourcegraph/jump/TreeSearch";
 
 const TREE_SEARCH_MODAL_NAME = "TreeSearch";
 
@@ -216,19 +231,13 @@ class RepoMain extends React.Component {
 				{this.props.main}
 				{(!this.props.route || !this.props.route.disableTreeSearchOverlay) && this.props.location.state && this.props.location.state.modal === TREE_SEARCH_MODAL_NAME &&
 					<Modal onDismiss={this._dismissTreeSearchModal}>
-						<div styleName="tree-search-modal">
-							<TreeSearch
-								repo={this.props.repo}
-								rev={this.props.rev}
-								commitID={this.props.commitID}
-								overlay={true}
-								path={this.state.treeSearchPath}
-								query={this.state.treeSearchQuery}
-								location={this.props.location}
-								route={this.props.route}
-								onChangeQuery={this._onChangeQuery.bind(this)}
-								onSelectPath={this._onSelectPath.bind(this)} />
-						</div>
+				 <div styleName="tree-search-modal">
+				 {renderTreeSearch(
+					 this.props.repo, this.props.rev, this.props.commitID, this.state.treeSearchPath,
+					 this.props.location.query.prefixMatch, this.props.location.query.includeRepos,
+					 this.context.router,
+				 )}
+				 </div>
 					</Modal>
 				}
 			</div>

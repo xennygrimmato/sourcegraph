@@ -83,6 +83,10 @@ var browserConfig = {
 		filename: "[name].browser.js",
 		sourceMapFilename: "[file].map",
 	},
+	watch: true,
+	watchOptions: {
+		poll: true,
+	},
 	plugins: commonPlugins.concat([
 		new FlowStatusWebpackPlugin({restartFlow: false}),
 		new ExtractTextPlugin("[name].css", {allChunks: true, ignoreOrder: true}),
