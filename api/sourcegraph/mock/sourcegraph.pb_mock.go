@@ -3,11 +3,11 @@
 package mock
 
 import (
-	"github.com/sourcegraph/sourcegraph/pkg/inventory"
-	"github.com/sourcegraph/sourcegraph/pkg/vcs"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/inventory"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
 	"sourcegraph.com/sqs/pbtypes"
 )
 
