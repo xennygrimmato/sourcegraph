@@ -162,10 +162,15 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.U
 
 var epoch = time.Unix(0, 0)
 
+func unmarshallResetRequest(ctx context.Context, token string) (passwordResetRequest, error) {
+	var req passwordResetRequest
+	return req, appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, token)
+}
+
 func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPassword) error {
 	genericErr := grpc.Errorf(codes.InvalidArgument, "error reseting password") // don't need to reveal everything
-	var req passwordResetRequest
-	if err := appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, newPass.Token.Token); err == sql.ErrNoRows {
+	req, err := unmarshallResetRequest(ctx, newPass.Token.Token)
+	if err == sql.ErrNoRows {
 		log15.Warn("Token does not exist in password reset database", "store", "Accounts", "error", err)
 		return genericErr
 	} else if err != nil {

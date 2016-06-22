@@ -2,6 +2,7 @@ package localstore
 
 import (
 	"database/sql"
+	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -190,8 +191,9 @@ func TestAccounts_RequestPasswordReset(t *testing.T) {
 	if !r.MatchString(token.Token) {
 		t.Errorf("token should match %s", p)
 	}
-	var req passwordResetRequest
-	if err = appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, token.Token); err != nil {
+
+	req, err := unmarshallResetRequest(ctx, token.Token)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if !req.ExpiresAt.After(before) {
@@ -215,17 +217,21 @@ func TestAccounts_ResetPassword_ok(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	oldReq, err := unmarshallResetRequest(ctx, token.Token)
+	if err != nil {
+		log.Fatal(err)
+	}
 	newPass := &sourcegraph.NewPassword{Password: "a", Token: &sourcegraph.PasswordResetToken{Token: token.Token}}
 	if err := s.ResetPassword(ctx, newPass); err != nil {
 		t.Fatal(err)
 	}
-	var req passwordResetRequest
-	if err = appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, newPass.Token.Token); err != nil {
+
+	newReq, err := unmarshallResetRequest(ctx, newPass.Token.Token)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if !time.Now().After(req.ExpiresAt) {
-		t.Errorf("token's new expiration date: %v should be in the past", req.ExpiresAt)
+	if newReq.ExpiresAt.After(oldReq.ExpiresAt) {
+		t.Errorf("token's new expiration date: %v should be before its previous expiration date: %v", newReq.ExpiresAt, oldReq.ExpiresAt)
 	}
 }
 
@@ -266,9 +272,8 @@ func TestAccounts_CleanExpiredResets(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.cleanExpiredResets(ctx)
-	var req passwordResetRequest
-	if err = appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, newPass.Token.Token); err != sql.ErrNoRows {
+	_, err = unmarshallResetRequest(ctx, newPass.Token.Token)
+	if err != sql.ErrNoRows {
 		t.Fatalf("Should have gotten a NoRow error when trying to retrieve a cleaned reset request, got this error instead: %s", err)
-
 	}
 }
