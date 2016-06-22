@@ -42,13 +42,13 @@ func getAuthedCookie(endpoint *url.URL, username, password string) (*authedCooki
 		return nil, err
 	}
 
-	cookie, err := auth.NewSessionCookie(auth.Session{AccessToken: tok.AccessToken})
+	cookie, err := auth.NewSessionCookie(auth.Session{AccessToken: tok.AccessToken}, auth.OnlySecureCookies(ctx))
 	if err != nil {
 		return nil, err
 	}
 	// If only Name and Value are set, then Cookie.String returns the
 	// serialization of the cookie for use in a Cookie header.
-	cookie = &http.Cookie{Name: cookie.Name, Value: cookie.Value}
+	cookie = &http.Cookie{Name: cookie.Name, Value: cookie.Value, Secure: cookie.Secure}
 
 	// Say the token expires 5 minutes earlier so we have time to refresh it
 	expires := (time.Duration(tok.ExpiresInSec) * time.Second) - (5 * time.Minute)
