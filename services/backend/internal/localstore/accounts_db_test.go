@@ -189,7 +189,6 @@ func TestAccounts_RequestPasswordReset(t *testing.T) {
 	if !r.MatchString(token.Token) {
 		t.Errorf("token should match %s", p)
 	}
-
 	if !token.ExpiresAt.Time().After(before) {
 		t.Errorf("token's expiration date: %v should be at some point in the future", token.ExpiresAt)
 	}
@@ -215,6 +214,13 @@ func TestAccounts_ResetPassword_ok(t *testing.T) {
 	newPass := &sourcegraph.NewPassword{Password: "a", Token: &sourcegraph.PasswordResetToken{Token: token.Token}}
 	if err := s.ResetPassword(ctx, newPass); err != nil {
 		t.Fatal(err)
+	}
+	var req passwordResetRequest
+	if err = appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, newPass.Token.Token); err != nil {
+		t.Fatal(err)
+	}
+	if !time.Now().After(req.ExpiresAt) {
+		t.Errorf("token's new expiration date: %v should be in the past", req.ExpiresAt)
 	}
 }
 
