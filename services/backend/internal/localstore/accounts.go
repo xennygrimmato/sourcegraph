@@ -127,7 +127,7 @@ type passwordResetRequest struct {
 	ExpiresAt time.Time `db:"expires_at"`
 }
 
-const passwordReset time.Duration = 4 * time.Hour
+const passwordReset time.Duration = -4 * time.Hour
 
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
 	doClean, err := amortize.ShouldAmortize(1, 1000)
