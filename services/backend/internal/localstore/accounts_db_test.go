@@ -192,7 +192,7 @@ func TestAccounts_RequestPasswordReset(t *testing.T) {
 		t.Errorf("token should match %s", p)
 	}
 
-	req, err := unmarshallResetRequest(ctx, token.Token)
+	req, err := unmarshalResetRequest(ctx, token.Token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func TestAccounts_ResetPassword_ok(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	oldReq, err := unmarshallResetRequest(ctx, token.Token)
+	oldReq, err := unmarshalResetRequest(ctx, token.Token)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestAccounts_ResetPassword_ok(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newReq, err := unmarshallResetRequest(ctx, newPass.Token.Token)
+	newReq, err := unmarshalResetRequest(ctx, newPass.Token.Token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +274,7 @@ func TestAccounts_CleanExpiredResets(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.cleanExpiredResets(ctx)
-	_, err = unmarshallResetRequest(ctx, newPass.Token.Token)
+	_, err = unmarshalResetRequest(ctx, newPass.Token.Token)
 	if err != sql.ErrNoRows {
 		t.Fatalf("Should have gotten a NoRow error when trying to retrieve a cleaned reset request, got this error instead: %s", err)
 	}
