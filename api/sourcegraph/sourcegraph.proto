@@ -1141,9 +1141,6 @@ message CreatedAccount {
 message PasswordResetToken {
 	// token is the hard to guess token that allows a user to set a new password.
 	string Token = 1;
-
-	// ExpiresAt holds the timestamp for when this password reset token will expire. 
-	pbtypes.Timestamp ExpiresAt = 2;
 }
 
 message PendingPasswordReset {
