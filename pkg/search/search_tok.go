@@ -21,14 +21,11 @@ func BagOfWords(def *graph.Def) map[string]int {
 	unitParts := strings.Split(def.Unit, "/")
 	defParts := delims.Split(def.Path, -1)
 	fileParts := strings.Split(filepath.ToSlash(def.File), "/")
-	var docParts []string
-	for i, _ := range def.Docs {
-		docParts = append(docParts, strings.Split(def.Docs[i].Data, " ")...)
-	}
+	docParts := parseDocString(def)
 	for _, w := range docParts {
 		words[w]++
 		if name := defParts[len(defParts)-1]; w == name {
-			words[w] += 20
+			words[w] += 2
 		}
 	}
 	for i, w := range repoParts {
@@ -79,6 +76,14 @@ func BagOfWords(def *graph.Def) map[string]int {
 	words[def.Kind] += 1
 
 	return words
+}
+
+func parseDocString(def *graph.Def) []string {
+	var docParts []string
+	for i, _ := range def.Docs {
+		docParts = append(docParts, strings.Split(def.Docs[i].Data, " ")...)
+	}
+	return docParts
 }
 
 func splitCaseWords(defParts []string) ([]string, []string) {
