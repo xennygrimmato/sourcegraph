@@ -181,10 +181,8 @@ func (g *globalDefs) Search(ctx context.Context, op *store.GlobalDefSearchOp) (*
 		// text similarity score, and whether the last term matches
 		// the name.
 		if bowQuerySplit := strings.Split(bowQuery, " & "); len(bowQuerySplit) > 2 {
-			fmt.Println("More than 3")
 			scoreSQL = `5.0*log(10 + ref_ct) + 100.0*ts_rank(to_tsvector('english', bow), to_tsquery('english', ` + arg(bowQuery) + `)) score`
 		} else {
-			fmt.Println("Less than 3")
 			scoreSQL = `5.0*log(10 + ref_ct) + 100.0*ts_rank(to_tsvector('english', bow), to_tsquery('english', ` + arg(bowQuery) + `)) + 100.0*((LOWER(name)=LOWER(` + arg(lastTok) + `))::int) score`
 		}
 
