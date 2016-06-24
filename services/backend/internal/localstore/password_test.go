@@ -1,6 +1,7 @@
 package localstore
 
 import (
+	"log"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -165,8 +166,20 @@ func TestPasswords_SetPassword_ok(t *testing.T) {
 	}
 
 	// Change to p2.
+	oldPass, err := marshalPassword(ctx, uid)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if err := s.SetPassword(ctx, uid, "p2"); err != nil {
 		t.Fatal(err)
+	}
+	newPass, err := marshalPassword(ctx, uid)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if newPass.ConsecutiveFails != 0 || !newPass.LastFail.After(oldPass.LastFail) {
+		log.Fatalf("the password should be completely reset after the password is reset - old: %+v, new: %+v", oldPass, newPass)
 	}
 	if err := s.CheckUIDPassword(ctx, uid, "p2"); err != nil {
 		t.Fatal(err)
@@ -238,6 +251,8 @@ func (c *testClock) Now() time.Time {
 	return c.nextTime
 }
 
+// TestPasswords_CheckUIDPassword_WaitPeriod tests to see if the waiting periods in between password
+// retries is properly enforced.
 func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
@@ -296,10 +311,10 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		// AFTER
 		tc.nextTime = next
 		if err := checkAndRestore("WRONG", i, now); err == nil {
-			t.Fatal("should always reject an incorrect password, no matter what time it is (next)")
+			t.Fatal("should always reject an incorrect password, no matter what time it is (after)")
 		}
 		if err := checkAndRestore("p", i+1, next); err != nil {
-			t.Fatalf("should accept the correct password when enough time has passed (next), err: ", err)
+			t.Fatalf("should accept the correct password when enough time has passed (after), err: ", err)
 		}
 	}
 

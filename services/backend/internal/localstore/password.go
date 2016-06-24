@@ -45,7 +45,7 @@ func marshalPassword(ctx context.Context, UID int32) (dbPassword, error) {
 	return pass, appDBH(ctx).SelectOne(&pass, `SELECT * FROM passwords WHERE uid=$1`, UID)
 }
 
-// 5 - 5*3^n 0, 10, 40, ...
+// -5 + 5*3^n -> 0, 10, 40, ...
 func calcWaitPeriod(fails int) time.Duration {
 	return -5*time.Second + 5*time.Duration(math.Pow(3, float64(fails)))*time.Second
 }
@@ -53,7 +53,8 @@ func calcWaitPeriod(fails int) time.Duration {
 const maxWaitPeriod = 20 * time.Minute
 
 // CheckUIDPassword returns an error if the password argument is not correct for
-// the user.
+// the user, or if the waiting period before the user can try logging in again
+// has expired.
 func (p *password) CheckUIDPassword(ctx context.Context, UID int32, password string) error {
 	if err := accesscontrol.VerifyUserHasAdminAccess(ctx, "Password.CheckUIDPassword"); err != nil {
 		return err
