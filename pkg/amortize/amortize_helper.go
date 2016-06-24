@@ -19,7 +19,7 @@ func ShouldAmortize(a, b int) (bool, error) {
 
 	bigN, err := rand.Int(rand.Reader, big.NewInt(int64(b)))
 	if err != nil {
-		return false, fmt.Errorf("Error when trying to generate a random number: %s", err)
+		return false, fmt.Errorf("error when trying to generate a random number: %s", err)
 	}
 	return bigN.Int64() < int64(a), nil
 }

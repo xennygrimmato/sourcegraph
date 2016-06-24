@@ -2,7 +2,6 @@ package localstore
 
 import (
 	"database/sql"
-	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -219,7 +218,7 @@ func TestAccounts_ResetPassword_ok(t *testing.T) {
 	}
 	oldReq, err := unmarshalResetRequest(ctx, token.Token)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	newPass := &sourcegraph.NewPassword{Password: "a", Token: &sourcegraph.PasswordResetToken{Token: token.Token}}
 	if err := s.ResetPassword(ctx, newPass); err != nil {
@@ -249,7 +248,7 @@ func TestAccounts_ResetPassword_badtoken(t *testing.T) {
 	s := accounts{}
 	newPass := &sourcegraph.NewPassword{Password: "a", Token: &sourcegraph.PasswordResetToken{Token: "b"}}
 	if err := s.ResetPassword(ctx, newPass); err == nil {
-		t.Errorf("Should have gotten error reseting password, got nil instead")
+		t.Errorf("should have gotten error reseting password, got nil instead")
 	}
 }
 
@@ -276,6 +275,6 @@ func TestAccounts_CleanExpiredResets(t *testing.T) {
 	s.cleanExpiredResets(ctx)
 	_, err = unmarshalResetRequest(ctx, newPass.Token.Token)
 	if err != sql.ErrNoRows {
-		t.Fatalf("Should have gotten a NoRow error when trying to retrieve a cleaned reset request, got this error instead: %s", err)
+		t.Fatalf("got this error: %s, should have gotten just a NoRow error instead when trying to retrieve a cleaned reset request", err)
 	}
 }

@@ -127,9 +127,11 @@ type passwordResetRequest struct {
 	ExpiresAt time.Time `db:"expires_at"`
 }
 
-const passwordReset time.Duration = 4 * time.Hour
+const passwordResetTokenExpiration = 4 * time.Hour
 
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
+	// 1 out of every 1000 times is just an initial guess as to how often we
+	// should go through and delete expired password reset requests
 	doClean, err := amortize.ShouldAmortize(1, 1000)
 	if err != nil {
 		return nil, err
@@ -148,7 +150,7 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.U
 		return nil, errors.New("UID must be set")
 	}
 	token := randstring.NewLen(tokenLength)
-	expiration := time.Now().Add(passwordReset)
+	expiration := time.Now().Add(passwordResetTokenExpiration)
 	req := passwordResetRequest{
 		Token:     token,
 		UID:       user.UID,
@@ -160,11 +162,10 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.U
 	return &sourcegraph.PasswordResetToken{Token: token}, nil
 }
 
-var epoch = time.Unix(0, 0)
-
 func unmarshalResetRequest(ctx context.Context, token string) (passwordResetRequest, error) {
 	var req passwordResetRequest
-	return req, appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE Token=$1`, token)
+	err := appDBH(ctx).SelectOne(&req, `SELECT * FROM password_reset_requests WHERE token=$1`, token)
+	return req, err
 }
 
 func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPassword) error {
@@ -179,33 +180,24 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 	if time.Now().Before(req.ExpiresAt) {
 		log15.Info("Resetting password", "store", "Accounts", "UID", req.UID)
 		if err := (password{}).SetPassword(ctx, req.UID, newPass.Password); err != nil {
-			return fmt.Errorf("Error changing password: %s", err)
+			return fmt.Errorf("error changing password: %s", err)
 		}
 		// Updating the expiration date of the token to the epoch will permanently expire it.
-		req.ExpiresAt = epoch
-		count, err := appDBH(ctx).Update(&req)
+		req.ExpiresAt = time.Time{}
+		_, err := appDBH(ctx).Update(&req)
 		if err != nil {
 			log15.Warn("Error updating token", "store", "Accounts", "error", err)
 		}
-		if count > 1 {
-			log15.Warn("Updated more than one token", "store", "Accounts", "updated", count)
-		}
 		return nil
 	}
-	return grpc.Errorf(codes.InvalidArgument, "this token has expired")
+	return grpc.Errorf(codes.InvalidArgument, "password reset token has expired")
 }
 
 // cleanExpiredResets deletes password reset requests from the DB whose expiration date has passed.
 func (s *accounts) cleanExpiredResets(ctx context.Context) error {
 	res, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE expires_at < now()`)
 	if err != nil {
-		return fmt.Errorf("Error when cleaning up expired password resets: %s", err)
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		log15.Warn("Error when counting the expired password reset requests that we cleaned", "store", "Accounts", "error", err)
-	} else {
-		log15.Info("Cleaned up expired password reset requests", "store", "Accounts", "removed", rows)
+		return fmt.Errorf("error when cleaning up expired password resets: %s", err)
 	}
 	return nil
 }
