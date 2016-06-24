@@ -21,11 +21,9 @@ machine:
 dependencies:
   pre:
     - ./dev/ci/install-go.sh
-    - ./dev/ci/packages.sh
     - ./dev/ci/install-test-tools.sh
 
   cache_directories:
-    - ~/google-cloud-sdk
     - ~/protobuf-3.0.0-beta-1/src
     - ~/cache
 
@@ -39,7 +37,6 @@ dependencies:
     - git config --global user.email "ci@example.com"
     - git config --global user.name "CI User"
 
-    - ./dev/ci/install-gcloud.sh
     - ./dev/ci/install-protobuf.sh
     - ./dev/ci/patch-exec-latency.sh
 
@@ -55,9 +52,6 @@ test:
   post:
     - ./dev/circle-ci-gather-coverage.sh:
         pwd: $REPO
-    - npm run graph:
-        pwd: $REPO/app
-    - cp $REPO/app/artifacts/* $CIRCLE_ARTIFACTS
 
 deployment:
   master-branch:
