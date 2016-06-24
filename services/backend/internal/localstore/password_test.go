@@ -243,6 +243,8 @@ func TestPasswords_SetPassword_setToEmpty(t *testing.T) {
 	}
 }
 
+// testClock gives us the ability to inject whatever we want
+// for the next time Now() is called.
 type testClock struct {
 	nextTime time.Time
 }
@@ -266,6 +268,10 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 	s := &password{clock: tc}
 	uid := nextUID()
 
+	// checkAndRestore is a lambda helper function with a closure containing this test's context
+	// and uid. It checks the given password 'pw' against uid's stored password
+	// with CheckUIDPassword(), and restores uid's consecutive_fails and last_fail values
+	// before returning the result of that 'pw' check.
 	var checkAndRestore = func(pw string, consecFails int, time time.Time) error {
 		checkErr := s.CheckUIDPassword(ctx, uid, pw)
 		pass, err := marshalPassword(ctx, uid)
@@ -276,7 +282,7 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		pass.LastFail = time
 		_, err = appDBH(ctx).Update(&pass)
 		if err != nil {
-			t.Fatalf("error when restoring time: ", err)
+			t.Fatalf("error: %v  when restoring consecutive_fails and fail_time for uid: %d: ", err, uid)
 		}
 		return checkErr
 	}
@@ -290,7 +296,7 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		now := tc.nextTime
 		next := tc.nextTime.Add(calcWaitPeriod(i + 1))
 
-		// BEFORE
+		// Before - Current system time is set to a value well before the user should be allowed a login attempt.
 		tc.nextTime = before
 		if err := checkAndRestore("WRONG", i, now); err == nil {
 			t.Fatal("should always reject an incorrect password, no matter what time it is (before)")
@@ -298,7 +304,8 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		if err := checkAndRestore("p", i, now); err == nil {
 			t.Fatal("should reject even the correct password when not enough time has passed in between attempts (before)")
 		}
-		// ON THE NOSE
+		// On the nose - Current system time is set to a value that is right on the threshold, immediately after which the user should be
+		// allowed a login attempt.
 		tc.nextTime = now
 		if err := checkAndRestore("WRONG", i, now); err == nil {
 			t.Fatal("should always reject an incorrect password, no matter what time it is (on the nose)")
@@ -306,7 +313,7 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		if err := checkAndRestore("p", i, now); err == nil {
 			t.Fatal("should reject even the correct password when not enough time has passed in between attempts (on the nose)")
 		}
-		// AFTER
+		// After - Current system time is set to a value well after the user should be allowed a login attempt.
 		tc.nextTime = next
 		if err := checkAndRestore("WRONG", i, now); err == nil {
 			t.Fatal("should always reject an incorrect password, no matter what time it is (after)")

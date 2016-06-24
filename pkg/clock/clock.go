@@ -10,12 +10,12 @@ type Clock interface {
 
 type prodClock struct{}
 
-func (c *prodClock) Now() time.Time {
+func (c prodClock) Now() time.Time {
 	return time.Now()
 }
 
 // NewProductionClock creates a Clock that simply mirrors
 // time.Now()'s original behavior, with no additional logic.
 func NewProductionClock() Clock {
-	return &prodClock{}
+	return prodClock{}
 }

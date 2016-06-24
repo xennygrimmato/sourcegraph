@@ -2,6 +2,7 @@ package localstore
 
 import (
 	"database/sql"
+	"log"
 	"math"
 	"time"
 
@@ -21,8 +22,8 @@ type password struct {
 	clock clock.Clock
 }
 
-func newPassword() password {
-	return password{clock: clock.NewProductionClock()}
+func newPassword() *password {
+	return &password{clock: clock.NewProductionClock()}
 }
 
 var _ store.Password = (*password)(nil)
@@ -58,6 +59,7 @@ func calcWaitPeriod(fails int) time.Duration {
 	return -5*time.Second + 5*time.Duration(math.Pow(3, float64(fails)))*time.Second
 }
 
+// As recommeded by: https://www.owasp.org/index.php/Authentication_Cheat_Sheet#Prevent_Brute-Force_Attacks
 const maxWaitPeriod = 20 * time.Minute
 
 // CheckUIDPassword returns an error if the password argument is not correct for
@@ -82,6 +84,7 @@ func (p password) CheckUIDPassword(ctx context.Context, UID int32, password stri
 		waitPeriod = maxWaitPeriod
 		log15.Warn("SECURITY: Maximum wait period for password attempt reached", "uid", UID, "waitPeriod", maxWaitPeriod)
 	}
+	log.Println(p.clock)
 	// Has the user waited long enough (waitPeriod) since their last failure?
 	if pass.LastFail.Add(waitPeriod).After(p.clock.Now()) {
 		return grpc.Errorf(codes.PermissionDenied, "must wait for %s before trying again", waitPeriod.String())
