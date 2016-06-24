@@ -156,7 +156,7 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 		return genericErr
 	}
 	log15.Info("Resetting password", "store", "Accounts", "UID", req.UID)
-	if err := (password{}).SetPassword(ctx, req.UID, newPass.Password); err != nil {
+	if err := newPassword().SetPassword(ctx, req.UID, newPass.Password); err != nil {
 		return fmt.Errorf("Error changing password: %s", err)
 	}
 
