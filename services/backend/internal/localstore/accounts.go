@@ -132,11 +132,7 @@ const passwordResetTokenExpiration = 4 * time.Hour
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
 	// 1 out of every 1000 times is just an initial guess as to how often we
 	// should go through and delete expired password reset requests
-	doClean, err := amortize.ShouldAmortize(1, 1000)
-	if err != nil {
-		return nil, err
-	}
-	if doClean {
+	if amortize.ShouldAmortize(1, 1000) {
 		s.cleanExpiredResets(ctx)
 	}
 	if err := accesscontrol.VerifyUserSelfOrAdmin(ctx, "Accounts.RequestPasswordReset", user.UID); err != nil {
@@ -195,7 +191,7 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 
 // cleanExpiredResets deletes password reset requests from the DB whose expiration date has passed.
 func (s *accounts) cleanExpiredResets(ctx context.Context) error {
-	res, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE expires_at < now()`)
+	_, err := appDBH(ctx).Exec(`DELETE FROM password_reset_requests WHERE expires_at < now()`)
 	if err != nil {
 		return fmt.Errorf("error when cleaning up expired password resets: %s", err)
 	}
