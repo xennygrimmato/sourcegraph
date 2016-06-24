@@ -276,7 +276,7 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		pass.LastFail = time
 		_, err = appDBH(ctx).Update(&pass)
 		if err != nil {
-			t.Fatalf("Error when restoring time: ", err)
+			t.Fatalf("error when restoring time: ", err)
 		}
 		return checkErr
 	}
@@ -298,7 +298,6 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		if err := checkAndRestore("p", i, now); err == nil {
 			t.Fatal("should reject even the correct password when not enough time has passed in between attempts (before)")
 		}
-
 		// ON THE NOSE
 		tc.nextTime = now
 		if err := checkAndRestore("WRONG", i, now); err == nil {
@@ -307,15 +306,13 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 		if err := checkAndRestore("p", i, now); err == nil {
 			t.Fatal("should reject even the correct password when not enough time has passed in between attempts (on the nose)")
 		}
-
 		// AFTER
 		tc.nextTime = next
 		if err := checkAndRestore("WRONG", i, now); err == nil {
 			t.Fatal("should always reject an incorrect password, no matter what time it is (after)")
 		}
 		if err := checkAndRestore("p", i+1, next); err != nil {
-			t.Fatalf("should accept the correct password when enough time has passed (after), err: ", err)
+			t.Fatalf("got err: %s, should accept the correct password when enough time has passed (after)", err)
 		}
 	}
-
 }

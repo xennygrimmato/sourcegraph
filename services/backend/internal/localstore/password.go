@@ -21,8 +21,8 @@ type password struct {
 	clock clock.Clock
 }
 
-func newPassword() *password {
-	return &password{clock: clock.NewProductionClock()}
+func newPassword() password {
+	return password{clock: clock.NewProductionClock()}
 }
 
 var _ store.Password = (*password)(nil)
@@ -42,11 +42,19 @@ func init() {
 
 func marshalPassword(ctx context.Context, UID int32) (dbPassword, error) {
 	var pass dbPassword
-	return pass, appDBH(ctx).SelectOne(&pass, `SELECT * FROM passwords WHERE uid=$1`, UID)
+	err := appDBH(ctx).SelectOne(&pass, `SELECT * FROM passwords WHERE uid=$1`, UID)
+	return pass, err
 }
 
-// -5 + 5*3^n -> 0, 10, 40, ...
+// calcWaitPeriod calculates how long someone should wait in between login attempts given that
+// that they have failed 'fails' time in a row previously. If "fails" is zero, the duration is
+// guaranteed to be 0 as well. Fails must be >= 0.
+// Based off of recommendations from: https://www.owasp.org/index.php/Guide_to_Authentication#Thresholds_Governor
 func calcWaitPeriod(fails int) time.Duration {
+	if fails < 0 {
+		panic("fails must be non-negative")
+	}
+	// The formula currently is: -5 + 5*3^n -> 0s, 10s, 40s, 130s, ...
 	return -5*time.Second + 5*time.Duration(math.Pow(3, float64(fails)))*time.Second
 }
 
@@ -55,7 +63,7 @@ const maxWaitPeriod = 20 * time.Minute
 // CheckUIDPassword returns an error if the password argument is not correct for
 // the user, or if the waiting period before the user can try logging in again
 // has expired.
-func (p *password) CheckUIDPassword(ctx context.Context, UID int32, password string) error {
+func (p password) CheckUIDPassword(ctx context.Context, UID int32, password string) error {
 	if err := accesscontrol.VerifyUserHasAdminAccess(ctx, "Password.CheckUIDPassword"); err != nil {
 		return err
 	}
@@ -74,7 +82,7 @@ func (p *password) CheckUIDPassword(ctx context.Context, UID int32, password str
 		waitPeriod = maxWaitPeriod
 		log15.Warn("SECURITY: Maximum wait period for password attempt reached", "uid", UID, "waitPeriod", maxWaitPeriod)
 	}
-	// Has it been over waitPeriod since their last failure?
+	// Has the user waited long enough (waitPeriod) since their last failure?
 	if pass.LastFail.Add(waitPeriod).After(p.clock.Now()) {
 		return grpc.Errorf(codes.PermissionDenied, "must wait for %s before trying again", waitPeriod.String())
 	}
@@ -87,9 +95,11 @@ func (p *password) CheckUIDPassword(ctx context.Context, UID int32, password str
 
 	cmpRes := bcrypt.CompareHashAndPassword([]byte(pass.HashedPassword), []byte(password))
 	if cmpRes == bcrypt.ErrMismatchedHashAndPassword {
+		// Wrong password - update the failure information
 		pass.ConsecutiveFails++
 		pass.LastFail = p.clock.Now()
 	} else if cmpRes == nil {
+		// Correct password - reset the failure count
 		pass.ConsecutiveFails = 0
 	}
 	_, err = appDBH(ctx).Update(&pass)
@@ -99,7 +109,7 @@ func (p *password) CheckUIDPassword(ctx context.Context, UID int32, password str
 	return cmpRes
 }
 
-func (p *password) SetPassword(ctx context.Context, uid int32, password string) error {
+func (p password) SetPassword(ctx context.Context, uid int32, password string) error {
 	if err := accesscontrol.VerifyUserSelfOrAdmin(ctx, "Password.SetPassword", uid); err != nil {
 		return err
 	}
