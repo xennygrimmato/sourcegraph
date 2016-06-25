@@ -26,7 +26,7 @@ const EMPTY_PATH = [];
 // page. The component's view is derived from the arguments passed to
 // renderTreeSearch. The body of this function defines the "controller" logic of
 // the view.
-export function renderTreeSearch(repo: string, rev: string, commitID: string, path: string, prefixMatch: bool, includeRepos: bool, router: any): any {
+export function renderTreeSearch(repo: string, rev: string, commitID: string, path: string, initialQuery: string, prefixMatch: bool, includeRepos: bool, router: any, onChangeQuery: (query: string) => void): any {
 		const fetch = function(query: string) {
 			Dispatcher.Backends.dispatch(new SearchActions.WantResults({
 				query: query,
@@ -169,8 +169,10 @@ export function renderTreeSearch(repo: string, rev: string, commitID: string, pa
 		<JumpTable
 			context={`${repo}@${commitID}/${path}`}
 			sections={[]}
-			placeholder="Jump to definition, file, or repository"
+			initialQuery={initialQuery}
+			placeholder={"Jump to definition, file, or repository"}
 			fetch={fetch}
+			onChangeQuery={onChangeQuery}
 			getResults={getResults}
 			onSelect={select}
 			stores={[SearchStore, TreeStore]} />

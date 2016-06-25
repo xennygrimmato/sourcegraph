@@ -233,9 +233,9 @@ class RepoMain extends React.Component {
 					<Modal onDismiss={this._dismissTreeSearchModal}>
 				 <div styleName="tree-search-modal">
 				 {renderTreeSearch(
-					 this.props.repo, this.props.rev, this.props.commitID, this.state.treeSearchPath,
+					 this.props.repo, this.props.rev, this.props.commitID, this.state.treeSearchPath, this.state.treeSearchQuery,
 					 this.props.location.query.prefixMatch, this.props.location.query.includeRepos,
-					 this.context.router,
+					 this.context.router, this._onChangeQuery.bind(this)
 				 )}
 				 </div>
 					</Modal>

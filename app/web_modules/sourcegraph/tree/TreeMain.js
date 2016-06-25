@@ -36,14 +36,13 @@ class TreeMain extends React.Component {
 	render() {
 		if (!this.props.commitID) return null;
 		const path = treeParam(this.props.routeParams.splat);
-
-		// TODO: update router URL
-
+		const initialQuery = (this.props.location.query.q || "");
 		return (
 			<div styleName="tree-container">
 				{/* Let RepoMain set title for the root path. */}
 				{path !== "/" && <Helmet title={`${path} · ${trimRepo(this.props.repo)}`} />}
-				{renderTreeSearch(this.props.repo, this.props.rev, this.props.commitID, path, true, true, this.context.router)}
+			{renderTreeSearch(this.props.repo, this.props.rev, this.props.commitID, path,
+												initialQuery, true, true, this.context.router, this._onChangeQuery.bind(this))}
 			</div>
 		);
 	}

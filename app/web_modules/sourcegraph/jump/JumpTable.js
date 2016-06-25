@@ -57,10 +57,12 @@ type JumpTableProps = {
 	// called.
 	context: string;
 
+	initialQuery: string;
 	placeholder: string;
 	stores: Array<Object>;
 	fetch: (query: string) => void;
 	onSelect: (section: Section, row: Row) => void;
+	onChangeQuery: (query: string) => void;
 	getResults: (query: string) => Array<Section>;
 }
 
@@ -97,7 +99,7 @@ class JumpTable extends Container {
 	constructor(props: JumpTableProps) {
 		super(props);
 		this.state = {
-			query: "",
+			query: props.initialQuery,
 			focused: true,
 			selection: { i: 0, j: 0},
 			sections: this.props.getResults(this.state.query),
@@ -150,6 +152,7 @@ class JumpTable extends Container {
 	onStateTransition(prevState: JumpTableState, nextState: JumpTableState) {
 		if (prevState.query !== nextState.query) {
 			nextState.sections = this.props.getResults(nextState.query);
+			this.props.onChangeQuery(nextState.query);
 			this.props.fetch(nextState.query);
 		}
 	}
