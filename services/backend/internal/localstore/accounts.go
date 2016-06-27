@@ -131,7 +131,7 @@ const passwordResetTokenExpiration = 4 * time.Hour
 
 func (s *accounts) RequestPasswordReset(ctx context.Context, user *sourcegraph.User) (*sourcegraph.PasswordResetToken, error) {
 	// 1 out of every 1000 times is just an initial guess as to how often we
-	// should go through and delete expired password reset requests
+	// should go through and delete expired password reset requests.
 	if amortize.ShouldAmortize(1, 1000) {
 		s.cleanExpiredResets(ctx)
 	}
@@ -173,7 +173,9 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 	} else if err != nil {
 		return genericErr
 	}
-	if time.Now().Before(req.ExpiresAt) {
+	// We round to the microsecond because that is the maximum resolution
+	// allowed by our DB.
+	if time.Now().Round(time.Microsecond).Before(req.ExpiresAt.Round(time.Microsecond)) {
 		log15.Info("Resetting password", "store", "Accounts", "UID", req.UID)
 		if err := (password{}).SetPassword(ctx, req.UID, newPass.Password); err != nil {
 			return fmt.Errorf("error changing password: %s", err)
