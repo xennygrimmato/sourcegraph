@@ -122,6 +122,25 @@ function injectBackgroundApp() {
 	}
 }
 
+
+function injectSourcegraphSettings() {
+	if (!isGitHubURL()) return;
+	let nav= document.querySelector(".reponav.js-repo-nav.js-sidenav-container-pjax");
+	nav.firstChild.id = "test";
+	if (nav && !nav.querySelector("#sourcegraph-settings-tab")) {
+		let tab = document.createElement("span");
+		tab.id = "sourcegraph-settings-tab";
+		render(
+			// this inherits styles from GitHub
+			<a href="/sourcegraph/sourcegraph" className="js-selected-navigation-item reponav-item" itemProp="url">
+  				<span itemProp="name">Sourcegraph</span>
+  				<meta itemProp="position" content="1"></meta>
+			</a>, tab
+		);
+		nav.insertBefore(tab, nav.lastChild);
+	}
+}
+
 function injectBlobAnnotator() {
 	if (!isGitHubURL()) return;
 
@@ -153,6 +172,7 @@ function injectModules() {
 	injectBackgroundApp();
 	injectSearchApp();
 	injectBlobAnnotator();
+	injectSourcegraphSettings();
 
 	// Add invisible div to the page to indicate injection has completed.
 	if (!document.getElementById("sourcegraph-app-bootstrap")) {
