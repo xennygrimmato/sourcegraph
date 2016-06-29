@@ -68,6 +68,8 @@ func Services() svc.Services {
 
 		Search: wrappedSearch{},
 
+		SourcegraphDesktop: wrappedSourcegraphDesktop{},
+
 		Users: wrappedUsers{},
 	}
 }
@@ -1001,6 +1003,21 @@ func (s wrappedSearch) Search(ctx context.Context, param *sourcegraph.SearchOp) 
 	res, err = backend.Services.Search.Search(ctx, param)
 	if res == nil && err == nil {
 		err = grpc.Errorf(codes.Internal, "Search.Search returned nil, nil")
+	}
+	return
+}
+
+type wrappedSourcegraphDesktop struct{}
+
+func (s wrappedSourcegraphDesktop) GetLatest(ctx context.Context, param *sourcegraph.ClientDesktopVersion) (res *sourcegraph.LatestDesktopVersion, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "SourcegraphDesktop", "GetLatest", param)
+	defer func() {
+		trace.After(ctx, "SourcegraphDesktop", "GetLatest", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.SourcegraphDesktop.GetLatest(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "SourcegraphDesktop.GetLatest returned nil, nil")
 	}
 	return
 }

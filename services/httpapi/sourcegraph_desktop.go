@@ -1,33 +1,31 @@
 package httpapi
 
 import (
-	"github.com/sourcegraph/go-github/github"
 	"net/http"
+
+	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/handlerutil"
 )
 
 func serveSourcegraphDesktopUpdateURL(w http.ResponseWriter, r *http.Request) error {
-	latestVersion, err := getLatestRelease()
+	ctx, cl := handlerutil.Client(r)
+
+	clientVersion := r.Header.Get("Sourcegraph-Version")
+
+	latestVersion, err := cl.Desktop.GetLatest(ctx, &sourcegraph.ClientDesktopVersion{
+		ClientVersion: clientVersion,
+	})
 	if err != nil {
 		return err
 	}
-	clientVersion := r.Header.Get("Sourcegraph-Version")
-	if latestVersion == clientVersion {
+
+	if latestVersion.Version == clientVersion {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 
 	url := map[string]string{
-		"url": "https://github.com/attfarhan/desktop-test/releases/download/" + latestVersion + "/Sourcegraph.zip",
+		"url": "https://github.com/attfarhan/desktop-test/releases/download/" + latestVersion.Version + "/Sourcegraph.zip",
 	}
 	return writeJSON(w, url)
-}
-
-func getLatestRelease() (string, error) {
-	client := github.NewClient(nil)
-	latestRelease, _, err := client.Repositories.GetLatestRelease("attfarhan", "desktop-test")
-	if err != nil {
-		return "", err
-	}
-
-	return (*latestRelease.TagName), nil
 }
