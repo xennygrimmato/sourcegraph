@@ -122,35 +122,34 @@ function injectBackgroundApp() {
 	}
 }
 
+function showSourcegraphSettings() {
+	document.querySelector(".repository-content").style.display = "none";
+}
+
+function onHashChange() {
+	if (window.location.hash == "#sourcegraph-settings") {
+		showSourcegraphSettings();
+	} else {
+		const el = document.querySelector(".repository-content");
+		if (el) el.style.display = "";
+	}
+}
 
 function injectSourcegraphSettings() {
 	if (!isGitHubURL()) return;
 
-	const {user, repo} = parseURL();
 	let nav= document.querySelector(".reponav.js-repo-nav.js-sidenav-container-pjax");
-	nav.firstChild.id = "test";
 	if (nav && !nav.querySelector("#sourcegraph-settings-tab")) {
 		let tab = document.createElement("span");
 		tab.id = "sourcegraph-settings-tab";
 		render(
 			// this inherits styles from GitHub
-			<a href={'/'+user+'/'+repo+'#sourcegraph-settings'} className="js-selected-navigation-item reponav-item" itemProp="url">
+			<a href={'#sourcegraph-settings'} className="js-selected-navigation-item reponav-item" itemProp="url">
   				<span itemProp="name">Sourcegraph</span>
   				<meta itemProp="position" content="1"></meta>
 			</a>, tab
 		);
 		nav.insertBefore(tab, nav.lastChild);
-		tab.addEventListener("onClick",(e) => {
-			alert();
-			if (e.which === 84 &&
-				e.shiftKey && (e.target.tagName.toLowerCase()) !== "input" &&
-				e.target.tagName.toLowerCase() !== "textarea" &&
-				!isSearchAppShown) {
-				toggleSearchFrame();
-			} else if (e.keyCode === 27 && isSearchAppShown) {
-				toggleSearchFrame();
-			}
-		});
 	}
 }
 
@@ -187,6 +186,8 @@ function injectModules() {
 	injectBlobAnnotator();
 	injectSourcegraphSettings();
 
+	window.location = "#";
+
 	// Add invisible div to the page to indicate injection has completed.
 	if (!document.getElementById("sourcegraph-app-bootstrap")) {
 		let el = document.createElement("div");
@@ -195,6 +196,8 @@ function injectModules() {
 		document.body.appendChild(el);
 	}
 }
+
+window.addEventListener('hashchange', onHashChange);
 
 window.addEventListener("load", () => {
 	injectModules();
