@@ -43,7 +43,7 @@ func init() {
 	AppSchema.Map.AddTableWithName(dbPassword{}, tableName).SetKeys(false, "UID")
 }
 
-func marshalPassword(ctx context.Context, UID int32) (dbPassword, error) {
+func unmarshalPassword(ctx context.Context, UID int32) (dbPassword, error) {
 	var pass dbPassword
 	err := appDBH(ctx).SelectOne(&pass, `SELECT * FROM passwords WHERE uid=$1`, UID)
 	return pass, err
@@ -73,7 +73,7 @@ func (p password) CheckUIDPassword(ctx context.Context, UID int32, password stri
 	}
 	genericErr := grpc.Errorf(codes.PermissionDenied, "password login not allowed for uid %d", UID)
 
-	pass, err := marshalPassword(ctx, UID)
+	pass, err := unmarshalPassword(ctx, UID)
 	if err == sql.ErrNoRows {
 		return genericErr // User doesn't exist
 	} else if err != nil {

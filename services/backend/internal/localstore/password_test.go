@@ -53,7 +53,7 @@ func TestPasswords_CheckUIDPassword_invalid(t *testing.T) {
 	if err := s.SetPassword(ctx, uid, "p"); err != nil {
 		t.Fatal(err)
 	}
-	oldDBPass, err := marshalPassword(ctx, uid)
+	oldDBPass, err := unmarshalPassword(ctx, uid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestPasswords_CheckUIDPassword_invalid(t *testing.T) {
 		t.Fatal("err == nil")
 	}
 
-	newDBPass, err := marshalPassword(ctx, uid)
+	newDBPass, err := unmarshalPassword(ctx, uid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestPasswords_SetPassword_ok(t *testing.T) {
 	}
 
 	// Change to p2.
-	oldPass, err := marshalPassword(ctx, uid)
+	oldPass, err := unmarshalPassword(ctx, uid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestPasswords_SetPassword_ok(t *testing.T) {
 	if err := s.SetPassword(ctx, uid, "p2"); err != nil {
 		t.Fatal(err)
 	}
-	newPass, err := marshalPassword(ctx, uid)
+	newPass, err := unmarshalPassword(ctx, uid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +273,7 @@ func TestPasswords_CheckUIDPassword_WaitPeriod(t *testing.T) {
 	// before returning the result of that 'pw' check.
 	var checkAndRestore = func(pw string, consecFails int, time time.Time) error {
 		checkErr := s.CheckUIDPassword(ctx, uid, pw)
-		pass, err := marshalPassword(ctx, uid)
+		pass, err := unmarshalPassword(ctx, uid)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
