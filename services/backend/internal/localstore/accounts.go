@@ -180,7 +180,7 @@ func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPa
 		if err := (password{}).SetPassword(ctx, req.UID, newPass.Password); err != nil {
 			return fmt.Errorf("error changing password: %s", err)
 		}
-		// Updating the expiration date of the token to the epoch will permanently expire it.
+		// This changes the expiry date to some point in the past.
 		req.ExpiresAt = time.Time{}
 		_, err := appDBH(ctx).Update(&req)
 		if err != nil {
