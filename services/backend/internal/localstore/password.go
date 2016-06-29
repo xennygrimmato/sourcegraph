@@ -17,6 +17,9 @@ import (
 )
 
 // password is a pgsql backed implementation of the passwords store.
+// password uses the clock interface for testing purposes. Use the
+// newPassword() constructor in order to make a normal password instance
+// for production.
 type password struct {
 	clock clock.Clock
 }
