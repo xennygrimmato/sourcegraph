@@ -1,7 +1,6 @@
 package localstore
 
 import (
-	"log"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -168,7 +167,7 @@ func TestPasswords_SetPassword_ok(t *testing.T) {
 	// Change to p2.
 	oldPass, err := marshalPassword(ctx, uid)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if err := s.SetPassword(ctx, uid, "p2"); err != nil {
@@ -176,10 +175,10 @@ func TestPasswords_SetPassword_ok(t *testing.T) {
 	}
 	newPass, err := marshalPassword(ctx, uid)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	if newPass.ConsecutiveFails != 0 || !newPass.LastFail.After(oldPass.LastFail) {
-		log.Fatalf("the password should be completely reset after the password is reset - old: %+v, new: %+v", oldPass, newPass)
+		t.Fatalf("the password should be completely reset after the password is reset - old: %+v, new: %+v", oldPass, newPass)
 	}
 	if err := s.CheckUIDPassword(ctx, uid, "p2"); err != nil {
 		t.Fatal(err)
