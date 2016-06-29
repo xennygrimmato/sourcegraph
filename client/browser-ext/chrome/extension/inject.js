@@ -125,6 +125,8 @@ function injectBackgroundApp() {
 
 function injectSourcegraphSettings() {
 	if (!isGitHubURL()) return;
+
+	const {user, repo} = parseURL();
 	let nav= document.querySelector(".reponav.js-repo-nav.js-sidenav-container-pjax");
 	nav.firstChild.id = "test";
 	if (nav && !nav.querySelector("#sourcegraph-settings-tab")) {
@@ -132,12 +134,23 @@ function injectSourcegraphSettings() {
 		tab.id = "sourcegraph-settings-tab";
 		render(
 			// this inherits styles from GitHub
-			<a href="/sourcegraph/sourcegraph" className="js-selected-navigation-item reponav-item" itemProp="url">
+			<a href={'/'+user+'/'+repo+'#sourcegraph-settings'} className="js-selected-navigation-item reponav-item" itemProp="url">
   				<span itemProp="name">Sourcegraph</span>
   				<meta itemProp="position" content="1"></meta>
 			</a>, tab
 		);
 		nav.insertBefore(tab, nav.lastChild);
+		tab.addEventListener("onClick",(e) => {
+			alert();
+			if (e.which === 84 &&
+				e.shiftKey && (e.target.tagName.toLowerCase()) !== "input" &&
+				e.target.tagName.toLowerCase() !== "textarea" &&
+				!isSearchAppShown) {
+				toggleSearchFrame();
+			} else if (e.keyCode === 27 && isSearchAppShown) {
+				toggleSearchFrame();
+			}
+		});
 	}
 }
 
@@ -189,6 +202,7 @@ window.addEventListener("load", () => {
 		if (identity) EventLogger.updateAmplitudePropsForUser(identity);
 	});
 });
+
 document.addEventListener("pjax:success", () => {
 	hideSearchFrame();
 	injectModules();
