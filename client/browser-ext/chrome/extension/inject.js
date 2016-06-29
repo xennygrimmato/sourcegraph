@@ -123,6 +123,8 @@ function injectBackgroundApp() {
 }
 
 function showSourcegraphSettings() {
+	document.querySelector(".js-selected-navigation-item.reponav-item.selected").className = "js-selected-navigation-item reponav-item";
+	document.getElementById("settings").className = "js-selected-navigation-item reponav-item selected";
 	document.querySelector(".repository-content").style.display = "none";
 }
 
@@ -144,7 +146,7 @@ function injectSourcegraphSettings() {
 		tab.id = "sourcegraph-settings-tab";
 		render(
 			// this inherits styles from GitHub
-			<a href={'#sourcegraph-settings'} className="js-selected-navigation-item reponav-item" itemProp="url">
+			<a href={'#sourcegraph-settings'} id="settings" className="js-selected-navigation-item reponav-item" itemProp="url">
   				<span itemProp="name">Sourcegraph</span>
   				<meta itemProp="position" content="1"></meta>
 			</a>, tab
