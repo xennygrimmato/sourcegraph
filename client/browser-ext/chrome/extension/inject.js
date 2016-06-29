@@ -122,6 +122,25 @@ function injectBackgroundApp() {
 	}
 }
 
+
+function injectSourcegraphSettings() {
+	if (!isGitHubURL()) return;
+	let nav= document.querySelector(".reponav.js-repo-nav.js-sidenav-container-pjax");
+	nav.firstChild.id = "test";
+	if (nav && !nav.querySelector("#sourcegraph-settings-tab")) {
+		let tab = document.createElement("span");
+		tab.id = "sourcegraph-settings-tab";
+		render(
+			// this inherits styles from GitHub
+			<a href="/sourcegraph/sourcegraph" className="js-selected-navigation-item reponav-item" itemProp="url">
+  				<span itemProp="name">Sourcegraph</span>
+  				<meta itemProp="position" content="1"></meta>
+			</a>, tab
+		);
+		nav.insertBefore(tab, nav.lastChild);
+	}
+}
+
 function injectBlobAnnotator() {
 	if (!isGitHubURL()) return;
 
@@ -136,14 +155,12 @@ function injectBlobAnnotator() {
 		const infoFilePath = getFileName(info, {isDelta, path});
 		if (!infoFilePath) continue;
 
-		const blobAnnotatorId = `sourcegraph-blob-annotator-${infoFilePath}`;
-		let blobAnnotatorContainer = document.getElementById(blobAnnotatorId);
-		if (!blobAnnotatorContainer) { // prevent injecting twice
-			blobAnnotatorContainer = document.createElement("span");
-			blobAnnotatorContainer.id = blobAnnotatorId;
-			info.appendChild(blobAnnotatorContainer);
-			injectComponent(<BlobAnnotator path={infoFilePath} blobElement={blob} />, blobAnnotatorContainer);
-		}
+		if (file.dataset && file.dataset["sgAnnotator"]) continue; // prevent injecting twice
+		file.dataset["sgAnnotator"] = true;
+
+		const blobAnnotatorContainer = document.createElement("span");
+		info.appendChild(blobAnnotatorContainer);
+		injectComponent(<BlobAnnotator path={infoFilePath} blobElement={blob} />, blobAnnotatorContainer);
 	}
 }
 
@@ -155,6 +172,7 @@ function injectModules() {
 	injectBackgroundApp();
 	injectSearchApp();
 	injectBlobAnnotator();
+	injectSourcegraphSettings();
 
 	// Add invisible div to the page to indicate injection has completed.
 	if (!document.getElementById("sourcegraph-app-bootstrap")) {
@@ -165,8 +183,20 @@ function injectModules() {
 	}
 }
 
-window.addEventListener("load", injectModules);
+window.addEventListener("load", () => {
+	injectModules();
+	chrome.runtime.sendMessage(null, {type: "getIdentity"}, {}, (identity) => {
+		if (identity) EventLogger.updateAmplitudePropsForUser(identity);
+	});
+});
 document.addEventListener("pjax:success", () => {
 	hideSearchFrame();
 	injectModules();
+});
+
+document.addEventListener("sourcegraph:identify", (ev) => {
+	if (ev && ev.detail) {
+		EventLogger.updateAmplitudePropsForUser(ev.detail);
+		chrome.runtime.sendMessage(null, {type: "setIdentity", identity: ev.detail}, {});
+	}
 });

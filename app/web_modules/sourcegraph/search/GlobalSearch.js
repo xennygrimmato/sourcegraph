@@ -46,9 +46,7 @@ class GlobalSearch extends Container {
 			query: "",
 			matchingResults: {Repos: [], Defs: [], Options: []},
 			selectionIndex: 0,
-			focused: false,
 		};
-		this._queryInput = null;
 		this._handleKeyDown = this._handleKeyDown.bind(this);
 		this._scrollToVisibleSelection = this._scrollToVisibleSelection.bind(this);
 		this._setSelectedItem = this._setSelectedItem.bind(this);
@@ -64,7 +62,6 @@ class GlobalSearch extends Container {
 			Defs: Array<Def>,
 			Options: Array<Options>,
 		};
-		focused: boolean;
 		selectionIndex: number;
 	};
 
@@ -189,9 +186,8 @@ class GlobalSearch extends Container {
 	}
 
 	_handleInput(e: KeyboardEvent) {
-		if (this.state.focused) {
-			this._onChangeQuery(this._queryInput ? this._queryInput.value : "");
-		}
+		if (!(e.currentTarget instanceof HTMLInputElement)) return;
+		this._onChangeQuery(e.currentTarget.value);
 	}
 
 	_scrollToVisibleSelection() {
@@ -379,14 +375,11 @@ class GlobalSearch extends Container {
 			<div styleName="search-input relative">
 				<Input type="text"
 					block={true}
-					onFocus={() => this.setState({focused: true})}
-					onBlur={() => this.setState({focused: false})}
 					onChange={this._handleInput}
 					value={this.state.query}
 					autoFocus={true}
 					placeholder="Search code and cross-references"
-					spellCheck={false}
-					domRef={(e) => this._queryInput = e} />
+					spellCheck={false} />
 			</div>
 			<div>
 				{this._results()}

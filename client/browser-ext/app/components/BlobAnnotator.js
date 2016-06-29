@@ -38,6 +38,7 @@ export default class BlobAnnotator extends Component {
 
 	constructor(props) {
 		super(props);
+		this._clickRefresh = this._clickRefresh.bind(this);
 		this.state = utils.parseURL();
 
 		if (this.state.isDelta) {
@@ -121,9 +122,43 @@ export default class BlobAnnotator extends Component {
 		}
 	}
 
+	componentDidMount() {
+		// Click may be for context expansion, in which case we should
+		// re-annotate the blob (which is smart enough to only annoate
+		// lines which haven't already been annotated).
+		document.addEventListener("click", this._clickRefresh);
+	}
+
+	componentWillUnmount() {
+		document.removeEventListener("click", this._clickRefresh);
+	}
+
+	_clickRefresh() {
+		// Diff expansion is not synchronous, so we must wait for
+		// elements to get added to the DOM before calling into the
+		// annotations code. 500ms is arbitrary but seems to work well.
+		setTimeout(() => this._addAnnotations(this.state), 500);
+	}
+
 	_isSplitDiff() {
-		const metaTag = document.querySelector('meta[name="diff-view"]');
-		return metaTag && metaTag.content === "split";
+		if (this.state.isPullRequest) {
+			const diffTypeDropdown = document.getElementsByClassName("diffbar-item dropdown js-menu-container");
+			if (!diffTypeDropdown || diffTypeDropdown.length !== 1) return false;
+
+			const diffSelection = diffTypeDropdown[0].getElementsByClassName("dropdown-item selected");
+			if (!diffSelection || diffSelection.length !== 1) return false;
+
+			return diffSelection[0].href.includes("diff=split");
+		} else {
+			const headerBar = document.getElementsByClassName("details-collapse table-of-contents js-details-container");
+			if (!headerBar || headerBar.length !== 1) return false;
+
+			const diffToggles = headerBar[0].getElementsByClassName("btn-group right");
+			if (!diffToggles || diffToggles.length !== 1) return false;
+
+			const selectedToggle = diffToggles[0].querySelector(".selected");
+			return selectedToggle && selectedToggle.href.includes("diff=split");
+		}
 	}
 
 	reconcileState(state, props) {
