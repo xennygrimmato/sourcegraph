@@ -8,7 +8,7 @@ import (
 	"sourcegraph.com/sqs/pbtypes"
 )
 
-const downloadLink = "https://github.com/sourcegraph/sourcegraph-desktop/releases/download/"
+const downloadLink = "https://github.com/attfarhan/desktop-test/releases/download/"
 const zips = "/Sourcegraph.zip"
 
 func serveSourcegraphDesktopUpdateURL(w http.ResponseWriter, r *http.Request) error {

@@ -16,7 +16,7 @@ var _ sourcegraph.DesktopServer = (*desktop)(nil)
 func (s *desktop) GetLatest(ctx context.Context, _ *pbtypes.Void) (*sourcegraph.LatestDesktopVersion, error) {
 	gh := githubutil.Default.UnauthedClient()
 
-	latestRelease, _, err := gh.Repositories.GetLatestRelease("sourcegraph", "sourcegraph-desktop")
+	latestRelease, _, err := gh.Repositories.GetLatestRelease("attfarhan", "desktop-test")
 	if err != nil {
 		return nil, err
 	}
