@@ -198,10 +198,18 @@ func (s *accounts) RequestPasswordReset(ctx context.Context, person *sourcegraph
 	}, nil
 }
 
-func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPassword) (*pbtypes.Void, error) {
+func (s *accounts) ResetPassword(ctx context.Context, req *sourcegraph.ResetPasswordRequest) (*pbtypes.Void, error) {
 	accountsStore := store.AccountsFromContext(ctx)
-	err := accountsStore.ResetPassword(elevatedActor(ctx), newPass)
+	err := accountsStore.ResetPassword(elevatedActor(ctx), req)
 	if err != nil {
+		return nil, err
+	}
+	return &pbtypes.Void{}, nil
+}
+
+func (s *accounts) ChangePassword(ctx context.Context, req *sourcegraph.ChangePasswordRequest) (*pbtypes.Void, error) {
+	accountsStore := store.AccountsFromContext(ctx)
+	if err := accountsStore.ChangePassword(elevatedActor(ctx), req); err != nil {
 		return nil, err
 	}
 	return &pbtypes.Void{}, nil

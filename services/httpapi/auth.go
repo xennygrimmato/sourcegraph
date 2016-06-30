@@ -143,6 +143,33 @@ func serveLogout(w http.ResponseWriter, r *http.Request) error {
 	return writeJSON(w, &authResponse{Success: true})
 }
 
+func serveChangePassword(w http.ResponseWriter, r *http.Request) error {
+	ctx, cl := handlerutil.Client(r)
+
+	form := struct {
+		CurrentPass    string
+		NewPass        string
+		ConfirmNewPass string
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	info, err := cl.Auth.Identify(ctx, &pbtypes.Void{})
+	if err != nil {
+		return err
+	}
+	if form.NewPass != form.ConfirmNewPass {
+		return grpc.Errorf(codes.InvalidArgument, "passwords don't match")
+	}
+	_, err = cl.Accounts.ChangePassword(ctx, &sourcegraph.ChangePasswordRequest{UID: info.UID, OldPassword: form.CurrentPass, NewPassword: form.NewPass})
+	if err != nil {
+		return err
+	}
+	writeJSON(w, &authResponse{Success: true})
+}
+
 func serveForgotPassword(w http.ResponseWriter, r *http.Request) error {
 	ctx, cl := handlerutil.Client(r)
 
@@ -179,7 +206,7 @@ func servePasswordReset(w http.ResponseWriter, r *http.Request) error {
 		return grpc.Errorf(codes.InvalidArgument, "passwords do not match")
 	}
 
-	_, err := cl.Accounts.ResetPassword(ctx, &sourcegraph.NewPassword{Password: form.Password, Token: &sourcegraph.PasswordResetToken{Token: form.Token}})
+	_, err := cl.Accounts.ResetPassword(ctx, &sourcegraph.ResetPasswordRequest{Password: form.Password, Token: &sourcegraph.PasswordResetToken{Token: form.Token}})
 	if err != nil {
 		return err
 	}

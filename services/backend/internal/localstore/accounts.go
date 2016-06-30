@@ -13,7 +13,9 @@ import (
 	"gopkg.in/gorp.v1"
 	"gopkg.in/inconshreveable/log15.v2"
 
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
+
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/amortize"
 	authpkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
@@ -67,6 +69,19 @@ func (s *accounts) Create(ctx context.Context, newUser *sourcegraph.User, email 
 		return nil, err
 	}
 	return u.toUser(), nil
+}
+
+func (s *accounts) ChangePassword(ctx context.Context, req *sourcegraph.ChangePasswordRequest) error {
+	if err := accesscontrol.VerifyUserSelfOrAdmin(ctx, "Accounts.Update", req.UID); err != nil {
+		return err
+	}
+	pwDB := newPassword()
+	if err := pwDB.CheckUIDPassword(ctx, req.UID, req.OldPassword); err == bcrypt.ErrMismatchedHashAndPassword {
+		return grpc.Errorf(codes.PermissionDenied, "incorrect password")
+	} else if err != nil {
+		return err
+	}
+	return pwDB.SetPassword(ctx, req.UID, req.NewPassword)
 }
 
 func (s *accounts) Update(ctx context.Context, modUser *sourcegraph.User) error {
@@ -164,7 +179,7 @@ func unmarshalResetRequest(ctx context.Context, token string) (passwordResetRequ
 	return req, err
 }
 
-func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.NewPassword) error {
+func (s *accounts) ResetPassword(ctx context.Context, newPass *sourcegraph.ResetPasswordRequest) error {
 	genericErr := grpc.Errorf(codes.InvalidArgument, "error reseting password") // don't need to reveal everything
 	req, err := unmarshalResetRequest(ctx, newPass.Token.Token)
 	if err == sql.ErrNoRows {

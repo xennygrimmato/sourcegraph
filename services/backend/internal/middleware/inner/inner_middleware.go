@@ -141,7 +141,7 @@ func (s wrappedAccounts) RequestPasswordReset(ctx context.Context, param *source
 	return
 }
 
-func (s wrappedAccounts) ResetPassword(ctx context.Context, param *sourcegraph.NewPassword) (res *pbtypes.Void, err error) {
+func (s wrappedAccounts) ResetPassword(ctx context.Context, param *sourcegraph.ResetPasswordRequest) (res *pbtypes.Void, err error) {
 	start := time.Now()
 	ctx = trace.Before(ctx, "Accounts", "ResetPassword", param)
 	defer func() {
@@ -150,6 +150,19 @@ func (s wrappedAccounts) ResetPassword(ctx context.Context, param *sourcegraph.N
 	res, err = backend.Services.Accounts.ResetPassword(ctx, param)
 	if res == nil && err == nil {
 		err = grpc.Errorf(codes.Internal, "Accounts.ResetPassword returned nil, nil")
+	}
+	return
+}
+
+func (s wrappedAccounts) ChangePassword(ctx context.Context, param *sourcegraph.ChangePasswordRequest) (res *pbtypes.Void, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "Accounts", "ChangePassword", param)
+	defer func() {
+		trace.After(ctx, "Accounts", "ChangePassword", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.Accounts.ChangePassword(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "Accounts.ChangePassword returned nil, nil")
 	}
 	return
 }

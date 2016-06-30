@@ -212,7 +212,7 @@ func (s wrappedAccounts) RequestPasswordReset(ctx context.Context, v1 *sourcegra
 	return rv, nil
 }
 
-func (s wrappedAccounts) ResetPassword(ctx context.Context, v1 *sourcegraph.NewPassword) (returnedResult *pbtypes.Void, returnedError error) {
+func (s wrappedAccounts) ResetPassword(ctx context.Context, v1 *sourcegraph.ResetPasswordRequest) (returnedResult *pbtypes.Void, returnedError error) {
 	defer func() {
 		if err := recover(); err != nil {
 			const size = 64 << 10
@@ -235,6 +235,36 @@ func (s wrappedAccounts) ResetPassword(ctx context.Context, v1 *sourcegraph.NewP
 	}
 
 	rv, err := innerSvc.ResetPassword(ctx, v1)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	return rv, nil
+}
+
+func (s wrappedAccounts) ChangePassword(ctx context.Context, v1 *sourcegraph.ChangePasswordRequest) (returnedResult *pbtypes.Void, returnedError error) {
+	defer func() {
+		if err := recover(); err != nil {
+			const size = 64 << 10
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+			returnedError = grpc.Errorf(codes.Internal, "panic in Accounts.ChangePassword: %v\n\n%s", err, buf)
+			returnedResult = nil
+		}
+	}()
+
+	var err error
+	ctx, err = initContext(ctx, s.ctxFunc, s.services)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	innerSvc := svc.AccountsOrNil(ctx)
+	if innerSvc == nil {
+		return nil, grpc.Errorf(codes.Unimplemented, "Accounts")
+	}
+
+	rv, err := innerSvc.ChangePassword(ctx, v1)
 	if err != nil {
 		return nil, wrapErr(err)
 	}

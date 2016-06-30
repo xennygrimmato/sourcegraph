@@ -1175,7 +1175,10 @@ service Accounts {
 	rpc RequestPasswordReset(PersonSpec) returns (PendingPasswordReset);
 
 	// CheckResetToken verifies a password reset token is authentic and valid
-	rpc ResetPassword(NewPassword) returns (pbtypes.Void);
+	rpc ResetPassword(ResetPasswordRequest) returns (pbtypes.Void);
+
+	// ChangePassword updates the password for an existing user. 
+	rpc ChangePassword(ChangePasswordRequest) returns (pbtypes.Void);
 
 	// Update profile of existing account.
 	rpc Update(User) returns (pbtypes.Void);
@@ -1223,7 +1226,19 @@ message PendingPasswordReset {
 	string Login = 4;
 }
 
-message NewPassword {
+message ChangePasswordRequest {
+	// NewPassword is the new password for the user whose password we're changing. 
+	string NewPassword = 1;
+
+	// OldPassword is the old password for the user whose password we're changing. 
+	// OldPassword must be correct, or else this operation can't proceed. 
+	string OldPassword = 2;
+
+	// UID is the UID of the user whose password we're changing.   
+	int32 UID = 3;
+}
+
+message ResetPasswordRequest {
 	// password is the new password for the user who requested the password reset
 	// token.
 	string Password = 1;

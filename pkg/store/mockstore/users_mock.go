@@ -46,7 +46,8 @@ type Accounts struct {
 	Update_               func(v0 context.Context, v1 *sourcegraph.User) error
 	UpdateEmails_         func(v0 context.Context, v1 sourcegraph.UserSpec, v2 []*sourcegraph.EmailAddr) error
 	RequestPasswordReset_ func(v0 context.Context, v1 *sourcegraph.User) (*sourcegraph.PasswordResetToken, error)
-	ResetPassword_        func(v0 context.Context, v1 *sourcegraph.NewPassword) error
+	ResetPassword_        func(v0 context.Context, v1 *sourcegraph.ResetPasswordRequest) error
+	ChangePassword_       func(v0 context.Context, v1 *sourcegraph.ChangePasswordRequest) error
 	Delete_               func(v0 context.Context, v1 int32) error
 }
 
@@ -64,8 +65,12 @@ func (s *Accounts) RequestPasswordReset(v0 context.Context, v1 *sourcegraph.User
 	return s.RequestPasswordReset_(v0, v1)
 }
 
-func (s *Accounts) ResetPassword(v0 context.Context, v1 *sourcegraph.NewPassword) error {
+func (s *Accounts) ResetPassword(v0 context.Context, v1 *sourcegraph.ResetPasswordRequest) error {
 	return s.ResetPassword_(v0, v1)
+}
+
+func (s *Accounts) ChangePassword(v0 context.Context, v1 *sourcegraph.ChangePasswordRequest) error {
+	return s.ChangePassword_(v0, v1)
 }
 
 func (s *Accounts) Delete(v0 context.Context, v1 int32) error { return s.Delete_(v0, v1) }

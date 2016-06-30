@@ -434,7 +434,8 @@ var _ sourcegraph.PeopleServer = (*PeopleServer)(nil)
 type AccountsClient struct {
 	Create_               func(ctx context.Context, in *sourcegraph.NewAccount) (*sourcegraph.CreatedAccount, error)
 	RequestPasswordReset_ func(ctx context.Context, in *sourcegraph.PersonSpec) (*sourcegraph.PendingPasswordReset, error)
-	ResetPassword_        func(ctx context.Context, in *sourcegraph.NewPassword) (*pbtypes.Void, error)
+	ResetPassword_        func(ctx context.Context, in *sourcegraph.ResetPasswordRequest) (*pbtypes.Void, error)
+	ChangePassword_       func(ctx context.Context, in *sourcegraph.ChangePasswordRequest) (*pbtypes.Void, error)
 	Update_               func(ctx context.Context, in *sourcegraph.User) (*pbtypes.Void, error)
 	Delete_               func(ctx context.Context, in *sourcegraph.PersonSpec) (*pbtypes.Void, error)
 }
@@ -447,8 +448,12 @@ func (s *AccountsClient) RequestPasswordReset(ctx context.Context, in *sourcegra
 	return s.RequestPasswordReset_(ctx, in)
 }
 
-func (s *AccountsClient) ResetPassword(ctx context.Context, in *sourcegraph.NewPassword, opts ...grpc.CallOption) (*pbtypes.Void, error) {
+func (s *AccountsClient) ResetPassword(ctx context.Context, in *sourcegraph.ResetPasswordRequest, opts ...grpc.CallOption) (*pbtypes.Void, error) {
 	return s.ResetPassword_(ctx, in)
+}
+
+func (s *AccountsClient) ChangePassword(ctx context.Context, in *sourcegraph.ChangePasswordRequest, opts ...grpc.CallOption) (*pbtypes.Void, error) {
+	return s.ChangePassword_(ctx, in)
 }
 
 func (s *AccountsClient) Update(ctx context.Context, in *sourcegraph.User, opts ...grpc.CallOption) (*pbtypes.Void, error) {
@@ -464,7 +469,8 @@ var _ sourcegraph.AccountsClient = (*AccountsClient)(nil)
 type AccountsServer struct {
 	Create_               func(v0 context.Context, v1 *sourcegraph.NewAccount) (*sourcegraph.CreatedAccount, error)
 	RequestPasswordReset_ func(v0 context.Context, v1 *sourcegraph.PersonSpec) (*sourcegraph.PendingPasswordReset, error)
-	ResetPassword_        func(v0 context.Context, v1 *sourcegraph.NewPassword) (*pbtypes.Void, error)
+	ResetPassword_        func(v0 context.Context, v1 *sourcegraph.ResetPasswordRequest) (*pbtypes.Void, error)
+	ChangePassword_       func(v0 context.Context, v1 *sourcegraph.ChangePasswordRequest) (*pbtypes.Void, error)
 	Update_               func(v0 context.Context, v1 *sourcegraph.User) (*pbtypes.Void, error)
 	Delete_               func(v0 context.Context, v1 *sourcegraph.PersonSpec) (*pbtypes.Void, error)
 }
@@ -477,8 +483,12 @@ func (s *AccountsServer) RequestPasswordReset(v0 context.Context, v1 *sourcegrap
 	return s.RequestPasswordReset_(v0, v1)
 }
 
-func (s *AccountsServer) ResetPassword(v0 context.Context, v1 *sourcegraph.NewPassword) (*pbtypes.Void, error) {
+func (s *AccountsServer) ResetPassword(v0 context.Context, v1 *sourcegraph.ResetPasswordRequest) (*pbtypes.Void, error) {
 	return s.ResetPassword_(v0, v1)
+}
+
+func (s *AccountsServer) ChangePassword(v0 context.Context, v1 *sourcegraph.ChangePasswordRequest) (*pbtypes.Void, error) {
+	return s.ChangePassword_(v0, v1)
 }
 
 func (s *AccountsServer) Update(v0 context.Context, v1 *sourcegraph.User) (*pbtypes.Void, error) {
