@@ -68,7 +68,6 @@ func (s *blacklistedSessionTokens) CheckSessionTokenBlacklist(ctx context.Contex
 		}
 	}
 
-
 	var blacklisted dbBlacklistedSessionToken
 	err = appDBH(ctx).SelectOne(&blacklisted, `SELECT * FROM blacklisted_session_token WHERE UID=$1 AND token=$2 LIMIT 1;`, user, token)
 	if err == sql.ErrNoRows {
