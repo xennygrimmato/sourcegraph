@@ -2,6 +2,7 @@ package localstore
 
 import "time"
 import "golang.org/x/net/context"
+import "gopkg.in/inconshreveable/log15.v2"
 
 import "database/sql"
 import "errors"
@@ -12,6 +13,7 @@ import "sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 import "sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 
 import "sourcegraph.com/sourcegraph/sourcegraph/pkg/dbutil"
+import "sourcegraph.com/sourcegraph/sourcegraph/pkg/amortize"
 
 type dbBlacklistedSessionToken struct {
 	UID              int32     // the user whose owned this token
@@ -54,6 +56,18 @@ func (s *blacklistedSessionTokens) PersistBlacklistedToken(ctx context.Context, 
 }
 
 func (s *blacklistedSessionTokens) CheckSessionTokenBlacklist(ctx context.Context, user int32, token string) (r *sourcegraph.BlacklistCheckResponse, err error) {
+
+	//Before we perform the check, let's see if we're luck enough to run the prune job, 1/100000 is just a guess as to how often
+	//this should run
+	if amortize.ShouldAmortize(1, 100000) {
+		removed, err := s.cleanOldTokens(ctx)
+		if err != nil {
+			log15.Error("Prune of blacklist table failed", "error", err)
+		} else {
+			log15.Debug("Prune of blacklist succeed without error", "removed", removed)
+		}
+	}
+
 
 	var blacklisted dbBlacklistedSessionToken
 	err = appDBH(ctx).SelectOne(&blacklisted, `SELECT * FROM blacklisted_session_token WHERE UID=$1 AND token=$2 LIMIT 1;`, user, token)

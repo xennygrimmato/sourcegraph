@@ -2982,6 +2982,49 @@ func (*BlacklistCheckResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptorSourcegraph, []int{157}
 }
 
+type BlacklistTokenSpec struct {
+	// UID is the UID of the user whose token is requested.
+	Uid int32 `protobuf:"varint,1,opt,name=uid,proto3" json:"uid,omitempty"`
+	// Host is the external service whose token is requested.
+	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *BlacklistTokenSpec) Reset()                    { *m = BlacklistTokenSpec{} }
+func (m *BlacklistTokenSpec) String() string            { return proto.CompactTextString(m) }
+func (*BlacklistTokenSpec) ProtoMessage()               {}
+func (*BlacklistTokenSpec) Descriptor() ([]byte, []int) { return fileDescriptorSourcegraph, []int{154} }
+
+type BlacklistCheckSpec struct {
+	Uid   int32  `protobuf:"varint,1,opt,name=uid,proto3" json:"uid,omitempty"`
+	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *BlacklistCheckSpec) Reset()                    { *m = BlacklistCheckSpec{} }
+func (m *BlacklistCheckSpec) String() string            { return proto.CompactTextString(m) }
+func (*BlacklistCheckSpec) ProtoMessage()               {}
+func (*BlacklistCheckSpec) Descriptor() ([]byte, []int) { return fileDescriptorSourcegraph, []int{155} }
+
+type BlacklistResponse struct {
+	Added bool `protobuf:"varint,1,opt,name=added,proto3" json:"added,omitempty"`
+}
+
+func (m *BlacklistResponse) Reset()                    { *m = BlacklistResponse{} }
+func (m *BlacklistResponse) String() string            { return proto.CompactTextString(m) }
+func (*BlacklistResponse) ProtoMessage()               {}
+func (*BlacklistResponse) Descriptor() ([]byte, []int) { return fileDescriptorSourcegraph, []int{156} }
+
+type BlacklistCheckResponse struct {
+	Ok               bool               `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	BlacklistedUntil *pbtypes.Timestamp `protobuf:"bytes,2,opt,name=blacklisted_until" json:"blacklisted_until,omitempty"`
+}
+
+func (m *BlacklistCheckResponse) Reset()         { *m = BlacklistCheckResponse{} }
+func (m *BlacklistCheckResponse) String() string { return proto.CompactTextString(m) }
+func (*BlacklistCheckResponse) ProtoMessage()    {}
+func (*BlacklistCheckResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptorSourcegraph, []int{157}
+}
+
 func init() {
 	proto.RegisterType((*Origin)(nil), "sourcegraph.Origin")
 	proto.RegisterType((*CombinedStatus)(nil), "sourcegraph.CombinedStatus")
@@ -38134,5 +38177,4 @@ var fileDescriptorSourcegraph = []byte{
 	0x66, 0x95, 0xca, 0x50, 0xb6, 0xe7, 0x7f, 0xf2, 0xb3, 0x2b, 0xe7, 0x7e, 0xf2, 0xf3, 0x2b, 0xa5,
 	0x9f, 0xc2, 0xbf, 0x7f, 0x86, 0x7f, 0xfb, 0x75, 0x7a, 0x07, 0xfe, 0xf6, 0xff, 0x05, 0x00, 0x00,
 	0xff, 0xff, 0x3f, 0x19, 0xd5, 0xc0, 0xf4, 0x5f, 0x00, 0x00,
->>>>>>> WIP - session blacklist changes
 }
