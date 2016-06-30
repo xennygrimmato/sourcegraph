@@ -2255,19 +2255,19 @@ service Search {
 	rpc Search(SearchOp) returns (SearchResultsList);
 }
 
-// SourcegraphDesktop provides the latest version of the desktop app to enable auto-updating.
-service SourcegraphDesktop {
-	rpc GetLatest(ClientDesktopVersion) returns (LatestDesktopVersion);
+// Desktop provides the latest version of the Sourcegraph desktop app to enable auto-updating.
+service Desktop {
+	rpc GetLatest(pbtypes.Void) returns (LatestDesktopVersion);
 }
 
 // LatestDesktopVersion is the latest version of the Sourcegraph desktop app.
 message LatestDesktopVersion {
-	string version = 1;
+	string Version = 1;
 }
 
 // clientVersion is a user's currently installed version of the Sourcegraph desktop app.
 message ClientDesktopVersion {
-	string clientVersion = 1;
+	string ClientVersion = 1;
 }
 
 // Channel manages a realtime communication channel between a client

@@ -4,15 +4,16 @@ import (
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/githubutil"
+	"sourcegraph.com/sqs/pbtypes"
 )
 
-var SourcegraphDesktop sourcegraph.SourcegraphDesktopServer = &sourcegraphdesktop{}
+var Desktop sourcegraph.DesktopServer = &desktop{}
 
-type sourcegraphdesktop struct{}
+type desktop struct{}
 
-var _ sourcegraph.SourcegraphDesktopServer = (*sourcegraphdesktop)(nil)
+var _ sourcegraph.DesktopServer = (*desktop)(nil)
 
-func (s *sourcegraphdesktop) GetLatest(ctx context.Context, clientVersion *sourcegraph.ClientDesktopVersion) (*sourcegraph.LatestDesktopVersion, error) {
+func (s *desktop) GetLatest(ctx context.Context, _ *pbtypes.Void) (*sourcegraph.LatestDesktopVersion, error) {
 	gh := githubutil.Default.UnauthedClient()
 
 	latestRelease, _, err := gh.Repositories.GetLatestRelease("sourcegraph", "sourcegraph-desktop")

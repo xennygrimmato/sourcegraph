@@ -29,26 +29,26 @@ import (
 // Services returns a full set of services with an implementation of each service method that lets you customize the initial context.Context and map Go errors to gRPC error codes. It is similar to HTTP handler middleware, but for gRPC servers.
 func Services(ctxFunc ContextFunc, services svc.Services) svc.Services {
 	s := svc.Services{
-		MultiRepoImporter:  wrappedMultiRepoImporter{ctxFunc, services},
-		Accounts:           wrappedAccounts{ctxFunc, services},
-		Annotations:        wrappedAnnotations{ctxFunc, services},
-		Async:              wrappedAsync{ctxFunc, services},
-		Auth:               wrappedAuth{ctxFunc, services},
-		Builds:             wrappedBuilds{ctxFunc, services},
-		Channel:            wrappedChannel{ctxFunc, services},
-		Defs:               wrappedDefs{ctxFunc, services},
-		Deltas:             wrappedDeltas{ctxFunc, services},
-		Meta:               wrappedMeta{ctxFunc, services},
-		MirrorRepos:        wrappedMirrorRepos{ctxFunc, services},
-		Notify:             wrappedNotify{ctxFunc, services},
-		Orgs:               wrappedOrgs{ctxFunc, services},
-		People:             wrappedPeople{ctxFunc, services},
-		RepoStatuses:       wrappedRepoStatuses{ctxFunc, services},
-		RepoTree:           wrappedRepoTree{ctxFunc, services},
-		Repos:              wrappedRepos{ctxFunc, services},
-		Search:             wrappedSearch{ctxFunc, services},
-		SourcegraphDesktop: wrappedSourcegraphDesktop{ctxFunc, services},
-		Users:              wrappedUsers{ctxFunc, services},
+		MultiRepoImporter: wrappedMultiRepoImporter{ctxFunc, services},
+		Accounts:          wrappedAccounts{ctxFunc, services},
+		Annotations:       wrappedAnnotations{ctxFunc, services},
+		Async:             wrappedAsync{ctxFunc, services},
+		Auth:              wrappedAuth{ctxFunc, services},
+		Builds:            wrappedBuilds{ctxFunc, services},
+		Channel:           wrappedChannel{ctxFunc, services},
+		Defs:              wrappedDefs{ctxFunc, services},
+		Deltas:            wrappedDeltas{ctxFunc, services},
+		Desktop:           wrappedDesktop{ctxFunc, services},
+		Meta:              wrappedMeta{ctxFunc, services},
+		MirrorRepos:       wrappedMirrorRepos{ctxFunc, services},
+		Notify:            wrappedNotify{ctxFunc, services},
+		Orgs:              wrappedOrgs{ctxFunc, services},
+		People:            wrappedPeople{ctxFunc, services},
+		RepoStatuses:      wrappedRepoStatuses{ctxFunc, services},
+		RepoTree:          wrappedRepoTree{ctxFunc, services},
+		Repos:             wrappedRepos{ctxFunc, services},
+		Search:            wrappedSearch{ctxFunc, services},
+		Users:             wrappedUsers{ctxFunc, services},
 	}
 	return s
 }
@@ -1111,6 +1111,41 @@ func (s wrappedDeltas) ListFiles(ctx context.Context, v1 *sourcegraph.DeltasList
 	}
 
 	rv, err := innerSvc.ListFiles(ctx, v1)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	return rv, nil
+}
+
+type wrappedDesktop struct {
+	ctxFunc  ContextFunc
+	services svc.Services
+}
+
+func (s wrappedDesktop) GetLatest(ctx context.Context, v1 *pbtypes.Void) (returnedResult *sourcegraph.LatestDesktopVersion, returnedError error) {
+	defer func() {
+		if err := recover(); err != nil {
+			const size = 64 << 10
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+			returnedError = grpc.Errorf(codes.Internal, "panic in Desktop.GetLatest: %v\n\n%s", err, buf)
+			returnedResult = nil
+		}
+	}()
+
+	var err error
+	ctx, err = initContext(ctx, s.ctxFunc, s.services)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	innerSvc := svc.DesktopOrNil(ctx)
+	if innerSvc == nil {
+		return nil, grpc.Errorf(codes.Unimplemented, "Desktop")
+	}
+
+	rv, err := innerSvc.GetLatest(ctx, v1)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
@@ -2206,41 +2241,6 @@ func (s wrappedSearch) Search(ctx context.Context, v1 *sourcegraph.SearchOp) (re
 	}
 
 	rv, err := innerSvc.Search(ctx, v1)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-
-	return rv, nil
-}
-
-type wrappedSourcegraphDesktop struct {
-	ctxFunc  ContextFunc
-	services svc.Services
-}
-
-func (s wrappedSourcegraphDesktop) GetLatest(ctx context.Context, v1 *sourcegraph.ClientDesktopVersion) (returnedResult *sourcegraph.LatestDesktopVersion, returnedError error) {
-	defer func() {
-		if err := recover(); err != nil {
-			const size = 64 << 10
-			buf := make([]byte, size)
-			buf = buf[:runtime.Stack(buf, false)]
-			returnedError = grpc.Errorf(codes.Internal, "panic in SourcegraphDesktop.GetLatest: %v\n\n%s", err, buf)
-			returnedResult = nil
-		}
-	}()
-
-	var err error
-	ctx, err = initContext(ctx, s.ctxFunc, s.services)
-	if err != nil {
-		return nil, wrapErr(err)
-	}
-
-	innerSvc := svc.SourcegraphDesktopOrNil(ctx)
-	if innerSvc == nil {
-		return nil, grpc.Errorf(codes.Unimplemented, "SourcegraphDesktop")
-	}
-
-	rv, err := innerSvc.GetLatest(ctx, v1)
 	if err != nil {
 		return nil, wrapErr(err)
 	}

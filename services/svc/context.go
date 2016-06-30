@@ -22,50 +22,50 @@ import (
 type contextKey int
 
 const (
-	_MultiRepoImporterKey  contextKey = iota
-	_AccountsKey           contextKey = iota
-	_AnnotationsKey        contextKey = iota
-	_AsyncKey              contextKey = iota
-	_AuthKey               contextKey = iota
-	_BuildsKey             contextKey = iota
-	_ChannelKey            contextKey = iota
-	_DefsKey               contextKey = iota
-	_DeltasKey             contextKey = iota
-	_MetaKey               contextKey = iota
-	_MirrorReposKey        contextKey = iota
-	_NotifyKey             contextKey = iota
-	_OrgsKey               contextKey = iota
-	_PeopleKey             contextKey = iota
-	_RepoStatusesKey       contextKey = iota
-	_RepoTreeKey           contextKey = iota
-	_ReposKey              contextKey = iota
-	_SearchKey             contextKey = iota
-	_SourcegraphDesktopKey contextKey = iota
-	_UsersKey              contextKey = iota
+	_MultiRepoImporterKey contextKey = iota
+	_AccountsKey          contextKey = iota
+	_AnnotationsKey       contextKey = iota
+	_AsyncKey             contextKey = iota
+	_AuthKey              contextKey = iota
+	_BuildsKey            contextKey = iota
+	_ChannelKey           contextKey = iota
+	_DefsKey              contextKey = iota
+	_DeltasKey            contextKey = iota
+	_DesktopKey           contextKey = iota
+	_MetaKey              contextKey = iota
+	_MirrorReposKey       contextKey = iota
+	_NotifyKey            contextKey = iota
+	_OrgsKey              contextKey = iota
+	_PeopleKey            contextKey = iota
+	_RepoStatusesKey      contextKey = iota
+	_RepoTreeKey          contextKey = iota
+	_ReposKey             contextKey = iota
+	_SearchKey            contextKey = iota
+	_UsersKey             contextKey = iota
 )
 
 // Services contains fields for all existing services.
 type Services struct {
-	MultiRepoImporter  pb.MultiRepoImporterServer
-	Accounts           sourcegraph.AccountsServer
-	Annotations        sourcegraph.AnnotationsServer
-	Async              sourcegraph.AsyncServer
-	Auth               sourcegraph.AuthServer
-	Builds             sourcegraph.BuildsServer
-	Channel            sourcegraph.ChannelServer
-	Defs               sourcegraph.DefsServer
-	Deltas             sourcegraph.DeltasServer
-	Meta               sourcegraph.MetaServer
-	MirrorRepos        sourcegraph.MirrorReposServer
-	Notify             sourcegraph.NotifyServer
-	Orgs               sourcegraph.OrgsServer
-	People             sourcegraph.PeopleServer
-	RepoStatuses       sourcegraph.RepoStatusesServer
-	RepoTree           sourcegraph.RepoTreeServer
-	Repos              sourcegraph.ReposServer
-	Search             sourcegraph.SearchServer
-	SourcegraphDesktop sourcegraph.SourcegraphDesktopServer
-	Users              sourcegraph.UsersServer
+	MultiRepoImporter pb.MultiRepoImporterServer
+	Accounts          sourcegraph.AccountsServer
+	Annotations       sourcegraph.AnnotationsServer
+	Async             sourcegraph.AsyncServer
+	Auth              sourcegraph.AuthServer
+	Builds            sourcegraph.BuildsServer
+	Channel           sourcegraph.ChannelServer
+	Defs              sourcegraph.DefsServer
+	Deltas            sourcegraph.DeltasServer
+	Desktop           sourcegraph.DesktopServer
+	Meta              sourcegraph.MetaServer
+	MirrorRepos       sourcegraph.MirrorReposServer
+	Notify            sourcegraph.NotifyServer
+	Orgs              sourcegraph.OrgsServer
+	People            sourcegraph.PeopleServer
+	RepoStatuses      sourcegraph.RepoStatusesServer
+	RepoTree          sourcegraph.RepoTreeServer
+	Repos             sourcegraph.ReposServer
+	Search            sourcegraph.SearchServer
+	Users             sourcegraph.UsersServer
 }
 
 // RegisterAll calls all of the the RegisterXxxServer funcs.
@@ -107,6 +107,10 @@ func RegisterAll(s *grpc.Server, svcs Services) {
 		sourcegraph.RegisterDeltasServer(s, svcs.Deltas)
 	}
 
+	if svcs.Desktop != nil {
+		sourcegraph.RegisterDesktopServer(s, svcs.Desktop)
+	}
+
 	if svcs.Meta != nil {
 		sourcegraph.RegisterMetaServer(s, svcs.Meta)
 	}
@@ -141,10 +145,6 @@ func RegisterAll(s *grpc.Server, svcs Services) {
 
 	if svcs.Search != nil {
 		sourcegraph.RegisterSearchServer(s, svcs.Search)
-	}
-
-	if svcs.SourcegraphDesktop != nil {
-		sourcegraph.RegisterSourcegraphDesktopServer(s, svcs.SourcegraphDesktop)
 	}
 
 	if svcs.Users != nil {
@@ -192,6 +192,10 @@ func WithServices(ctx context.Context, s Services) context.Context {
 		ctx = WithDeltas(ctx, s.Deltas)
 	}
 
+	if s.Desktop != nil {
+		ctx = WithDesktop(ctx, s.Desktop)
+	}
+
 	if s.Meta != nil {
 		ctx = WithMeta(ctx, s.Meta)
 	}
@@ -226,10 +230,6 @@ func WithServices(ctx context.Context, s Services) context.Context {
 
 	if s.Search != nil {
 		ctx = WithSearch(ctx, s.Search)
-	}
-
-	if s.SourcegraphDesktop != nil {
-		ctx = WithSourcegraphDesktop(ctx, s.SourcegraphDesktop)
 	}
 
 	if s.Users != nil {
@@ -446,6 +446,29 @@ func DeltasOrNil(ctx context.Context) sourcegraph.DeltasServer {
 	return nil
 }
 
+// WithDesktop returns a copy of parent that uses the given Desktop service.
+func WithDesktop(ctx context.Context, s sourcegraph.DesktopServer) context.Context {
+	return context.WithValue(ctx, _DesktopKey, s)
+}
+
+// Desktop gets the context's Desktop service. If the service is not present, it panics.
+func Desktop(ctx context.Context) sourcegraph.DesktopServer {
+	s, ok := ctx.Value(_DesktopKey).(sourcegraph.DesktopServer)
+	if !ok || s == nil {
+		panic("no Desktop set in context")
+	}
+	return s
+}
+
+// DesktopOrNil returns the context's Desktop service if present, or else nil.
+func DesktopOrNil(ctx context.Context) sourcegraph.DesktopServer {
+	s, ok := ctx.Value(_DesktopKey).(sourcegraph.DesktopServer)
+	if ok {
+		return s
+	}
+	return nil
+}
+
 // WithMeta returns a copy of parent that uses the given Meta service.
 func WithMeta(ctx context.Context, s sourcegraph.MetaServer) context.Context {
 	return context.WithValue(ctx, _MetaKey, s)
@@ -647,29 +670,6 @@ func Search(ctx context.Context) sourcegraph.SearchServer {
 // SearchOrNil returns the context's Search service if present, or else nil.
 func SearchOrNil(ctx context.Context) sourcegraph.SearchServer {
 	s, ok := ctx.Value(_SearchKey).(sourcegraph.SearchServer)
-	if ok {
-		return s
-	}
-	return nil
-}
-
-// WithSourcegraphDesktop returns a copy of parent that uses the given SourcegraphDesktop service.
-func WithSourcegraphDesktop(ctx context.Context, s sourcegraph.SourcegraphDesktopServer) context.Context {
-	return context.WithValue(ctx, _SourcegraphDesktopKey, s)
-}
-
-// SourcegraphDesktop gets the context's SourcegraphDesktop service. If the service is not present, it panics.
-func SourcegraphDesktop(ctx context.Context) sourcegraph.SourcegraphDesktopServer {
-	s, ok := ctx.Value(_SourcegraphDesktopKey).(sourcegraph.SourcegraphDesktopServer)
-	if !ok || s == nil {
-		panic("no SourcegraphDesktop set in context")
-	}
-	return s
-}
-
-// SourcegraphDesktopOrNil returns the context's SourcegraphDesktop service if present, or else nil.
-func SourcegraphDesktopOrNil(ctx context.Context) sourcegraph.SourcegraphDesktopServer {
-	s, ok := ctx.Value(_SourcegraphDesktopKey).(sourcegraph.SourcegraphDesktopServer)
 	if ok {
 		return s
 	}
