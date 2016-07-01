@@ -13,6 +13,7 @@ import "sourcegraph/user/UserBackend"; // for side effects
 import redirectIfLoggedIn from "sourcegraph/user/redirectIfLoggedIn";
 import CSSModules from "react-css-modules";
 import style from "sourcegraph/user/styles/accountForm.css";
+import {PASSWORD_PATTERN, PASSWORD_DESCRIPTION} from "sourcegraph/util/constants/PasswordConstants";
 
 class ResetPassword extends Container {
 	static propTypes = {
@@ -61,7 +62,9 @@ class ResetPassword extends Container {
 						autoComplete="new-password"
 						autoFocus={true}
 						block={true}
-						required={true} />
+						required={true}
+						pattern = {PASSWORD_PATTERN}
+						title = {PASSWORD_DESCRIPTION}/>
 				</label>
 				<label>
 					<span>Confirm new password</span>

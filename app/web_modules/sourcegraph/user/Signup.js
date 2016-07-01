@@ -13,6 +13,7 @@ import "sourcegraph/user/UserBackend"; // for side effects
 import redirectIfLoggedIn from "sourcegraph/user/redirectIfLoggedIn";
 import CSSModules from "react-css-modules";
 import style from "sourcegraph/user/styles/accountForm.css";
+import {PASSWORD_PATTERN, PASSWORD_DESCRIPTION} from "sourcegraph/util/constants/PasswordConstants";
 
 export class SignupForm extends Container {
 	static propTypes = {
@@ -118,7 +119,9 @@ export class SignupForm extends Container {
 						domRef={(e) => this._passwordInput = e}
 						tabIndex="4"
 						block={true}
-						required={true} />
+						required={true}
+						pattern = {PASSWORD_PATTERN}
+						title = {PASSWORD_DESCRIPTION}/>
 				</label>
 				<p styleName="mid-text">
 					By creating an account, you agree to our <a href="/-/privacy" target="_blank">privacy policy</a> and <a href="/-/terms" target="_blank">terms</a>.
