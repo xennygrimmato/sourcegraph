@@ -170,7 +170,7 @@ func TestRequestPasswordReset(t *testing.T) {
 func TestResetPassword(t *testing.T) {
 	var called bool
 	ctx, mock := testContext()
-	mock.stores.Accounts.ResetPassword_ = func(ctx context.Context, new *sourcegraph.NewPassword) error {
+	mock.stores.Accounts.ResetPassword_ = func(ctx context.Context, new *sourcegraph.ResetPasswordRequest) error {
 		called = true
 		if new.Password != "hunter2" || new.Token.Token != "secrettoken" {
 			t.Errorf("Didn't receive expected new password")
@@ -178,7 +178,7 @@ func TestResetPassword(t *testing.T) {
 		return nil
 	}
 	s := accounts{}
-	_, err := s.ResetPassword(ctx, &sourcegraph.NewPassword{Password: "hunter2", Token: &sourcegraph.PasswordResetToken{Token: "secrettoken"}})
+	_, err := s.ResetPassword(ctx, &sourcegraph.ResetPasswordRequest{Password: "hunter2", Token: &sourcegraph.PasswordResetToken{Token: "secrettoken"}})
 	if err != nil {
 		t.Fatal(err)
 	}
