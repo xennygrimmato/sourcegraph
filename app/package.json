@@ -71,6 +71,7 @@
     "react-router-scroll": "^0.2.0",
     "recharts": "^0.10.5",
     "split": "^1.0.0",
+    "sjcl": "1.0.3",
     "utf8": "2.1.1"
   },
   "scripts": {

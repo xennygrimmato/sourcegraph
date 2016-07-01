@@ -13,6 +13,7 @@ import "sourcegraph/user/UserBackend"; // for side effects
 import redirectIfLoggedIn from "sourcegraph/user/redirectIfLoggedIn";
 import CSSModules from "react-css-modules";
 import style from "sourcegraph/user/styles/accountForm.css";
+import hashPass from "sourcegraph/util/password";
 
 export class SignupForm extends Container {
 	static propTypes = {
@@ -45,6 +46,7 @@ export class SignupForm extends Container {
 		state.githubError = (props.location.query && props.location.query["github-signup-error"]) || null;
 		state.githubLogin = (props.location.query && props.location.query.login) || null;
 		state.githubEmail = (props.location.query && props.location.query.email) || null;
+		console.log(hashPass("test"));
 	}
 
 
