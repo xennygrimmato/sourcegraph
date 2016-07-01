@@ -94,7 +94,7 @@ func testRegisterFlow(t *T) error {
 	username.Click()
 	username.SendKeys(t.TestLogin)
 	password.Click()
-	password.SendKeys("e2etest")
+	password.SendKeys("e2eTestPa$$")
 	email.Click()
 	email.SendKeys(t.TestEmail)
 
