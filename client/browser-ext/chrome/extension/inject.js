@@ -7,6 +7,7 @@ import * as Actions from "../../app/actions";
 
 import Background from "../../app/components/Background";
 import SearchFrame from "../../app/components/SearchFrame";
+import SettingsFrame from "../../app/components/SettingsFrame";
 import {SearchIcon} from "../../app/components/Icons";
 import BlobAnnotator from "../../app/components/BlobAnnotator";
 import createStore from "../../app/store/configureStore";
@@ -122,10 +123,32 @@ function injectBackgroundApp() {
 	}
 }
 
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
 function showSourcegraphSettings() {
-	document.querySelector(".js-selected-navigation-item.reponav-item.selected").className = "js-selected-navigation-item reponav-item";
-	document.getElementById("settings").className = "js-selected-navigation-item reponav-item selected";
-	document.querySelector(".repository-content").style.display = "none";
+	let frame = getSettingsFrame();
+	if (!frame) {
+		frame = createSettingsFrame();
+		document.querySelector(".js-selected-navigation-item.reponav-item.selected").className = "js-selected-navigation-item reponav-item";
+		document.getElementById("settings").className = "js-selected-navigation-item reponav-item selected";
+		document.querySelector(".repository-content").style.display = "none";
+		document.querySelector(".container.new-discussion-timeline").appendChild(frame);
+		frame.style.display = "block";
+	}
+}
+
+function getSettingsFrame() {
+	return document.getElementById("sourcegraph-settings-frame");
+}
+
+function createSettingsFrame() {
+	let settingsFrame = document.createElement("div");
+	settingsFrame.id = "sourcegraph-settings-frame";
+	injectComponent(<SettingsFrame/>, settingsFrame);
+	return settingsFrame;
 }
 
 function onHashChange() {
@@ -154,6 +177,9 @@ function injectSourcegraphSettings() {
 		nav.insertBefore(tab, nav.lastChild);
 	}
 }
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 function injectBlobAnnotator() {
 	if (!isGitHubURL()) return;

@@ -11,6 +11,15 @@ const accessToken = function(state = null, action) {
 	}
 }
 
+const authentication = function(state = null, action) {
+	switch (action.type) {
+	case ActionTypes.STORED_AUTHENTICATION:
+		return action.json ? action.json : state;
+	default:
+		return state;
+	}
+}
+
 const resolvedRev = function(state = {content: {}}, action) {
 	switch (action.type) {
 	case ActionTypes.RESOLVED_REV:
@@ -125,4 +134,4 @@ const annotations = function(state = {content: {}}, action) {
 	}
 }
 
-export default combineReducers({accessToken, resolvedRev, srclibDataVersion, build, def, defs, annotations});
+export default combineReducers({accessToken, authentication, resolvedRev, srclibDataVersion, build, def, defs, annotations});

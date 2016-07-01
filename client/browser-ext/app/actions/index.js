@@ -113,6 +113,15 @@ export function getAnnotations(repo, rev, path, exactRev) {
 	}
 }
 
+
+export function getAuthentication(state) {
+	return function (dispatch) {
+		return fetch(`https://sourcegraph.com/.api/auth-info`)
+		.then((json) => dispatch({type: types.STORED_AUTHENTICATION, json}))
+		.catch((err) => dispatch({type: types.STORED_AUTHENTICATION, err}));
+	}
+}
+
 export function refreshVCS(repo) {
 	return function (dispatch) {
 		return fetch(`https://sourcegraph.com/.api/repos/${repo}/-/refresh`, {method: "POST"})
