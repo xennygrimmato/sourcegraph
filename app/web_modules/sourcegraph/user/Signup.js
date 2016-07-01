@@ -118,6 +118,8 @@ export class SignupForm extends Container {
 						domRef={(e) => this._passwordInput = e}
 						tabIndex="4"
 						block={true}
+						pattern="^(?!.*(.)\1{2})(?=.*[^A-Za-z\d])(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{10,128}$" // eslint-disable-line no-octal-escape
+						title="Your password should be between 10 and 128 characters, and should include at least: 1 uppercase character 1 lowercase character, 1 digit, and 1 special character."
 						required={true} />
 				</label>
 				<p styleName="mid-text">

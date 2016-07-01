@@ -167,7 +167,7 @@ func serveChangePassword(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	writeJSON(w, &authResponse{Success: true})
+	return writeJSON(w, &authResponse{Success: true})
 }
 
 func serveForgotPassword(w http.ResponseWriter, r *http.Request) error {
