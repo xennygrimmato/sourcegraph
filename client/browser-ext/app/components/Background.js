@@ -40,7 +40,6 @@ export default class Background extends React.Component {
 
 	componentDidMount() {
 		if (this.props.accessToken) useAccessToken(this.props.accessToken);
-
 		// Capture user's access token if on sourcegraph.com.
 		if (utils.isSourcegraphURL()) {
 			const regexp = /accessToken\\":\\"([-A-Za-z0-9_.]+)\\"/;

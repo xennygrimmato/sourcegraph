@@ -32,6 +32,7 @@ function createSearchFrame() {
 }
 
 function toggleSearchFrame() {
+	
 	EventLogger.logEvent("ToggleSearchInput", {visibility: isSearchAppShown ? "hidden" : "visible"});
 	function focusInput() {
 		const el = document.querySelector(".sg-input");
@@ -45,13 +46,16 @@ function toggleSearchFrame() {
 		document.querySelector(".repository-content").style.display = "none";
 		document.querySelector(".container.new-discussion-timeline").appendChild(frame);
 		frame.style.display = "block";
+		if (window.location.hash == "#sourcegraph-settings") hideSourcegraphSettings();
 		isSearchAppShown = true;
 		focusInput();
 	} else if (isSearchAppShown) {
 		// Toggle visibility off.
 		hideSearchFrame();
+		if (window.location.hash == "#sourcegraph-settings") showSourcegraphSettings();
 	} else {
 		// Toggle visiblity on.
+		if (window.location.hash == "#sourcegraph-settings") hideSourcegraphSettings();
 		document.querySelector(".repository-content").style.display = "none";
 		if (frame) frame.style.display = "block";
 		isSearchAppShown = true;
@@ -126,17 +130,25 @@ function injectBackgroundApp() {
 
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//last issue: click settings, search, and try to click settings again
 
 
 function showSourcegraphSettings() {
 	let frame = getSettingsFrame();
 	if (!frame) {
 		frame = createSettingsFrame();
-		document.querySelector(".js-selected-navigation-item.reponav-item.selected").className = "js-selected-navigation-item reponav-item";
-		document.getElementById("settings").className = "js-selected-navigation-item reponav-item selected";
-		document.querySelector(".repository-content").style.display = "none";
-		document.querySelector(".container.new-discussion-timeline").appendChild(frame);
-		frame.style.display = "block";
+	}
+	document.querySelector(".js-selected-navigation-item.reponav-item.selected").className = "js-selected-navigation-item reponav-item";
+	document.getElementById("settings").className = "js-selected-navigation-item reponav-item selected";
+	document.querySelector(".repository-content").style.display = "none";
+	document.querySelector(".container.new-discussion-timeline").appendChild(frame);
+	frame.style.display = "";
+}
+
+function hideSourcegraphSettings() {
+	let frame = getSettingsFrame();
+	if (frame) {
+		frame.style.display = "none";
 	}
 }
 
@@ -153,10 +165,10 @@ function createSettingsFrame() {
 
 function onHashChange() {
 	if (window.location.hash == "#sourcegraph-settings") {
+		if (isSearchAppShown) toggleSearchFrame();
 		showSourcegraphSettings();
 	} else {
-		const el = document.querySelector(".repository-content");
-		if (el) el.style.display = "";
+		hideSourcegraphSettings();
 	}
 }
 
@@ -209,12 +221,13 @@ function injectComponent(component, mountElement) {
 }
 
 function injectModules() {
+
 	injectBackgroundApp();
 	injectSearchApp();
 	injectBlobAnnotator();
 	injectSourcegraphSettings();
 
-	window.location = "#";
+	if (isGitHubURL()) window.location = "#";
 
 	// Add invisible div to the page to indicate injection has completed.
 	if (!document.getElementById("sourcegraph-app-bootstrap")) {

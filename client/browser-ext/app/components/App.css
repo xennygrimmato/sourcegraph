@@ -3,20 +3,6 @@
 	align-items: flex-start;
 }
 
-.settings-buttons {
-	font-weight: 500;
-	color: white;
-	text-align: center;
-	padding-bottom: 1rem;
-	padding-top: .5rem;
-	border-radius: 4px;
-    box-sizing: border-box;
-    cursor: pointer;
-    display: inline-block;
-    transition: btn-transition;
-    user-select: none;
-}
-
 .column-one-fourth {
 	width:25%;
 }
@@ -24,6 +10,7 @@
 .column-three-fourths {
 	width:75%;
 }
+
 
 .input-box {
 	display: flex;
