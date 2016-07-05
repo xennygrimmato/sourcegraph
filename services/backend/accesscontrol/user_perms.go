@@ -163,6 +163,20 @@ func VerifyActorHasWriteAccess(ctx context.Context, actor auth.Actor, method str
 		return err
 	}
 
+	repoObj, err := store.ReposFromContext(ctx).Get(ctx, repoID)
+	if err != nil {
+		return err
+	}
+	if repoObj.Origin != nil && repoObj.Origin.Service == sourcegraph.Origin_GitHub {
+		// TODO(sqs!before-merge): Support checking GitHub repo
+		// permissions to determine whether the user can update the
+		// repo.
+		if p := repoObj.Permissions; p != nil && (p.Push || p.Admin) {
+			return nil
+		}
+		return grpc.Errorf(codes.Unauthenticated, "write operation (%s) denied: not authorized by GitHub", method)
+	}
+
 	// TODO: redesign the permissions model to avoid short-circuited "return nil"s.
 	// (because it makes modifying authorization logic more error-prone.)
 

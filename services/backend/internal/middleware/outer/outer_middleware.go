@@ -1823,6 +1823,36 @@ func (s wrappedRepos) GetConfig(ctx context.Context, v1 *sourcegraph.RepoSpec) (
 	return rv, nil
 }
 
+func (s wrappedRepos) UpdateConfig(ctx context.Context, v1 *sourcegraph.RepoUpdateConfigOp) (returnedResult *pbtypes.Void, returnedError error) {
+	defer func() {
+		if err := recover(); err != nil {
+			const size = 64 << 10
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+			returnedError = grpc.Errorf(codes.Internal, "panic in Repos.UpdateConfig: %v\n\n%s", err, buf)
+			returnedResult = nil
+		}
+	}()
+
+	var err error
+	ctx, err = initContext(ctx, s.ctxFunc, s.services)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	innerSvc := svc.ReposOrNil(ctx)
+	if innerSvc == nil {
+		return nil, grpc.Errorf(codes.Unimplemented, "Repos")
+	}
+
+	rv, err := innerSvc.UpdateConfig(ctx, v1)
+	if err != nil {
+		return nil, wrapErr(err)
+	}
+
+	return rv, nil
+}
+
 func (s wrappedRepos) GetCommit(ctx context.Context, v1 *sourcegraph.RepoRevSpec) (returnedResult *vcs.Commit, returnedError error) {
 	defer func() {
 		if err := recover(); err != nil {

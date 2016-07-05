@@ -96,6 +96,9 @@ message StreamResponse {
 // RepoConfig describes a repository's config. This config is
 // Sourcegraph-specific and is persisted locally.
 message RepoConfig {
+	// Enabled is whether the repo's results should be included in
+	// search results.
+	bool Enabled = 1;
 }
 
 // Repo represents a source code repository.
@@ -318,6 +321,9 @@ service Repos {
 	// GetConfig retrieves the configuration for a repository.
 	rpc GetConfig(RepoSpec) returns (RepoConfig);
 
+	// UpdateConfig updates a repository's configuration.
+	rpc UpdateConfig(RepoUpdateConfigOp) returns (pbtypes.Void);
+
 	// TODO(sqs!nodb-ctx): move these to a "VCS" service (not Repos)
 	rpc GetCommit(RepoRevSpec) returns (vcs.Commit);
 
@@ -437,6 +443,22 @@ message RepoResolution {
 message SrclibDataVersion {
 	string CommitID = 1;
 	int32 CommitsBehind = 2;
+}
+
+// BoolValue is used instead of "bool" when you need to differentiate
+// between unset, false, and true (as is often the case in "update"
+// calls).
+message BoolValue {
+	bool Value = 1;
+}
+
+message RepoUpdateConfigOp {
+	// Repo is the repository whose configuration to update.
+	int32 Repo = 1;
+
+	// Enabled is whether results from the repo should be included in
+	// search.
+	BoolValue Enabled = 2;
 }
 
 message ReposCreateOp {

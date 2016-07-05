@@ -40,6 +40,7 @@ export default class UserSettingsReposMain extends Container {
 	stores() { return [RepoStore]; }
 
 	render() {
+		// TODO(sqs!before-merge): Add an "enable" and "disable" button.
 		return <Repos repos={this.state.repos ? this.state.repos.Repos : null} location={this.props.location} />;
 	}
 }

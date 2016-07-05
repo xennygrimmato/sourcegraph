@@ -838,6 +838,19 @@ func (s wrappedRepos) GetConfig(ctx context.Context, param *sourcegraph.RepoSpec
 	return
 }
 
+func (s wrappedRepos) UpdateConfig(ctx context.Context, param *sourcegraph.RepoUpdateConfigOp) (res *pbtypes.Void, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "Repos", "UpdateConfig", param)
+	defer func() {
+		trace.After(ctx, "Repos", "UpdateConfig", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.Repos.UpdateConfig(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "Repos.UpdateConfig returned nil, nil")
+	}
+	return
+}
+
 func (s wrappedRepos) GetCommit(ctx context.Context, param *sourcegraph.RepoRevSpec) (res *vcs.Commit, err error) {
 	start := time.Now()
 	ctx = trace.Before(ctx, "Repos", "GetCommit", param)

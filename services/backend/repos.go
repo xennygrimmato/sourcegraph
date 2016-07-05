@@ -346,6 +346,27 @@ func (s *repos) GetConfig(ctx context.Context, repo *sourcegraph.RepoSpec) (*sou
 	return conf, nil
 }
 
+func (s *repos) UpdateConfig(ctx context.Context, op *sourcegraph.RepoUpdateConfigOp) (*pbtypes.Void, error) {
+	store := store.RepoConfigsFromContext(ctx)
+
+	conf, err := store.Get(ctx, op.Repo)
+	if err != nil {
+		return nil, err
+	}
+
+	if conf == nil {
+		conf = &sourcegraph.RepoConfig{}
+	}
+	if op.Enabled != nil {
+		conf.Enabled = op.Enabled.Value
+	}
+
+	if err := store.Update(ctx, op.Repo, *conf); err != nil {
+		return nil, err
+	}
+	return &pbtypes.Void{}, nil
+}
+
 func (s *repos) GetInventory(ctx context.Context, repoRev *sourcegraph.RepoRevSpec) (*inventory.Inventory, error) {
 	if localcli.Flags.DisableRepoInventory {
 		return nil, grpc.Errorf(codes.Unimplemented, "repo inventory listing is disabled by the configuration (DisableRepoInventory/--local.disable-repo-inventory)")

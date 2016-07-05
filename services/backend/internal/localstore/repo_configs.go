@@ -17,14 +17,19 @@ func init() {
 type dbRepoConfig struct {
 	// Repo is the ID of the repository that this config is for.
 	Repo int32 `db:"repo_id"`
+
+	Enabled bool
 }
 
 func (c *dbRepoConfig) toRepoConfig() *sourcegraph.RepoConfig {
-	return &sourcegraph.RepoConfig{}
+	return &sourcegraph.RepoConfig{
+		Enabled: c.Enabled,
+	}
 }
 
 func (c *dbRepoConfig) fromRepoConfig(repo int32, c2 *sourcegraph.RepoConfig) {
 	c.Repo = repo
+	c.Enabled = c2.Enabled
 }
 
 // repoConfigs is a DB-backed implementation of the RepoConfigs store.

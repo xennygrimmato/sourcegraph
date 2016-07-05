@@ -271,7 +271,9 @@ func TestReposService_GetConfig(t *testing.T) {
 	var s repos
 	ctx, mock := testContext()
 
-	wantRepoConfig := &sourcegraph.RepoConfig{}
+	wantRepoConfig := &sourcegraph.RepoConfig{
+		Enabled: true,
+	}
 
 	mock.stores.Repos.MockGetByURI(t, "r", 1)
 	calledConfigsGet := mock.stores.RepoConfigs.MockGet_Return(t, 1, wantRepoConfig)
@@ -285,5 +287,65 @@ func TestReposService_GetConfig(t *testing.T) {
 	}
 	if !reflect.DeepEqual(conf, wantRepoConfig) {
 		t.Errorf("got %+v, want %+v", conf, wantRepoConfig)
+	}
+}
+
+func TestReposService_UpdateConfig_Enable(t *testing.T) {
+	var s repos
+	ctx, mock := testContext()
+
+	mock.stores.Repos.MockGetByURI(t, "r", 1)
+	calledConfigsGet := mock.stores.RepoConfigs.MockGet_Return(t, 1, &sourcegraph.RepoConfig{Enabled: false})
+	var calledConfigsUpdate bool
+	mock.stores.RepoConfigs.Update_ = func(ctx context.Context, repo int32, conf sourcegraph.RepoConfig) error {
+		if !conf.Enabled {
+			t.Errorf("got %v, want Enabled == true", conf.Enabled)
+		}
+		calledConfigsUpdate = true
+		return nil
+	}
+
+	_, err := s.UpdateConfig(ctx, &sourcegraph.RepoUpdateConfigOp{
+		Repo:    1,
+		Enabled: &sourcegraph.BoolValue{Value: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !*calledConfigsGet {
+		t.Error("!calledConfigsGet")
+	}
+	if !calledConfigsUpdate {
+		t.Error("!calledConfigsUpdate")
+	}
+}
+
+func TestReposService_UpdateConfig_Disable(t *testing.T) {
+	var s repos
+	ctx, mock := testContext()
+
+	mock.stores.Repos.MockGetByURI(t, "r", 1)
+	calledConfigsGet := mock.stores.RepoConfigs.MockGet_Return(t, 1, &sourcegraph.RepoConfig{Enabled: true})
+	var calledConfigsUpdate bool
+	mock.stores.RepoConfigs.Update_ = func(ctx context.Context, repo int32, conf sourcegraph.RepoConfig) error {
+		if conf.Enabled {
+			t.Errorf("got %v, want Enabled == false", conf.Enabled)
+		}
+		calledConfigsUpdate = true
+		return nil
+	}
+
+	_, err := s.UpdateConfig(ctx, &sourcegraph.RepoUpdateConfigOp{
+		Repo:    1,
+		Enabled: &sourcegraph.BoolValue{Value: false},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !*calledConfigsGet {
+		t.Error("!calledConfigsGet")
+	}
+	if !calledConfigsUpdate {
+		t.Error("!calledConfigsUpdate")
 	}
 }

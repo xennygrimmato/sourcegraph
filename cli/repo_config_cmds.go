@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 
@@ -23,6 +24,15 @@ func initRepoConfigCmds(repoGroup *flags.Command) {
 		"get a repo's config",
 		"The get subcommand gets a repository's configuration.",
 		&repoConfigGetCmd{},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = g.AddCommand("update",
+		"update a repo's config",
+		"The update subcommand updates a repository's configuration.",
+		&repoConfigUpdateCmd{},
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -57,6 +67,52 @@ func (c *repoConfigGetCmd) Execute(args []string) error {
 		return err
 	}
 	fmt.Println(string(b))
+
+	return nil
+}
+
+type repoConfigUpdateCmd struct {
+	Args struct {
+		Repo string `name:"REPO" description:"repository URI (e.g., host.com/myrepo)"`
+	} `positional-args:"yes" required:"yes" count:"1"`
+
+	Enable  bool `long:"enable" description:"enable repo"`
+	Disable bool `long:"disable" description:"disable repo"`
+}
+
+func (c *repoConfigUpdateCmd) Execute(args []string) error {
+	cl := cliClient
+
+	if (!c.Enable && !c.Disable) || (c.Enable && c.Disable) {
+		return errors.New("exactly one of --enable and --disable must be specified")
+	}
+
+	res, err := cl.Repos.Resolve(cliContext, &sourcegraph.RepoResolveOp{Path: c.Args.Repo})
+	if err != nil {
+		return err
+	}
+
+	repo, err := cl.Repos.Get(cliContext, &sourcegraph.RepoSpec{ID: res.Repo})
+	if err != nil {
+		return err
+	}
+
+	var verb string
+	op := &sourcegraph.RepoUpdateConfigOp{Repo: repo.ID}
+	if c.Enable {
+		op.Enabled = &sourcegraph.BoolValue{Value: true}
+		verb = "enabled"
+	}
+	if c.Disable {
+		op.Enabled = &sourcegraph.BoolValue{Value: true}
+		verb = "disabled"
+	}
+	_, err = cl.Repos.UpdateConfig(cliContext, op)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("# %s: %s\n", repo.URI, verb)
 
 	return nil
 }
