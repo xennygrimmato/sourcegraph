@@ -80,7 +80,7 @@ func serveDefRefs(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return writeJSON(w, refs.Refs)
+	return writeJSON(w, refs)
 }
 
 func serveDefRefLocations(w http.ResponseWriter, r *http.Request) error {

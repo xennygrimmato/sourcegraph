@@ -133,7 +133,7 @@ export default class RefsContainer extends Container {
 
 		state.forceComponentUpdate = false;
 		if (state.refs && !state.refs.Error) {
-			for (let ref of state.refs || []) {
+			for (let ref of state.refs.Refs || []) {
 				if (!ref) continue;
 				let refRev = ref.Repo === state.repo ? state.commitID : ref.CommitID;
 				if (!this.filesByName[ref.File]) {
@@ -181,7 +181,7 @@ export default class RefsContainer extends Container {
 		}
 
 		if (nextState.refs && !nextState.refs.Error && (nextState.refs !== prevState.refs || nextState.shownFiles !== prevState.shownFiles)) {
-			for (let ref of nextState.refs) {
+			for (let ref of nextState.refs.Refs) {
 				let refRev = ref.Repo === nextState.repo ? nextState.commitID : ref.CommitID;
 				if (nextState.shownFiles.has(ref.File)) {
 					Dispatcher.Backends.dispatch(new BlobActions.WantFile(ref.Repo, refRev, ref.File));
@@ -286,7 +286,7 @@ export default class RefsContainer extends Container {
 								}
 								if (this.state.refs && this.state.refs.Error) {
 									err = `Error loading references for ${loc.Path}.`;
-								} else if (this.state.refs && this.state.refs.filter((r) => r.File === loc.Path).length === 0) {
+								} else if (this.state.refs && this.state.refs.Refs.filter((r) => r.File === loc.Path).length === 0) {
 									err = `No references found for ${loc.Path}`;
 								}
 

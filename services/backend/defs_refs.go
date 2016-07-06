@@ -3,12 +3,17 @@ package backend
 import (
 	"path"
 
+	"github.com/rogpeppe/rog-go/parallel"
+
+	"gopkg.in/inconshreveable/log15.v2"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/svc"
 	"sourcegraph.com/sourcegraph/srclib/graph"
@@ -93,10 +98,78 @@ func (s *defs) ListRefs(ctx context.Context, op *sourcegraph.DefsListRefsOp) (*s
 	}
 	hasMore := len(bareRefs) > opt.Offset()+opt.Limit()
 
-	return &sourcegraph.RefList{
+	refList := &sourcegraph.RefList{
 		Refs:           refs,
 		StreamResponse: sourcegraph.StreamResponse{HasMore: hasMore},
-	}, nil
+	}
+
+	if opt.Authorship {
+		authors, err := s.listAuthorsForRefs(ctx, refList.Refs)
+		if err != nil {
+			return nil, err
+		}
+		refList.Authors = authors
+	}
+
+	return refList, nil
+}
+
+func (s *defs) listAuthorsForRefs(ctx context.Context, refs []*graph.Ref) ([]*sourcegraph.RefAuthor, error) {
+	listAuthorsForRef := func(ctx context.Context, ref *graph.Ref) (*sourcegraph.RefAuthor, error) {
+		res, err := svc.Repos(ctx).Resolve(ctx, &sourcegraph.RepoResolveOp{Path: ref.Repo})
+		if err != nil {
+			return nil, err
+		}
+		vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, res.Repo)
+		if err != nil {
+			return nil, err
+		}
+		hunks, err := blameFileByteRange(vcsrepo, ref.File,
+			&vcs.BlameOptions{NewestCommit: vcs.CommitID(ref.CommitID)},
+			int(ref.Start), int(ref.End))
+		if err != nil {
+			return nil, err
+		}
+
+		// Most refs are one-liners with only one hunk. For refs that
+		// span multiple hunks, take the author to be the one who
+		// contributed the most bytes.
+		var hunk *vcs.Hunk
+		for _, h := range hunks {
+			if hunk == nil || (hunk.EndByte-hunk.StartByte) < (h.EndByte-h.StartByte) {
+				hunk = h
+			}
+		}
+		if hunk == nil {
+			log15.Warn("listAuthorsForRef: No hunk for ref.", "repo", ref.Repo, "commitID", ref.CommitID, "file", ref.File, "startByte", ref.Start, "endByte", ref.End)
+			return nil, nil
+		}
+
+		// Remove domain to prevent spammers from being able
+		// to easily scrape emails from us.
+		return &sourcegraph.RefAuthor{
+			Email:     emailUserNoDomain(hunk.Author.Email),
+			AvatarURL: gravatarURL(hunk.Author.Email, 48),
+			AuthorshipInfo: sourcegraph.AuthorshipInfo{
+				LastCommitID:   string(hunk.CommitID),
+				LastCommitDate: hunk.Author.Date,
+			},
+		}, nil
+	}
+
+	authors := make([]*sourcegraph.RefAuthor, len(refs))
+	par := parallel.NewRun(10)
+	for i_, ref_ := range refs {
+		i, ref := i_, ref_
+		par.Do(func() (err error) {
+			authors[i], err = listAuthorsForRef(ctx, ref)
+			return
+		})
+	}
+	if err := par.Wait(); err != nil {
+		return nil, err
+	}
+	return authors, nil
 }
 
 func (s *defs) ListRefLocations(ctx context.Context, op *sourcegraph.DefsListRefLocationsOp) (*sourcegraph.RefLocationsList, error) {

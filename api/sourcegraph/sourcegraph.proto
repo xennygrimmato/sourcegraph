@@ -1437,6 +1437,10 @@ message DefListRefsOptions {
 	string CommitID = 4 [(gogoproto.moretags) = "url:\",omitempty\""];
 	repeated string Files = 2 [(gogoproto.moretags) = "url:\",omitempty\""];
 	ListOptions ListOptions = 3 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
+
+	// Authorship is whether to include VCS blame information about
+	// who committed each ref.
+	bool Authorship = 5 [(gogoproto.moretags) = "url:\",omitempty\""];
 }
 
 // DefSpec specifies a def.
@@ -1465,7 +1469,25 @@ message DefsListRefsOp {
 
 message RefList {
 	repeated graph.Ref Refs = 1;
+
+	// Authors contains the author for each ref, if
+	// DefListRefsOptions.Authorship is true. Each item in this list
+	// corresponds to the same-index item in the Refs list.
+	repeated RefAuthor Authors = 3;
+	
 	StreamResponse StreamResponse = 2 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
+}
+
+// RefAuthor describes the author of a ref.
+message RefAuthor {
+	// Email is the author's email. It may be obfuscated or truncated
+	// to prevent spam.
+	string Email = 1;
+
+	// AvatarURL is the URL to the author's avatar image, if any.
+	string AvatarURL = 2;
+
+	AuthorshipInfo AuthorshipInfo = 3 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
 }
 
 // DefListRefLocationsOptions holds the options for fetching

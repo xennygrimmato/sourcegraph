@@ -30,7 +30,7 @@ describe("DefStore", () => {
 	});
 
 	it("should handle RefsFetched", () => {
-		DefStore.directDispatch(new DefActions.RefsFetched("r", "v", "d", "rr", "rf", ["someData"]));
-		expect(DefStore.refs.get("r", "v", "d", "rr", "rf")).to.eql(["someData"]);
+		DefStore.directDispatch(new DefActions.RefsFetched("r", "v", "d", "rr", "rf", {Refs: ["someData"]}));
+		expect(DefStore.refs.get("r", "v", "d", "rr", "rf")).to.eql({Refs: ["someData"]});
 	});
 });
