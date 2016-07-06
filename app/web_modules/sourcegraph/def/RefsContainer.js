@@ -28,7 +28,7 @@ import colors from "sourcegraph/components/styles/_colors.css";
 import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
 import {urlToRepo} from "sourcegraph/repo/routes";
 
-const SNIPPET_REF_CONTEXT_LINES = 4; // Number of additional lines to show above/below a ref
+const SNIPPET_REF_CONTEXT_LINES = 1; // Number of additional lines to show above/below a ref
 
 export default class RefsContainer extends Container {
 	static propTypes = {
