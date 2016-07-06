@@ -1,5 +1,7 @@
 @value base "sourcegraph/components/styles/_base.css";
 
+@value avatar-tiny-width: 1.58rem;
+
 .avatar {
 	composes: br2 from base;
 	display: inline-block;
@@ -8,7 +10,7 @@
 
 .tiny {
 	composes: avatar;
-	width: 1.58rem;
+	width: avatar-tiny-width;
 	height: 1.58rem;
 	max-width: 1.58rem;
 	max-height: 1.58rem;

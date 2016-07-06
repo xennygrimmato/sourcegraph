@@ -4,11 +4,15 @@
 @value typography "sourcegraph/components/styles/_typography.css";
 @value vars "sourcegraph/components/styles/_vars.css";
 @value layout "sourcegraph/components/styles/_layout.css";
-
+@value avatar "sourcegraph/components/styles/avatar.css";
+@value avatar-tiny-width from avatar;
 @value c_blue-text, c_dark-blue  from colors;
 
 .container-fixed { composes: containerFixed from layout; }
 .flex-grow { flex-grow: 1; }
+.flex { display: flex; }
+.flex-center { align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
 
 .cool-mid-gray { composes: cool-mid-gray from colors; }
 .bg-cool-pale-gray-2 { composes: bg-cool-pale-gray-2 from colors; }
@@ -28,9 +32,15 @@
 
 .def { composes: purple from colors; }
 
+.def-item {
+	composes: mr3 from base;
+}
+.spacer {
+	flex: 1 1;
+}
 .authors {
-	composes: mt2 ml2 mb2 from base;
-	display: flex;
+	flex: 4 0 avatar-tiny-width;
+	text-align: right;
 }
 
 .icon {

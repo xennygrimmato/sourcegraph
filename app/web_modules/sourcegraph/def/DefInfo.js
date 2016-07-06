@@ -15,6 +15,7 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import DefStore from "sourcegraph/def/DefStore";
 import RepoRefsContainer from "sourcegraph/def/RepoRefsContainer";
 import ExamplesContainer from "sourcegraph/def/ExamplesContainer";
+import AuthorList from "sourcegraph/def/AuthorList";
 import * as DefActions from "sourcegraph/def/DefActions";
 import {urlToDef} from "sourcegraph/def/routes";
 import {qualifiedNameAndType, defTitle, defTitleOK} from "sourcegraph/def/Formatter";
@@ -244,14 +245,12 @@ class DefInfo extends Container {
 								</div>
 							}
 
-							<div styleName="f7 cool-mid-gray">
-								{def && def.Repo && <Link to={urlToRepo(def.Repo)} styleName="link-subtle">{def.Repo}</Link>}
-								&nbsp; &middot; &nbsp;
-								<Link title="View definition in code" to={defBlobUrl} styleName="link-subtle">View definition</Link>
-								&nbsp; &middot; &nbsp;
+							<div styleName="f7 cool-mid-gray flex flex-center flex-wrap">
+								{def && def.Repo && <Link to={urlToRepo(def.Repo)} styleName="link-subtle def-item">{def.Repo}</Link>}
+								<Link title="View definition in code" to={defBlobUrl} styleName="link-subtle def-item">View definition</Link>
 								<Dropdown
 									className={base.mt0}
-									styleName="link-subtle"
+									styleName="link-subtle def-item"
 									title="Translate"
 									initialValue={this.state.currentLang}
 									disabled={this.state.repoObj ? this.state.repoObj.Private : false}
@@ -267,6 +266,10 @@ class DefInfo extends Container {
 										{name: "Русский", value: "ru"},
 										{name: "Italiano", value: "it"},
 									]} />
+								<div styleName="spacer" />
+								{this.state.authors && !this.state.authors.Error && this.state.authors.DefAuthors.length && (
+									<AuthorList authors={this.state.authors.DefAuthors} horizontal={true} styleName="authors" />
+								)}
 							</div>
 
 							<hr className={base.mv4} styleName="b--cool-pale-gray" />

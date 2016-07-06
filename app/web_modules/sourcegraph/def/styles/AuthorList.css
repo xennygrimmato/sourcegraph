@@ -3,21 +3,20 @@
 @value typography "sourcegraph/components/styles/_typography.css";
 
 .list {
-	composes: mt1 mb2 from base;
 	list-style-type: none;
 	padding-left: 0;
 }
 
 .list-horizontal {
 	composes: list;
-	display: flex;
-	flex-wrap: wrap;
+	display: inline-flex;
+	flex-wrap: nowrap;
+	composes: ma0 from base;
 }
 
-@media screen and (max-width: 48em) {
-	.list-horizontal {
-		margin: 0 10px;
-	}
+.list-vertical {
+	composes: list;
+	composes: mt1 mb2 from base;
 }
 
 .pencil-icon {
@@ -33,10 +32,12 @@
 	display: flex;
 	align-items: center;
 }
+.person:not(:first-child) {
+	padding-left: 3px;
+}
 
 .person-horizontal {
 	composes: person;
-	composes: pr3 from base;
 }
 
 .badge-wrapper {
@@ -45,14 +46,16 @@
 	display: inline-block;
 }
 
+.avatar-horizontal {}
+.avatar-vertical {
+	composes: mh2 from base;
+	vertical-align: bottom;
+}
+
 .badge {
 	composes: br2 pv1 ph2 from base;
 	composes: bg-blue-1 blue from colors;
 	composes: b f7 from typography;
-}
-
-.avatar {
-	composes: ph2 from base;
 }
 
 .timestamp {
