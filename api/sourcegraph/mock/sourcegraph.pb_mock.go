@@ -598,6 +598,7 @@ type DefsClient struct {
 	ListRefLocations_ func(ctx context.Context, in *sourcegraph.DefsListRefLocationsOp) (*sourcegraph.RefLocationsList, error)
 	ListExamples_     func(ctx context.Context, in *sourcegraph.DefsListExamplesOp) (*sourcegraph.RefLocationsList, error)
 	ListAuthors_      func(ctx context.Context, in *sourcegraph.DefsListAuthorsOp) (*sourcegraph.DefAuthorList, error)
+	ListClients_      func(ctx context.Context, in *sourcegraph.DefsListClientsOp) (*sourcegraph.DefClientList, error)
 	RefreshIndex_     func(ctx context.Context, in *sourcegraph.DefsRefreshIndexOp) (*pbtypes.Void, error)
 }
 
@@ -625,6 +626,10 @@ func (s *DefsClient) ListAuthors(ctx context.Context, in *sourcegraph.DefsListAu
 	return s.ListAuthors_(ctx, in)
 }
 
+func (s *DefsClient) ListClients(ctx context.Context, in *sourcegraph.DefsListClientsOp, opts ...grpc.CallOption) (*sourcegraph.DefClientList, error) {
+	return s.ListClients_(ctx, in)
+}
+
 func (s *DefsClient) RefreshIndex(ctx context.Context, in *sourcegraph.DefsRefreshIndexOp, opts ...grpc.CallOption) (*pbtypes.Void, error) {
 	return s.RefreshIndex_(ctx, in)
 }
@@ -638,6 +643,7 @@ type DefsServer struct {
 	ListRefLocations_ func(v0 context.Context, v1 *sourcegraph.DefsListRefLocationsOp) (*sourcegraph.RefLocationsList, error)
 	ListExamples_     func(v0 context.Context, v1 *sourcegraph.DefsListExamplesOp) (*sourcegraph.RefLocationsList, error)
 	ListAuthors_      func(v0 context.Context, v1 *sourcegraph.DefsListAuthorsOp) (*sourcegraph.DefAuthorList, error)
+	ListClients_      func(v0 context.Context, v1 *sourcegraph.DefsListClientsOp) (*sourcegraph.DefClientList, error)
 	RefreshIndex_     func(v0 context.Context, v1 *sourcegraph.DefsRefreshIndexOp) (*pbtypes.Void, error)
 }
 
@@ -663,6 +669,10 @@ func (s *DefsServer) ListExamples(v0 context.Context, v1 *sourcegraph.DefsListEx
 
 func (s *DefsServer) ListAuthors(v0 context.Context, v1 *sourcegraph.DefsListAuthorsOp) (*sourcegraph.DefAuthorList, error) {
 	return s.ListAuthors_(v0, v1)
+}
+
+func (s *DefsServer) ListClients(v0 context.Context, v1 *sourcegraph.DefsListClientsOp) (*sourcegraph.DefClientList, error) {
+	return s.ListClients_(v0, v1)
 }
 
 func (s *DefsServer) RefreshIndex(v0 context.Context, v1 *sourcegraph.DefsRefreshIndexOp) (*pbtypes.Void, error) {

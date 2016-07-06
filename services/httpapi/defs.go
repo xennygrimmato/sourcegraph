@@ -53,6 +53,40 @@ func serveDefs(w http.ResponseWriter, r *http.Request) error {
 	return writeJSON(w, defs)
 }
 
+func serveDefClients(w http.ResponseWriter, r *http.Request) error {
+	ctx, cl := handlerutil.Client(r)
+
+	var tmp struct {
+		Repo     repoIDOrPath
+		CommitID string
+		sourcegraph.DefListClientsOptions
+	}
+	if err := schemaDecoder.Decode(&tmp, r.URL.Query()); err != nil {
+		return err
+	}
+	repo, err := getRepoID(ctx, tmp.Repo)
+	if err != nil {
+		return err
+	}
+
+	defSpec, err := resolveDef(ctx, routevar.ToDefAtRev(mux.Vars(r)))
+	if err != nil {
+		return err
+	}
+
+	clients, err := cl.Defs.ListClients(ctx, &sourcegraph.DefsListClientsOp{
+		Def:      *defSpec,
+		Repo:     repo,
+		CommitID: tmp.CommitID,
+		Opt:      &tmp.DefListClientsOptions,
+	})
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(w, clients)
+}
+
 func resolveDef(ctx context.Context, def routevar.DefAtRev) (*sourcegraph.DefSpec, error) {
 	cl, err := sourcegraph.NewClientFromContext(ctx)
 	if err != nil {

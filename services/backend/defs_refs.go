@@ -148,7 +148,7 @@ func (s *defs) listAuthorsForRefs(ctx context.Context, refs []*graph.Ref) ([]*so
 		// Remove domain to prevent spammers from being able
 		// to easily scrape emails from us.
 		return &sourcegraph.RefAuthor{
-			Email:     emailUserNoDomain(hunk.Author.Email),
+			Email:     hunk.Author.Email,
 			AvatarURL: gravatarURL(hunk.Author.Email, 48),
 			AuthorshipInfo: sourcegraph.AuthorshipInfo{
 				LastCommitID:   string(hunk.CommitID),

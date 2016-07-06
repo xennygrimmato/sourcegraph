@@ -33,6 +33,7 @@ const (
 	DefRefLocations          = "def.ref.locations"
 	DefExamples              = "def.examples"
 	DefAuthors               = "def.authors"
+	DefClients               = "def.clients"
 	Defs                     = "defs"
 	DeltaFiles               = "delta.files"
 	GlobalSearch             = "global.search"
@@ -140,6 +141,7 @@ func New(base *mux.Router) *mux.Router {
 	defPath := "/def/" + routevar.Def
 	def := repoRev.PathPrefix(defPath + "/-/").Subrouter()
 	def.Path("/authors").Methods("GET").Name(DefAuthors)
+	def.Path("/clients").Methods("GET").Name(DefClients)
 	def.Path("/refs").Methods("GET").Name(DefRefs)
 	def.Path("/ref-locations").Methods("GET").Name(DefRefLocations)
 	def.Path("/examples").Methods("GET").Name(DefExamples)

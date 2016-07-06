@@ -493,6 +493,19 @@ func (s wrappedDefs) ListAuthors(ctx context.Context, param *sourcegraph.DefsLis
 	return
 }
 
+func (s wrappedDefs) ListClients(ctx context.Context, param *sourcegraph.DefsListClientsOp) (res *sourcegraph.DefClientList, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "Defs", "ListClients", param)
+	defer func() {
+		trace.After(ctx, "Defs", "ListClients", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.Defs.ListClients(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "Defs.ListClients returned nil, nil")
+	}
+	return
+}
+
 func (s wrappedDefs) RefreshIndex(ctx context.Context, param *sourcegraph.DefsRefreshIndexOp) (res *pbtypes.Void, err error) {
 	start := time.Now()
 	ctx = trace.Before(ctx, "Defs", "RefreshIndex", param)

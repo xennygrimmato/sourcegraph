@@ -71,6 +71,7 @@ func NewHandler(m *mux.Router) http.Handler {
 	m.Get(apirouter.Coverage).Handler(handler(serveCoverage))
 	m.Get(apirouter.Def).Handler(handler(serveDef))
 	m.Get(apirouter.DefAuthors).Handler(handler(serveDefAuthors))
+	m.Get(apirouter.DefClients).Handler(handler(serveDefClients))
 	m.Get(apirouter.DefRefs).Handler(handler(serveDefRefs))
 	m.Get(apirouter.DefRefLocations).Handler(handler(serveDefRefLocations))
 	m.Get(apirouter.DefExamples).Handler(handler(serveDefExamples))

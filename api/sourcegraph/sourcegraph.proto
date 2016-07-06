@@ -1781,6 +1781,9 @@ service Defs {
 	// ListAuthors lists people who committed parts of def's definition.
 	rpc ListAuthors(DefsListAuthorsOp) returns (DefAuthorList);
 
+	// ListClients lists people who use def in their code.
+	rpc ListClients(DefsListClientsOp) returns (DefClientList);
+
 	// RefreshIndex updates the precomputed indexes used for answering
 	// ListRefLocations queries. The indexes are built from the current
 	// snapshot of the code graph. This operation is idempotent, and
@@ -1848,6 +1851,45 @@ message DefsListAuthorsOp {
 
 message DefAuthorList {
 	repeated DefAuthor DefAuthors = 1;
+}
+
+message DefClient {
+	// Email is the client's email. It may be obfuscated or truncated
+	// to prevent spam.
+	string Email = 1;
+
+	// AvatarURL is the URL to the client's avatar image, if any.
+	string AvatarURL = 2;
+
+	AuthorshipInfo AuthorshipInfo = 3 [(gogoproto.nullable) = false, (gogoproto.embed) = true, (gogoproto.jsontag) = ""];
+
+	// Refs are all of the instances where the client used the def.
+	repeated graph.Ref Refs = 4;
+}
+
+// DefListClientsOptions specifies options for DefsService.ListClients.
+message DefListClientsOptions {
+}
+
+message DefsListClientsOp {
+	DefSpec Def = 1 [(gogoproto.nullable) = false];
+
+	// Repo (required) scopes the query to only clients that use the
+	// def in the given repo. Global clients queries ("who calls foo()
+	// anywhere in any repository globally") are not yet supported,
+	// but API clients can repeatedly call Defs.ListClients with
+	// multiple Repo arguments.
+	int32 Repo = 2;
+
+	// CommitID (required) is the commit ID corresponding to the Repo
+	// param.
+	string CommitID = 3;
+	
+	DefListClientsOptions Opt = 4;
+}
+
+message DefClientList {
+	repeated DefClient DefClients = 1;
 }
 
 // DeltasService interacts with the delta-related endpoints of the Sourcegraph API.
