@@ -9,6 +9,9 @@ import CSSModules from "react-css-modules";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
 import Helmet from "react-helmet";
 import Container from "sourcegraph/Container";
+import {Label, Modal} from "sourcegraph/components";
+
+
 
 function GettingStartedPage(props, {signedIn}): React$Element {
 	return (
@@ -22,10 +25,22 @@ function GettingStartedPage(props, {signedIn}): React$Element {
 
 			<div styleName="content">
 				{location.hash === "#private" &&
-					<p> testing code1</p>
+					<Modal onDismiss={() => location.hash=""}>
+						<div styleName="code-auth-modal">
+							<h3>
+								<p> this is what you do for private code </p>
+							</h3>
+					</div>
+					</Modal>
 				}
 				{location.hash === "#public" &&
-					<p> testing code2 </p>
+					<Modal onDismiss={() => location.hash=""}>
+						<div styleName="code-auth-modal">
+							<h3>
+								<p> this is what you do for public code </p>
+							</h3>
+						</div>
+					</Modal>
 				}
 
 				<p styleName="p">We are glad you signed up.</p>
