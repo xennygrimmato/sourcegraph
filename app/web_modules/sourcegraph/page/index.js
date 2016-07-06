@@ -87,11 +87,11 @@ export const routes: Array<Route> = [
 		},
 	},
 	{
-		path: rel.walkthrough,
+		path: rel.gettingStarted,
 		getComponents: (location, callback) => {
 			require.ensure([], (require) => {
 				callback(null, {
-					main: require("sourcegraph/page/WalkthroughPage").default,
+					main: require("sourcegraph/page/GettingStartedPage").default,
 				});
 			});
 		},

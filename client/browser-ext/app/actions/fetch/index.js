@@ -7,13 +7,6 @@
 // Currently (in Firefox 45) fetch does not see/respect these permissions
 // so cross-site requests violate the browser content security policy.
 
-export function getAuthentication(state) {
-   return function (dispatch) {
-     return fetch(`https://sourcegraph.com/.api/auth-info`)
-     .then((json) => dispatch({type: types.STORED_AUTHENTICATION, json}))
-     .catch((err) => dispatch({type: types.STORED_AUTHENTICATION, err}));
-   }
- }
 
 (function(self) {
   'use strict';
