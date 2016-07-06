@@ -187,6 +187,13 @@ class DefInfo extends Container {
 		let refLocs = this.state.refLocations;
 		let defBlobUrl = def ? urlToDef(def, this.state.rev) : "";
 
+		let onDefClick = null;
+		if (hiddenDescr) {
+			onDefClick = this._onViewMore;
+		} else if (def && this.shouldHideDescr(def, DESCRIPTION_CHAR_CUTOFF)) {
+			onDefClick = this._onViewLess;
+		}
+
 		if (refLocs && refLocs.Error) {
 			return (
 				<Header
@@ -212,20 +219,15 @@ class DefInfo extends Container {
 							*/}
 
 							{!def.DocHTML && def.Docs && def.Docs.length &&
-								<div className={base.mb3}>
-									<div>{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, DESCRIPTION_CHAR_CUTOFF) || def.Docs[0].Data}</div>
-									{hiddenDescr &&
-										<a href="#" onClick={this._onViewMore} styleName="f7">View More...</a>
-									}
-									{!hiddenDescr && this.shouldHideDescr(def, DESCRIPTION_CHAR_CUTOFF) &&
-										<a href="#" onClick={this._onViewLess} styleName="f7">Collapse</a>
-									}
+								<div className={base.mb3} onClick={onDefClick}>
+									{hiddenDescr && this.splitPlainDescr(def.Docs[0].Data, DESCRIPTION_CHAR_CUTOFF) || def.Docs[0].Data}
 								</div>
 							}
 
 							{def.DocHTML &&
 								<div>
-									<div className={base.mb3}>
+									<div className={base.mb3}
+										onClick={onDefClick}>
 										{this.state.showTranslatedString &&
 											<div className={base.mt1}>
 												<LanguageIcon styleName="icon" />
@@ -233,12 +235,6 @@ class DefInfo extends Container {
 											</div>
 										}
 										<div dangerouslySetInnerHTML={hiddenDescr && {__html: this.splitHTMLDescr(def.DocHTML.__html, DESCRIPTION_CHAR_CUTOFF)} || def.DocHTML}></div>
-										{hiddenDescr &&
-											<a href="#" onClick={this._onViewMore} styleName="f7">View More...</a>
-										}
-										{!hiddenDescr && this.shouldHideDescr(def, DESCRIPTION_CHAR_CUTOFF) &&
-											<a href="#" onClick={this._onViewLess} styleName="f7">Collapse</a>
-										}
 										{this.state.showTranslatedString && <hr className={base.mv4} styleName="b--cool-pale-gray" />}
 									</div>
 
