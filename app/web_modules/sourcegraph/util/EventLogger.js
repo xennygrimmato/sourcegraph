@@ -63,15 +63,14 @@ export class EventLogger {
 	init() {
 		if (global.window && !this._amplitude) {
 			this._amplitude = require("amplitude-js");
+			
 			this._telligent = window.telligent;
 
-			this._telligent("newTracker", "sg", "localhost:4567", {
+			this._telligent("newTracker", "sg", "127.0.0.1:8500", {
 			  appId: "sgWeb",
-			  platform: "Web"
+			  platform: "Web",
+			  encodeBase64: false
 			});
-
-
-			this._telligent('trackPageView', 'EventLoggerView');
 
 			if (!this._siteConfig) {
 				throw new Error("EventLogger requires SiteConfig to be previously set using EventLogger.setSiteConfig before EventLogger can be initialized.");
@@ -149,6 +148,9 @@ export class EventLogger {
 			if (authInfo) {
 				if (this._amplitude && authInfo.Login) this._amplitude.setUserId(authInfo.Login || null);
 				if (window.ga && authInfo.Login) window.ga("set", "userId", authInfo.Login);
+				//Matt King to fix.
+				if (this._telligent && authInfo.Login) this._telligent("setUserId", authInfo.Login);
+
 				if (authInfo.UID) this.setIntercomProperty("user_id", authInfo.UID.toString());
 				if (authInfo.IntercomHash) this.setIntercomProperty("user_hash", authInfo.IntercomHash);
 				if (this._fullStory && authInfo.Login) {
@@ -188,6 +190,7 @@ export class EventLogger {
 	}
 	// sets current user's properties
 	setUserProperty(property, value) {
+		this._telligent("addStaticMetadata", property, value, ["userInfo"]);
 		this._amplitude.identify(new this._amplitude.Identify().set(property, value));
 	}
 
@@ -198,6 +201,8 @@ export class EventLogger {
 		if (this.userAgentIsBot || !page) {
 			return;
 		}
+
+		this._telligent("track", "view", {...eventProperties, platform: this._currentPlatform, page_name: page, page_title: title});
 
 		// Log Amplitude "View" event
 		this._amplitude.logEvent(title, {...eventProperties, Platform: this._currentPlatform});
