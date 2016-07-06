@@ -43,17 +43,15 @@ export class EventLogger {
 		// with the relevant event properties.
 		this._dispatcherToken = Dispatcher.Stores.register(this.__onDispatch.bind(this));
 
-		document.addEventListener("sourcegraph:platform:initalization", this._initializeForSourcegraphPlatform.bind(this));
+		if (typeof document !== "undefined") {
+			document.addEventListener("sourcegraph:platform:initalization", this._initializeForSourcegraphPlatform.bind(this));
+		}
 	}
 
 	_initializeForSourcegraphPlatform(event) {
 		if (event && event.detail && event.detail.currentPlatform) {
-			this.setCurrentPlatformForEvent(event.detail.currentPlatform);
+			this._currentPlatform = event.detail.currentPlatform;
 		}
-	}
-
-	setCurrentPlatformForEvent(platform) {
-		this._currentPlatform = platform;
 	}
 
 	setSiteConfig(siteConfig: SiteConfig) {
