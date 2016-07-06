@@ -8,6 +8,7 @@ import base from "sourcegraph/components/styles/_base.css";
 import CSSModules from "react-css-modules";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
 import Helmet from "react-helmet";
+import Container from "sourcegraph/Container";
 
 function GettingStartedPage(props, {signedIn}): React$Element {
 	return (
@@ -20,10 +21,17 @@ function GettingStartedPage(props, {signedIn}): React$Element {
 			</Hero>
 
 			<div styleName="content">
+				{location.hash === "#private" &&
+					<p> testing code1</p>
+				}
+				{location.hash === "#public" &&
+					<p> testing code2 </p>
+				}
+
 				<p styleName="p">We are glad you signed up.</p>
 
 				<Heading level="3" underline="blue" className={styles.h5}>How it works</Heading>
-				<p styleName="p">Your public and private code </p>
+				<p styleName="p">Your <a href="#public"> public </a> and <a href="#private"> private </a> code </p>
 				<ul>
 					<li styleName="p"></li>
 				</ul>
@@ -40,8 +48,13 @@ function GettingStartedPage(props, {signedIn}): React$Element {
 		</div>
 	);
 }
+
 GettingStartedPage.contextTypes = {
 	signedIn: React.PropTypes.bool,
+};
+
+GettingStartedPage.propTypes = {
+	location: React.PropTypes.object.isRequired,
 };
 
 export default CSSModules(GettingStartedPage, styles);
