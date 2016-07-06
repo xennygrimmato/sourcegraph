@@ -63,26 +63,22 @@ export class EventLogger {
 	init() {
 		if (global.window && !this._amplitude) {
 			this._amplitude = require("amplitude-js");
-			
-			this._telligent = window.telligent;
 
-			this._telligent("newTracker", "sg", "127.0.0.1:8500", {
-			  appId: "sgWeb",
-			  platform: "Web",
-			  encodeBase64: false
-			});
+			this._telligent = window.telligent;
 
 			if (!this._siteConfig) {
 				throw new Error("EventLogger requires SiteConfig to be previously set using EventLogger.setSiteConfig before EventLogger can be initialized.");
 			}
 
 			let apiKey = "608f75cce80d583063837b8f5b18be54";
+			let env = "development";
 			if (this._siteConfig.buildVars.Version === "dev") {
 				apiKey = "2b4b1117d1faf3960c81899a4422a222";
 			} else {
 				switch (this._siteConfig.appURL) {
 				case "https://sourcegraph.com":
 					apiKey = "e3c885c30d2c0c8bf33b1497b17806ba";
+					env = "production";
 					break;
 				case "https://staging.sourcegraph.com":
 				case "https://staging2.sourcegraph.com":
@@ -94,6 +90,13 @@ export class EventLogger {
 					break;
 				}
 			}
+
+			this._telligent("newTracker", "sg", "sourcegraph.logging.telligentdata.com", {
+				appId: "SourcegraphWeb",
+				platform: this._currentPlatform,
+				encodeBase64: false,
+				env: env,
+			});
 
 			this._amplitude.init(apiKey, null, {
 				includeReferrer: true,
@@ -148,7 +151,7 @@ export class EventLogger {
 			if (authInfo) {
 				if (this._amplitude && authInfo.Login) this._amplitude.setUserId(authInfo.Login || null);
 				if (window.ga && authInfo.Login) window.ga("set", "userId", authInfo.Login);
-				//Matt King to fix.
+
 				if (this._telligent && authInfo.Login) this._telligent("setUserId", authInfo.Login);
 
 				if (authInfo.UID) this.setIntercomProperty("user_id", authInfo.UID.toString());
@@ -190,7 +193,7 @@ export class EventLogger {
 	}
 	// sets current user's properties
 	setUserProperty(property, value) {
-		this._telligent("addStaticMetadata", property, value, ["userInfo"]);
+		this._telligent("addStaticMetadata", property, value, "userInfo");
 		this._amplitude.identify(new this._amplitude.Identify().set(property, value));
 	}
 
@@ -224,6 +227,7 @@ export class EventLogger {
 			return;
 		}
 
+		this._telligent("track", eventAction, {...eventProperties, eventCategory: eventCategory, eventAction: eventAction, is_authed: this._user ? "true" : "false", Platform: this._currentPlatform});
 		this._amplitude.logEvent(eventLabel, {...eventProperties, eventCategory: eventCategory, eventAction: eventAction, is_authed: this._user ? "true" : "false", Platform: this._currentPlatform});
 
 		window.ga("send", {

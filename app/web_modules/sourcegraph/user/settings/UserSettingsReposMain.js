@@ -37,7 +37,6 @@ export default class UserSettingsReposMain extends Container {
 		}
 	}
 
-
 	stores() { return [RepoStore]; }
 
 	render() {
