@@ -8,6 +8,14 @@ export function setAccessToken(token) {
 	return {type: types.SET_ACCESS_TOKEN, token};
 }
 
+export function getAuthentication(state) {
+   return function (dispatch) {
+     return fetch(`https://sourcegraph.com/.api/auth-info`)
+     .then((json) => dispatch({type: types.STORED_AUTHENTICATION, json}))
+     .catch((err) => dispatch({type: types.STORED_AUTHENTICATION, err}));
+   }
+ }
+
 // Utility method to fetch the absolute commit id for a branch, usually prior to hitting
 // another API (e.g. fetching srclib data versino requires resolving rev first).
 function _resolveRev(dispatch, state, repo, rev) {

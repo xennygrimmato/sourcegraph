@@ -20,6 +20,8 @@ let buildsCache = {};
 		build: state.build,
 		srclibDataVersion: state.srclibDataVersion,
 		annotations: state.annotations,
+		accessToken: state.accessToken,
+		authentication: state.authentication
 	}),
 	(dispatch) => ({
 		actions: bindActionCreators(Actions, dispatch)
@@ -126,6 +128,7 @@ export default class BlobAnnotator extends Component {
 		// Click may be for context expansion, in which case we should
 		// re-annotate the blob (which is smart enough to only annoate
 		// lines which haven't already been annotated).
+		this.props.actions.getAuthentication(this.state);
 		document.addEventListener("click", this._clickRefresh);
 	}
 
@@ -261,9 +264,16 @@ export default class BlobAnnotator extends Component {
 	}
 
 	_indicatorText(repoURI, rev) {
-		const dataVer = this._getSrclibDataVersion(repoURI, rev);
-		if (dataVer) return "Indexed";
-		return this._buildStatus(this._getBuild(repoURI, rev));
+		let build = this._getBuild(repoURI, rev);
+		let webToken = this.props.accessToken;
+		let dataVer = this._getSrclibDataVersion(repoURI, rev);
+		let name = this.props.authentication ? this.props.authentication.Login : "";
+
+		if (dataVer) return "Indexed";		
+		if (!webToken || webToken === "") return "Not signed into Sourcegraph";
+		if (name === "") return "Not authed private code";
+		if (!build || build.Failure) return "This build failed";
+		return "Error not found";
 	}
 
 	render() {

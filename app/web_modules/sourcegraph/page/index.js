@@ -12,7 +12,7 @@ export function isPage(pathname: string): bool {
 	invariant(pathname, "no pathname");
 	pathname = pathname.slice(1); // trim leading "/"
 	return pathname === abs.about || pathname === abs.contact || pathname === abs.security ||
-		pathname === abs.pricing || pathname === abs.terms || pathname === abs.privacy;
+		pathname === abs.pricing || pathname === abs.terms || pathname === abs.privacy || pathname === abs.walkthrough;
 }
 
 export const routes: Array<Route> = [
@@ -82,6 +82,16 @@ export const routes: Array<Route> = [
 			require.ensure([], (require) => {
 				callback(null, {
 					main: require("sourcegraph/page/PrivacyPage").default,
+				});
+			});
+		},
+	},
+	{
+		path: rel.walkthrough,
+		getComponents: (location, callback) => {
+			require.ensure([], (require) => {
+				callback(null, {
+					main: require("sourcegraph/page/WalkthroughPage").default,
 				});
 			});
 		},
