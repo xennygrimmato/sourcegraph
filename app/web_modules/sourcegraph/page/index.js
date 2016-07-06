@@ -12,7 +12,7 @@ export function isPage(pathname: string): bool {
 	invariant(pathname, "no pathname");
 	pathname = pathname.slice(1); // trim leading "/"
 	return pathname === abs.about || pathname === abs.contact || pathname === abs.security ||
-		pathname === abs.pricing || pathname === abs.terms || pathname === abs.privacy || pathname === abs.walkthrough;
+		pathname === abs.pricing || pathname === abs.terms || pathname === abs.privacy;
 }
 
 export const routes: Array<Route> = [
