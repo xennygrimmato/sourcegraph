@@ -28,7 +28,16 @@ function GettingStartedPage(props, {signedIn}): React$Element {
 					<Modal onDismiss={() => location.hash=""}>
 						<div styleName="code-auth-modal">
 							<h3>
-								<p> this is what you do for private code </p>
+								{!signedIn && <div styleName="cta">
+									<p styleName="p">Sign in to enable Sourcegraph for private code.</p>
+									<GitHubAuthButton returnTo={"/getting-started"+location.hash} color="blue" className={base.mr3}>
+										<strong>Sign in with GitHub</strong>
+									</GitHubAuthButton>
+								</div>}
+
+								{signedIn && <div styleName="cta">
+									<p styleName="p">Check to enable Sourcegraph for private repositories:</p>
+								</div>}
 							</h3>
 					</div>
 					</Modal>
@@ -37,13 +46,20 @@ function GettingStartedPage(props, {signedIn}): React$Element {
 					<Modal onDismiss={() => location.hash=""}>
 						<div styleName="code-auth-modal">
 							<h3>
-								<p> this is what you do for public code </p>
+								{!signedIn && <div styleName="cta">
+									<p styleName="p">Sign in to configure your public repositories.</p>
+									<GitHubAuthButton returnTo={"/getting-started"+location.hash} color="blue" className={base.mr3}>
+										<strong>Sign in with GitHub</strong>
+									</GitHubAuthButton>
+								</div>}
+
+								{signedIn && <div styleName="cta">
+									<p styleName="p">Check to enable Sourcegraph for public repositories:</p>
+								</div>}
 							</h3>
 						</div>
 					</Modal>
 				}
-
-				<p styleName="p">We are glad you signed up.</p>
 
 				<Heading level="3" underline="blue" className={styles.h5}>How it works</Heading>
 				<p styleName="p">Your <a href="#public"> public </a> and <a href="#private"> private </a> code </p>
@@ -51,14 +67,7 @@ function GettingStartedPage(props, {signedIn}): React$Element {
 					<li styleName="p"></li>
 				</ul>
 
-				<Heading level="3" underline="blue" className={styles.h4}>Register for beta access</Heading>
-
-				{!signedIn && <div styleName="cta">
-					<p styleName="p">You must sign in to continue.</p>
-					<GitHubAuthButton returnTo="/getting-started" color="blue" className={base.mr3}>
-						<strong>Sign in with GitHub</strong>
-					</GitHubAuthButton>
-				</div>}
+				
 			</div>
 		</div>
 	);
