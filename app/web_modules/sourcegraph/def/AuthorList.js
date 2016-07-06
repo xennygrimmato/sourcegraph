@@ -1,6 +1,7 @@
 // @flow
 
 import React from "react";
+import {Link} from "react-router";
 import TimeAgo from "sourcegraph/util/TimeAgo";
 import {Avatar} from "sourcegraph/components";
 import type {DefAuthor} from "sourcegraph/def";
@@ -15,10 +16,12 @@ export default CSSModules(function AuthorList({
 	authors,
 	horizontal = false,
 	className,
+	urlForCommit,
 }: {
 	authors: Array<DefAuthor>,
 	horizontal: bool,
 	className?: string,
+	urlForCommit: (commitID: string) => string,
 }) {
 	const small = horizontal; // treat these as the same for now
 	return (
@@ -28,12 +31,14 @@ export default CSSModules(function AuthorList({
 					{authors.map((a, i) => (
 						<li key={i} styleName={`person${horizontal ? "-horizontal" : ""}`}
 							title={`${a.Email} authored ${pct(a)}, last commit ${a.LastCommitDate}`}>
-							{!small && <div styleName="badge-wrapper">
-								<span styleName="badge">{pct(a)}</span>
-							</div>}
-							<Avatar styleName={`avatar-${horizontal ? "horizontal" : "vertical"}`} size="tiny" img={a.AvatarURL} />
-							{!small && a.Email}
-							{!small && <TimeAgo time={a.LastCommitDate} styleName="timestamp" />}
+							<Link to={urlForCommit(a.LastCommitID)}>
+								{!small && <div styleName="badge-wrapper">
+									<span styleName="badge">{pct(a)}</span>
+								</div>}
+								<Avatar styleName={`avatar-${horizontal ? "horizontal" : "vertical"}`} size="tiny" img={a.AvatarURL} />
+								{!small && a.Email}
+								{!small && <TimeAgo time={a.LastCommitDate} styleName="timestamp" />}
+							</Link>
 						</li>
 					))}
 				</ol>

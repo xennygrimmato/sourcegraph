@@ -24,7 +24,7 @@ import {trimRepo} from "sourcegraph/repo";
 import {urlToRepo} from "sourcegraph/repo/routes";
 import {LanguageIcon} from "sourcegraph/components/Icons";
 import {Dropdown, Header, Heading, FlexContainer} from "sourcegraph/components";
-
+import {urlToRepoCommit} from "sourcegraph/repo/commit/routes";
 
 // Number of characters of the Docstring to show before showing the "collapse" options.
 const DESCRIPTION_CHAR_CUTOFF = 80;
@@ -268,7 +268,8 @@ class DefInfo extends Container {
 									]} />
 								<div styleName="spacer" />
 								{this.state.authors && !this.state.authors.Error && this.state.authors.DefAuthors.length && (
-									<AuthorList authors={this.state.authors.DefAuthors} horizontal={true} styleName="authors" />
+									<AuthorList authors={this.state.authors.DefAuthors} horizontal={true} styleName="authors"
+										urlForCommit={commit => urlToRepoCommit(this.state.repo, commit)} />
 								)}
 							</div>
 

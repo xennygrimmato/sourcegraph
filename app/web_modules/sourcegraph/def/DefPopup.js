@@ -13,6 +13,7 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import RefLocationsList from "sourcegraph/def/RefLocationsList";
 import AuthorList from "sourcegraph/def/AuthorList";
 import {urlToDefInfo} from "sourcegraph/def/routes";
+import {urlToRepoCommit} from "sourcegraph/repo/commit/routes";
 
 class DefPopup extends Container {
 	static propTypes = {
@@ -71,7 +72,7 @@ class DefPopup extends Container {
 
 				{<header className={s.sectionTitle}>Authors</header>}
 				{!this.state.authors && <span styleName="loading">Loading...</span>}
-				{this.state.authors && !this.state.authors.Error && this.state.authors.DefAuthors.length && <AuthorList authors={this.state.authors.DefAuthors} />}
+				{this.state.authors && !this.state.authors.Error && this.state.authors.DefAuthors.length && <AuthorList authors={this.state.authors.DefAuthors} urlForCommit={commit => urlToRepoCommit(this.state.repo, commit)} />}
 			</div>
 		);
 	}
