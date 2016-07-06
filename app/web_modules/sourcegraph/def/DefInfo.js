@@ -15,6 +15,7 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import DefStore from "sourcegraph/def/DefStore";
 import RepoRefsContainer from "sourcegraph/def/RepoRefsContainer";
 import ExamplesContainer from "sourcegraph/def/ExamplesContainer";
+import DefClientsContainer from "sourcegraph/def/DefClientsContainer";
 import AuthorList from "sourcegraph/def/AuthorList";
 import * as DefActions from "sourcegraph/def/DefActions";
 import {urlToDef} from "sourcegraph/def/routes";
@@ -41,6 +42,7 @@ class DefInfo extends Container {
 		def: React.PropTypes.string.isRequired,
 		commitID: React.PropTypes.string,
 		rev: React.PropTypes.string,
+		location: React.PropTypes.object.isRequired,
 	};
 
 	constructor(props) {
@@ -134,6 +136,7 @@ class DefInfo extends Container {
 		state.defObj = props.defObj || null;
 		state.defCommitID = props.defObj ? props.defObj.CommitID : null;
 		state.authors = state.defObj ? DefStore.authors.get(state.repo, state.defObj.CommitID, state.def) : null;
+		state.location = props.location;
 
 		if (state.defObj && state.defDescrHidden === null) {
 			state.defDescrHidden = this.shouldHideDescr(state.defObj, DESCRIPTION_CHAR_CUTOFF);
@@ -277,6 +280,15 @@ class DefInfo extends Container {
 									rev={this.props.rev}
 									commitID={this.props.commitID}
 									def={this.props.def}
+									defObj={this.props.defObj} />
+							</div>
+							<div className={base.mb5}>
+								<DefClientsContainer
+									repo={this.props.repo}
+									rev={this.props.rev}
+									commitID={this.state.defCommitID}
+									def={this.props.def}
+									location={this.props.location}
 									defObj={this.props.defObj} />
 							</div>
 							<div>

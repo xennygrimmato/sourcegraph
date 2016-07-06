@@ -85,6 +85,7 @@ export default class RefsContainer extends Container {
 	reconcileState(state, props) {
 		state.prefetch = props.prefetch || false;
 
+		state.showAllFiles = state.showAllFiles || props.showAllFiles;
 		if (typeof state.showAllFiles === "undefined") {
 			state.showAllFiles = false;
 		}
@@ -97,7 +98,7 @@ export default class RefsContainer extends Container {
 		state.defObj = props.defObj || null;
 		state.showRepoTitle = props.showRepoTitle || false;
 
-		state.refRepo = props.repoRefs.Repo || null;
+		state.refRepo = props.repoRefs ? props.repoRefs.Repo : props.repo;
 		state.refRev = state.refRepo === state.repo ? state.rev : null;
 		state.repoRefLocations = props.repoRefs || null;
 		state.rangeLimit = props.rangeLimit || null;
@@ -105,7 +106,17 @@ export default class RefsContainer extends Container {
 			state.fileLocations = state.repoRefLocations.Files;
 		}
 
-		state.refs = props.refs || DefStore.refs.get(state.repo, state.rev, state.def, state.refRepo, null);
+		// Synthesize fileLocations if we provide refs directly.
+		let refs = props.refs || DefStore.refs.get(state.repo, state.rev, state.def, state.refRepo, null);
+		if (props.refs && state.refs !== props.refs && !refs.Error) {
+			state.shownFiles = new Set();
+			refs.Refs.forEach(ref => state.shownFiles.add(ref.File));
+			state.fileLocations = [];
+			state.shownFiles.forEach(p => {
+				state.fileLocations.push({Path: p});
+			});
+		}
+		state.refs = refs;
 
 		if (state.fileLocations && !state.initExpanded) {
 			// Auto-expand N snippets by default.
@@ -171,7 +182,7 @@ export default class RefsContainer extends Container {
 
 	onStateTransition(prevState, nextState) {
 		const refPropsUpdated = prevState.repo !== nextState.repo || prevState.rev !== nextState.rev || prevState.def !== nextState.def || prevState.refRepo !== nextState.refRepo;
-		if (refPropsUpdated) {
+		if (refPropsUpdated && !nextState.refs) {
 			Dispatcher.Backends.dispatch(new DefActions.WantRefs(nextState.repo, nextState.rev, nextState.def, nextState.refRepo));
 		}
 
@@ -180,10 +191,10 @@ export default class RefsContainer extends Container {
 			Dispatcher.Backends.dispatch(new DefActions.WantDef(repo, rev, def));
 		}
 
-		if (nextState.refs && !nextState.refs.Error && (nextState.refs !== prevState.refs || nextState.shownFiles !== prevState.shownFiles)) {
+		if (nextState.refs && !nextState.refs.Error && (nextState.refs !== prevState.refs || nextState.shownFiles !== prevState.shownFiles || nextState.showAllFiles !== prevState.showAllFiles)) {
 			for (let ref of nextState.refs.Refs) {
 				let refRev = ref.Repo === nextState.repo ? nextState.commitID : ref.CommitID;
-				if (nextState.shownFiles.has(ref.File)) {
+				if (nextState.showAllFiles || nextState.shownFiles.has(ref.File)) {
 					Dispatcher.Backends.dispatch(new BlobActions.WantFile(ref.Repo, refRev, ref.File));
 					Dispatcher.Backends.dispatch(new BlobActions.WantAnnotations(ref.Repo, ref.CommitID, ref.File));
 				}
@@ -271,7 +282,7 @@ export default class RefsContainer extends Container {
 						<div className={styles.refs}>
 							{this.state.fileLocations && this.state.fileLocations.map((loc, i) => {
 								if (!this.state.showAllFiles && i >= this.state.fileCollapseThreshold) return null;
-								if (!this.state.shownFiles.has(loc.Path)) return this.renderFileHeader(this.state.refRepo, this.state.refRev, loc.Path, loc.Count, i);
+								if (!this.state.showAllFiles && !this.state.shownFiles.has(loc.Path)) return this.renderFileHeader(this.state.refRepo, this.state.refRev, loc.Path, loc.Count, i);
 
 								let err;
 								let file = this.filesByName ? this.filesByName[loc.Path] : null;

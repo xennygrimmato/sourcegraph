@@ -56,6 +56,32 @@ export class DefAuthorsFetched {
 	}
 }
 
+export class WantClients {
+	repo: string;
+	commitID: string;
+	def: string;
+
+	constructor(repo: string, commitID: string, def: string) {
+		this.repo = repo;
+		this.commitID = commitID;
+		this.def = def;
+	}
+}
+
+export class ClientsFetched {
+	repo: string;
+	commitID: string;
+	def: string;
+	clients: Object;
+
+	constructor(repo: string, commitID: string, def: string, clients: Object) {
+		this.repo = repo;
+		this.commitID = commitID;
+		this.def = def;
+		this.clients = clients;
+	}
+}
+
 export class WantDefs {
 	repo: string;
 	commitID: string;

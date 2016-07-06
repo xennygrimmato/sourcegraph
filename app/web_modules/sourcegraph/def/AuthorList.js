@@ -6,7 +6,7 @@ import TimeAgo from "sourcegraph/util/TimeAgo";
 import {Avatar} from "sourcegraph/components";
 import type {DefAuthor} from "sourcegraph/def";
 import CSSModules from "react-css-modules";
-import styles from "./styles/AuthorList.css";
+import styles from "./styles/PersonList.css";
 
 function pct(a: DefAuthor): string {
 	return `${Math.round(100 * a.BytesProportion) || "< 1"}%`;

@@ -14,6 +14,21 @@ const DefBackend = {
 	fetch: singleflightFetch(defaultFetch),
 
 	__onDispatch(action) {
+		if (action instanceof DefActions.WantClients) {
+			let clients = DefStore.clients.get(action.repo, action.commitID, action.def);
+			if (clients === null) {
+				DefBackend.fetch(`/.api/repos/${action.repo}${action.commitID ? `@${action.commitID}` : ""}/-/def/${action.def}/-/clients?Repo=${encodeURIComponent(action.repo)}&CommitID=${encodeURIComponent(action.commitID)}`)
+					.then(checkStatus)
+					.then((resp) => resp.json())
+					.catch((err) => {
+						console.error(err);
+						return {Error: true};
+					})
+					.then((data) => Dispatcher.Stores.dispatch(new DefActions.ClientsFetched(action.repo, action.commitID, action.def, data)));
+			}
+			return;
+		}
+
 		switch (action.constructor) {
 		case DefActions.WantDef:
 			{

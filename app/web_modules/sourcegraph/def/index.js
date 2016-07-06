@@ -13,6 +13,7 @@ export type DefKey = {
 	Unit: string;
 	Path: string; // def path, not file path
 };
+export type Ref = Object;
 
 export type AuthorshipInfo = {
 	LastCommitDate: string;
@@ -26,8 +27,11 @@ export type DefAuthor = DefAuthorship & {
 	Email: string;
 	AvatarURL: string;
 };
-
-export type Ref = Object;
+export type DefClient = AuthorshipInfo & {
+	Email: string;
+	AvatarURL: string;
+	Refs: Array<Ref>;
+};
 
 // Refs streaming pagnination assumes that the per page amount will be
 // consistent for each fetch.

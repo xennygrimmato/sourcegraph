@@ -88,6 +88,13 @@ export class DefStore extends Store {
 				return this.content[defKey(repo, commitID, def)] || null;
 			},
 		});
+		this.clients = deepFreeze({
+			content: data && data.clients ? data.clients.content : {},
+			// NOTE: Currently only allows fetching clients from the current repo.
+			get(repo: string, commitID: string, def: string): ?Object {
+				return this.content[defKey(repo, commitID, def)] || null;
+			},
+		});
 		this.highlightedDef = null;
 		this.refs = deepFreeze({
 			content: data && data.refs ? data.refs.content : {},
@@ -103,12 +110,24 @@ export class DefStore extends Store {
 		return {
 			defs: this.defs,
 			authors: this.authors,
+			clients: this.clients,
 			refs: this.refs,
 			refLocations: this.refLocations,
 		};
 	}
 
 	__onDispatch(action) {
+		if (action instanceof DefActions.ClientsFetched) {
+			this.clients = deepFreeze({
+				...this.clients,
+				content: {...this.clients.content,
+					[defKey(action.repo, action.commitID, action.def)]: action.clients,
+				},
+			});
+			this.__emitChange();
+			return;
+		}
+
 		switch (action.constructor) {
 		case DefActions.DefFetched:
 			this.defs = deepFreeze(Object.assign({}, this.defs, {

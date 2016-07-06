@@ -42,6 +42,9 @@
 	flex: 4 0 avatar-tiny-width;
 	text-align: right;
 }
+.clients {
+	composes: pl3 from base;
+}
 
 .icon {
 	font-size: 1.5rem;
