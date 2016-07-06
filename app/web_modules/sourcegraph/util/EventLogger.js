@@ -25,6 +25,7 @@ export class EventLogger {
 	_amplitude: any = null;
 	_intercom: any = null;
 	_fullStory: any = null;
+	_telligent: any = null;
 
 	_intercomSettings: any;
 	userAgentIsBot: bool;
@@ -62,6 +63,15 @@ export class EventLogger {
 	init() {
 		if (global.window && !this._amplitude) {
 			this._amplitude = require("amplitude-js");
+			this._telligent = window.telligent;
+
+			this._telligent("newTracker", "sg", "localhost:4567", {
+			  appId: "sgWeb",
+			  platform: "Web"
+			});
+
+
+			this._telligent('trackPageView', 'EventLoggerView');
 
 			if (!this._siteConfig) {
 				throw new Error("EventLogger requires SiteConfig to be previously set using EventLogger.setSiteConfig before EventLogger can be initialized.");
