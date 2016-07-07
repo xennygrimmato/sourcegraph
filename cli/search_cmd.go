@@ -20,7 +20,8 @@ func init() {
 }
 
 type searchCmd struct {
-	Refresh      string `long:"refresh" description:"repository URI for which to update the search index and counts (implies --refresh-counts)"`
+	Refresh      string `long:"refresh" description:"repository URI for which to update the search index and counts"`
+	RefreshAll   string `long:"refresh-all" description:"set to 'IKnowWhatIAmDoing' to update the search index and counts for all repos (expensive, needs admin permissions)"`
 	RefreshAsync bool   `long:"refresh-async" description:"queues refresh instead of blocking"`
 	Limit        int32  `long:"limit" description:"limit # of search results" default:"10"`
 	Args         struct {
@@ -29,28 +30,31 @@ type searchCmd struct {
 }
 
 func (c *searchCmd) Execute(args []string) error {
-	cl := cliClient
 	if c.Refresh != "" {
-		res, err := cl.Repos.Resolve(cliContext, &sourcegraph.RepoResolveOp{Path: c.Refresh})
+		res, err := cliClient.Repos.Resolve(cliContext, &sourcegraph.RepoResolveOp{Path: c.Refresh})
+		if err != nil {
+			return err
+		}
+		return c.refresh(res.Repo)
+	}
+	if c.RefreshAll != "" {
+		if c.RefreshAll != "IKnowWhatIAmDoing" {
+			log.Fatal("Caution: --refresh-all is a very expensive operation. Use --refresh-all=IKnowWhatIAmDoing")
+		}
+
+		list, err := cliClient.Repos.List(cliContext, &sourcegraph.RepoListOptions{All: true})
 		if err != nil {
 			return err
 		}
 
-		if c.RefreshAsync {
-			_, err = cl.Async.RefreshIndexes(cliContext, &sourcegraph.AsyncRefreshIndexesOp{
-				Repo:   res.Repo,
-				Source: "searchCmd",
-				Force:  true,
-			})
-			return err
+		for i, r := range list.Repos {
+			log.Printf("%d/%d: %s", i+1, len(list.Repos), r.URI)
+			if err := c.refresh(r.ID); err != nil {
+				log.Println(err)
+			}
 		}
 
-		_, err = cl.Defs.RefreshIndex(cliContext, &sourcegraph.DefsRefreshIndexOp{
-			Repo:                res.Repo,
-			RefreshRefLocations: true,
-			Force:               true,
-		})
-		return err
+		return nil
 	}
 
 	query := strings.Join(c.Args.Query, " ")
@@ -58,7 +62,7 @@ func (c *searchCmd) Execute(args []string) error {
 		log.Fatal("src search: empty query")
 	}
 
-	results, err := cl.Search.Search(cliContext, &sourcegraph.SearchOp{
+	results, err := cliClient.Search.Search(cliContext, &sourcegraph.SearchOp{
 		Query: query,
 		Opt: &sourcegraph.SearchOptions{
 			ListOptions: sourcegraph.ListOptions{
@@ -80,6 +84,24 @@ func (c *searchCmd) Execute(args []string) error {
 		log.Printf("%6.2f "+bold("%s")+" <%s>\n", r.Score, name, link)
 	}
 	return nil
+}
+
+func (c *searchCmd) refresh(repo int32) error {
+	if c.RefreshAsync {
+		_, err := cliClient.Async.RefreshIndexes(cliContext, &sourcegraph.AsyncRefreshIndexesOp{
+			Repo:   repo,
+			Source: "searchCmd",
+			Force:  true,
+		})
+		return err
+	}
+
+	_, err := cliClient.Defs.RefreshIndex(cliContext, &sourcegraph.DefsRefreshIndexOp{
+		Repo:                repo,
+		RefreshRefLocations: true,
+		Force:               true,
+	})
+	return err
 }
 
 func parseDef(def *sourcegraph.Def) (name, link string) {
