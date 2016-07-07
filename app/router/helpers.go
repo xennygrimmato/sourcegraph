@@ -10,7 +10,7 @@ import (
 )
 
 func (r *Router) URLToSearch(query string) *url.URL {
-	return &url.URL{Path: fmt.Sprintf("/search?q=%s", url.QueryEscape(query))}
+	return &url.URL{Path: "/search", RawQuery: "q=" + url.QueryEscape(query)}
 }
 
 func (r *Router) URLToRepo(repo string) *url.URL {
@@ -27,6 +27,10 @@ func (r *Router) URLToRepoRev(repo, rev string) *url.URL {
 
 func (r *Router) URLToRepoTreeEntry(repo, rev, path string) *url.URL {
 	return &url.URL{Path: fmt.Sprintf("/%s%s/-/tree/%s", repo, revStr(rev), path)}
+}
+
+func (r *Router) URLToBlob(repo, rev, path string) *url.URL {
+	return &url.URL{Path: fmt.Sprintf("/%s%s/-/blob/%s", repo, revStr(rev), path)}
 }
 
 func (r *Router) URLToDef(def routevar.DefAtRev) *url.URL {

@@ -25,6 +25,13 @@ function simpleContentsString(contents) {
 	return contents.join("");
 }
 
+function getContentsString(contents) {
+	if (contents && contents.props && contents.props.children) return getContentsString(contents.props.children);
+	if (typeof contents === "string") return contents;
+	if (contents instanceof Array) return contents.map(getContentsString).join("");
+	return "";
+}
+
 // converts each string component of contents from UTF-8
 function fromUtf8(contents) {
 	if (typeof contents === "string") {
@@ -119,17 +126,17 @@ class BlobLine extends Component {
 			if (annURLs && isExternalLink(annURLs[0])) {
 				let isHighlighted = this.state.highlightedDef === annURLs[0];
 				return (
-					<a
+					<Link
 						className={classNames(ann.Class, {
 							[s.highlightedAnn]: isHighlighted && (!this.state.highlightedDefObj || !this.state.highlightedDefObj.Error),
 						})}
-						target="_blank"
-						href={annURLs[0]}
+						target={annURLs[0].startsWith("https://") ? "_blank" : null}
+						to={annURLs[0].replace("%25s", getContentsString(content))}
 						onMouseOver={() => Dispatcher.Stores.dispatch(new DefActions.HighlightDef(annURLs[0], getLanguageExtensionForPath(this.state.path)))}
 						onMouseOut={() => Dispatcher.Stores.dispatch(new DefActions.HighlightDef(null))}
 						key={i}>
 						{simpleContentsString(content)}
-					</a>
+					</Link>
 				);
 			}
 

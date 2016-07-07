@@ -242,7 +242,7 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 		var u *url.URL
 		if t != nil && t.Exact {
 			if t.Path != "" {
-				u = approuter.Rel.URLToRepoTreeEntry(repoPath, opt.Entry.RepoRev.CommitID, opt.Entry.Path)
+				u = approuter.Rel.URLToBlob(repoPath, opt.Entry.RepoRev.CommitID, opt.Entry.Path)
 				// TODO(sqs): include name in fragment (or something) to specially highlight the name
 			}
 			if t.Span != nil {
@@ -256,11 +256,17 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 				u.Fragment = fmt.Sprintf("L%d:%d-%d:%d", t.Span.StartLine, t.Span.StartCol, endLine, t.Span.EndCol)
 			}
 		} else {
-			// TODO(sqs): support searching within a file or dir (not just repo)
-			//
-			// TODO(sqs): frontend has to add the text of the ref
-			query := t.Ident + " " + t.Context
+			var query string
+			if t != nil && t.Context != "" {
+				query += t.Context + " "
+			}
+			if t != nil && t.Ident != "" {
+				query += t.Ident
+			} else {
+				query += "%s" // frontend will replace with text of ref
+			}
 			if t != nil && t.Path != "" {
+				// TODO(sqs): support searching within a file or dir (not just repo)
 				query += " r:" + repoPath
 			}
 			u = approuter.Rel.URLToSearch(strings.TrimSpace(query))
@@ -290,7 +296,7 @@ func expUniverseResultsToAnnotations(res *lang.IndexResult, targetFilename strin
 	for _, def := range data.Defs {
 		anns = append(anns, &sourcegraph.Annotation{
 			URL: makeURL(&lang.Target{
-				Span:  def.NameSpan,
+				Span:  def.Span,
 				Path:  targetFilename,
 				Exact: true,
 			}),
