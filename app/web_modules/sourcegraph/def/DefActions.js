@@ -201,3 +201,32 @@ export class RefsFetched {
 		this.refs = refs;
 	}
 }
+
+export type WantFuzzyDefsP = {
+	repo: string;
+	commitID: string;
+	file: string;
+	name: string;
+	token: string; // TODO(beyang): s/token/query/
+};
+
+export class WantFuzzyDefs {
+	p: WantFuzzyDefsP;
+
+	constructor(p: WantFuzzyDefsP) {
+		this.p = p;
+	}
+}
+
+type FuzzyDefsFetchedP = {
+	q: WantFuzzyDefsP;
+	defs: Array<Def>;
+}
+
+export class FuzzyDefsFetched {
+	p: FuzzyDefsFetchedP;
+
+	constructor(p: FuzzyDefsFetchedP) {
+		this.p = p;
+	}
+}

@@ -151,12 +151,23 @@ class BlobLine extends Component {
 						onMouseOver={() => Dispatcher.Stores.dispatch(new DefActions.HighlightDef(annURLs[0], getLanguageExtensionForPath(this.state.path)))}
 						onMouseOut={() => Dispatcher.Stores.dispatch(new DefActions.HighlightDef(null))}
 						onClick={(ev) => {
-							if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
-							// TODO: implement multiple defs menu if ann.URLs.length > 0 (more important for languages other than Go)
-							if (this.state.highlightedDefObj && this.state.highlightedDefObj.Error) {
-								// Prevent navigating to a broken ref or not-yet-loaded def.
-								ev.preventDefault();
-							}
+							ev.preventDefault();
+
+							let cmps = annURLs[0].split("-");
+							let repo = cmps[0].split("/"), unit = cmps[1].split("/"), path = cmps[2].split("/");
+							let query = [];
+							// query.push(repo[2], repo[3]);
+							// query.push(...unit.slice(3));
+							// query.push(...path);
+							query.push(path[path.length - 1]);
+
+							Dispatcher.Backends.dispatch(new DefActions.WantFuzzyDefs({ // TODO(beyang): can just dispatch WantSearch query here
+								repo: "",
+								commitID: "",
+								file: "",
+								name: path[path.length - 1],
+								token: query.join(" "),
+							}));
 
 							// Clear the def tooltip on click, or else it might be stuck
 							// to the cursor if no corresponding HighlightDef(null) is dispatched.

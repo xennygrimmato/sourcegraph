@@ -4,6 +4,7 @@ import Store from "sourcegraph/Store";
 import Dispatcher from "sourcegraph/Dispatcher";
 import deepFreeze from "sourcegraph/util/deepFreeze";
 import * as DefActions from "sourcegraph/def/DefActions";
+import type {WantFuzzyDefsP} from "sourcegraph/def/DefActions";
 import {defPath} from "sourcegraph/def";
 import type {Def, ExamplesKey, RefLocationsKey} from "sourcegraph/def";
 import * as BlobActions from "sourcegraph/blob/BlobActions";
@@ -33,6 +34,10 @@ function refLocationsKeyFor(r: RefLocationsKey): string {
 	}
 	let q = toQuery(opts);
 	return `/.api/repos/${r.repo}${r.rev ? `@${r.rev}` : ""}/-/def/${r.def}/-/ref-locations?${q}`;
+}
+
+function fuzzyDefsKeyFor(p: WantFuzzyDefsP): string {
+	return `${p.repo}@${p.commitID}:${p.file}?${p.token}`;
 }
 
 function examplesKeyFor(r: ExamplesKey): string {
@@ -93,6 +98,12 @@ export class DefStore extends Store {
 			content: data && data.refs ? data.refs.content : {},
 			get(repo: string, commitID: string, def: string, refRepo: string, refFile: ?string) {
 				return this.content[refsKeyFor(repo, commitID, def, refRepo, refFile)] || null;
+			},
+		});
+		this.fuzzyDefs = deepFreeze({
+			content: null,
+			get(p: WantFuzzyDefsP) {
+				return this.content[fuzzyDefsKeyFor(p)];
 			},
 		});
 		this._refLocations = deepFreeze(data && data.refLocations ? data.refLocations.content : {});
@@ -255,6 +266,14 @@ export class DefStore extends Store {
 			this.refs = deepFreeze(Object.assign({}, this.refs, {
 				content: Object.assign({}, this.refs.content, {
 					[refsKeyFor(action.repo, action.commitID, action.def, action.refRepo, action.refFile)]: action.refs,
+				}),
+			}));
+			break;
+
+		case DefActions.FuzzyDefsFetched:
+			this.fuzzyDefs = deepFreeze(Object.assign({}, this.fuzzyDefs, {
+				content: Object.assign({}, this.fuzzyDefs.content, {
+					[fuzzyDefsKeyFor(action.p.q)]: action.p.defs,
 				}),
 			}));
 			break;

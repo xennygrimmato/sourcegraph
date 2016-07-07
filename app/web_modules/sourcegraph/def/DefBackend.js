@@ -126,6 +126,25 @@ const DefBackend = {
 				}
 				break;
 			}
+
+		case DefActions.WantFuzzyDefs:
+			{
+				let fuzzyDefs = DefStore.fuzzyDefs.get(action.p);
+				if (fuzzyDefs === null) {
+					let url = `/.api/global-search?Query=${action.p.token}`;
+					trackPromise(
+						DefBackend.fetch(url)
+							.then(checkStatus)
+							.then((resp) => resp.json())
+							.catch((err) => ({Error: err}))
+							.then(convNotFound)
+							.then((data) => {
+								Dispatcher.Stores.dispatch(new DefActions.FuzzyDefsFetched({q: action.p, defs: data.Defs}));
+							})
+					);
+				}
+				break;
+			}
 		}
 	},
 };

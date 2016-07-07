@@ -4,6 +4,7 @@ import React from "react";
 import Helmet from "react-helmet";
 
 import Container from "sourcegraph/Container";
+import type {Def} from "sourcegraph/def";
 import Dispatcher from "sourcegraph/Dispatcher";
 import Blob from "sourcegraph/blob/Blob";
 import BlobContentPlaceholder from "sourcegraph/blob/BlobContentPlaceholder";
@@ -20,6 +21,8 @@ import "sourcegraph/build/BuildBackend";
 import Style from "sourcegraph/blob/styles/Blob.css";
 import {lineCol, lineRange, parseLineRange} from "sourcegraph/blob/lineCol";
 import urlTo from "sourcegraph/util/urlTo";
+import {urlToSearch} from "sourcegraph/search/routes";
+import {urlToDef} from "sourcegraph/def/routes";
 import {makeRepoRev, trimRepo} from "sourcegraph/repo";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
 import Header from "sourcegraph/components/Header";
@@ -92,6 +95,7 @@ export default class BlobMain extends Container {
 		state.def = props.def || null;
 		state.defObj = state.def && state.commitID ? DefStore.defs.get(state.repo, state.commitID, state.def) : null;
 		state.children = props.children || null;
+		if (!state.fuzzyDefs) state.fuzzyDefs = null;
 
 		// Def-specific
 		state.highlightedDef = DefStore.highlightedDef;
@@ -104,6 +108,30 @@ export default class BlobMain extends Container {
 	}
 
 	onStateTransition(prevState, nextState) {
+		if (nextState.fuzzyDefs && nextState.fuzzyDefs.length > 0) {
+			let topDefNameMatch = false;
+			let topDef = nextState.fuzzyDefs[0];
+			if (nextState.fuzzyDefQuery.name === topDef.Name) {
+				topDefNameMatch = true;
+			}
+			let otherNameMatch = false;
+			for (let i = 1; i < nextState.fuzzyDefs.length; i++) {
+				let def = nextState.fuzzyDefs[i];
+				if (nextState.fuzzyDefQuery.name == def.Name) {
+					otherNameMatch = true;
+					break;
+				}
+			}
+
+			if (topDefNameMatch && !otherNameMatch) {
+				nextState.fuzzyDefs = null;
+				nextState.fuzzyDefQuery= null;
+				this._navigateToDef(topDef);
+			} else {
+				this._navigateToSearch("", "", "", nextState.fuzzyDefQuery.token);
+			}
+		}
+
 		if (nextState.highlightedDef && prevState.highlightedDef !== nextState.highlightedDef) {
 			if (!isExternalLink(nextState.highlightedDef)) { // kludge to filter out external def links
 				let {repo, rev, def, err} = defRouteParams(nextState.highlightedDef);
@@ -133,6 +161,12 @@ export default class BlobMain extends Container {
 		} else if (action instanceof BlobActions.SelectCharRange) {
 			let hash = action.startLine ? `L${lineRange(lineCol(action.startLine, action.startCol), action.endLine && lineCol(action.endLine, action.endCol))}` : null;
 			this._navigate(action.repo, action.rev, action.path, hash);
+		} else if (action instanceof DefActions.FuzzyDefsFetched) {
+			let fd = DefStore.fuzzyDefs.get(action.p.q);
+			this.setState({
+				fuzzyDefs: fd,
+				fuzzyDefQuery: action.p.q,
+			});
 		}
 	}
 
@@ -147,6 +181,14 @@ export default class BlobMain extends Container {
 		}
 		if (replace) this.context.router.replace(url);
 		else this.context.router.push(url);
+	}
+
+	_navigateToSearch(repo: string, commitID: string, file: string, query: string) {
+		this.context.router.push(urlToSearch(query));
+	}
+
+	_navigateToDef(def: Def) {
+		this.context.router.push(urlToDef(def));
 	}
 
 	render() {
