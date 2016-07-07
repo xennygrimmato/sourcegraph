@@ -69,9 +69,7 @@ class SearchSettings extends Container {
 		// propagating context through components that use shouldComponentUpdate.
 		// We're already observing UserStore, so this doesn't add any extra overhead.
 		state.signedIn = Boolean(UserStore.activeAuthInfo());
-
 	}
-
 
 	onStateTransition(prevState, nextState) {
 		if (prevState.settings !== nextState.settings && nextState.settings && nextState.settings.search && nextState.settings.search.scope) {
