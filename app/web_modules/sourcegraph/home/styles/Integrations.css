@@ -1,0 +1,25 @@
+@value base "sourcegraph/components/styles/_base.css";
+@value grid "sourcegraph/components/styles/_grid.css";
+@value colors "sourcegraph/components/styles/_colors.css";
+@value typography "sourcegraph/components/styles/_typography.css";
+
+.imageAsset {
+	width: 100px;
+	height: 100px;
+}
+.integrationsContainer {
+	composes: center from base;
+	composes: col-4 from grid;
+	display: flex;
+	flex-wrap: wrap;
+	composes: pa2 from base;
+}
+.integrationContainer {
+	width: 100px;
+	text-align: center;
+	composes: ma2 from base;
+}
+.installedIntegrationContainer {
+	composes: integrationContainer;
+	background-color: grey;
+}
