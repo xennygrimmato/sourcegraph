@@ -68,7 +68,6 @@ func serveGlobalSearch(w http.ResponseWriter, r *http.Request) error {
 			NotRepos:     paramsNotRepos,
 			ListOptions:  sourcegraph.ListOptions{PerPage: params.Limit},
 			IncludeRepos: params.IncludeRepos,
-			Fast:         params.Fast,
 		},
 	}
 

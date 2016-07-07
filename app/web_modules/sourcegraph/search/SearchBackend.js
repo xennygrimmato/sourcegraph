@@ -34,9 +34,6 @@ const SearchBackend = {
 					if (p.commitID) {
 						q.push(`CommitID=${encodeURIComponent(p.commitID)}`);
 					}
-					if (p.fast) {
-						q.push(`Fast=1`);
-					}
 
 					trackPromise(
 						SearchBackend.fetch(`/.api/global-search?${q.join("&")}`)

@@ -201,7 +201,6 @@ class GlobalSearch extends Container {
 								repos: batch,
 								limit: RESULTS_LIMIT,
 								includeRepos: props.location.query.includeRepos,
-								fast: true,
 							});
 						}
 					}

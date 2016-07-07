@@ -9,7 +9,6 @@ export type WantResultsPayload = {
 	commitID?: string;
 	limit: number;
 	includeRepos?: bool;
-	fast?: bool;
 }
 
 export class WantResults {
