@@ -37,10 +37,14 @@ class SearchSettings extends Container {
 
 	constructor(props) {
 		super(props);
-		this.state.settings = UserStore.settings.get();
+		this.state = {settings: UserStore.settings.get()}
+	}
+
+	componentDidMount() {
 		const langFromQuery = this.props.location.query.lang;
 		if (langFromQuery) {
 			const langs = (typeof (langFromQuery) === "string") ? [langFromQuery] : langFromQuery;
+
 			const newSettings = {
 				...this.state.settings,
 				search: {
@@ -49,13 +53,11 @@ class SearchSettings extends Container {
 				},
 			};
 			Dispatcher.Stores.dispatch(new UserActions.UpdateSettings(newSettings));
+		} else {
+			this.context.router.replace({...this.props.location, query: {...this.props.location.query, lang: this._langs()}});
 		}
-	}
 
-	state: {
-		settings: Settings;
-		betaLanguage: ?LanguageID;
-	};
+	}
 
 	stores() { return [UserStore]; }
 
@@ -68,7 +70,9 @@ class SearchSettings extends Container {
 		// propagating context through components that use shouldComponentUpdate.
 		// We're already observing UserStore, so this doesn't add any extra overhead.
 		state.signedIn = Boolean(UserStore.activeAuthInfo());
+
 	}
+
 
 	onStateTransition(prevState, nextState) {
 		if (prevState.settings !== nextState.settings && nextState.settings && nextState.settings.search && nextState.settings.search.scope) {
@@ -143,6 +147,7 @@ class SearchSettings extends Container {
 	}
 
 	_renderLanguages() {
+		console.log(this.state)
 		const langs = this._langs();
 		return (
 			<div styleName="group">
