@@ -15,8 +15,6 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/lang"
 )
 
-// TODO(sqs): assumes that all files are in the same Go package.
-//
 // TODO(sqs): use golang.org/x/tools/go/buildutil OverlayContext? Says
 // only Context.OpenFile respects it right now, so maybe hold off.
 //
