@@ -1,0 +1,64 @@
+syntax = "proto3";
+package lang;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.goproto_getters_all) = false;
+
+message Def {
+	string ident = 1; // identifier (e.g., "x" for `var x = 7`)
+	string parent_ident = 2; // parent identifier (e.g., "R" for `func (x *R) Foo() {}`)
+	string title = 3; // full human-readable declaration title (e.g., "var x int" for `var x = 7`)
+	string kind = 4;
+	bool global = 5; // visible to other packages/repos
+
+	Span span = 6; // span containing the entire def and decl
+	Span name_span = 7; // span containing only the def's name (e.g., just `foo` in `var foo = 3`)
+}
+
+message Ref {
+	Span span = 1; // span containing the ref
+	Target target = 2; // where this ref points to
+}
+
+// Target contains information that can be used to determine which def
+// a ref points to.
+message Target {
+	string ident = 1; // ident of def (blank means same as the ref span's text)
+	string context = 2; // additional search terms/filters if resolution falls back to search
+
+	Span span = 3; // span containing the def that this ref points to
+	string path = 4; // file/dir (non-recursive) containing the def that this ref points to (blank means same file as ref)
+
+	bool exact = 5; // whether this target refers exactly to a specific def (if not, it's best-effort)
+}
+
+message Span {
+	uint32 start_byte = 1;
+	uint32 byte_len = 2;
+
+	uint32 start_line = 3;
+	uint32 start_col = 4;
+	uint32 end_line = 5; // 0 means same as start line
+	uint32 end_col = 6;
+}
+
+service Indexer {
+	rpc Index(IndexOp) returns (IndexResult);
+}
+
+message IndexOp {
+	map<string, bytes> sources = 1; // source files used as input for the index operation
+	repeated string targets = 2; // file paths (which must be present as map keys) to produce output for
+}
+
+message IndexResult {
+	message IndexData {
+		repeated Def defs = 1;
+		repeated Ref refs = 2;
+	}
+	map<string, IndexData> files = 1; // index data for each file listed in IndexOp.targets.
+
+	repeated string messages = 2; // log messages
+	bool complete = 3; // whether the indexing was complete (if not, messages explain why; e.g., syntax errors)
+}
