@@ -1,6 +1,3 @@
-// @flow weak
-
-// $FlowHack
 const grpc = require("grpc");
 const path = require("path");
 const index = require("./indexer").index;
@@ -22,7 +19,6 @@ function getServer() {
 	return s;
 }
 
-// $FlowHack
 if (require.main === module) {
 	if (!process.env.NOSERVER) {
 		// If this is run as a script, start a server on an unused port
@@ -32,10 +28,10 @@ if (require.main === module) {
 	}
 
 	console.log("========= TEST");
-	const filename = path.resolve(__dirname, "../../app/web_modules/sourcegraph/blob/BlobLine.js");
+	const filename = path.resolve(__dirname, "../../app/web_modules/sourcegraph/app/routePatterns.js");
 	require("fs").readFile(filename, (err, data) => {
 		if (err) throw err;
-		index({files: {[filename]: data}, targets: [filename]}, (err, res) => {
+		index({sources: {[filename]: data}, targets: [filename]}, (err, res) => {
 			if (err) throw err;
 			console.log("========= TEST OUTPUT:");
 			console.log(JSON.stringify(res, null, 2));

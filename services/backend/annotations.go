@@ -294,14 +294,18 @@ func expUniverseResultsToAnnotations(res *lang.IndexResult, targetFilename strin
 		})
 	}
 	for _, def := range data.Defs {
+		span := def.NameSpan
+		if span == nil {
+			span = def.Span
+		}
 		anns = append(anns, &sourcegraph.Annotation{
 			URL: makeURL(&lang.Target{
 				Span:  def.Span,
 				Path:  targetFilename,
 				Exact: true,
 			}),
-			StartByte: def.NameSpan.StartByte,
-			EndByte:   def.NameSpan.StartByte + def.NameSpan.ByteLen,
+			StartByte: span.StartByte,
+			EndByte:   span.StartByte + span.ByteLen,
 			Def:       true,
 		})
 	}
