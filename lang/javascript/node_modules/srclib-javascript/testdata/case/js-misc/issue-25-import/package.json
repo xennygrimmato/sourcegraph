@@ -1,0 +1,8 @@
+{
+  "name":"issue-25-import",
+  "version":"0.0.1",
+  "description":"ensure proper path is emitted for paths containing parts from 'import' statement (import foo from 'bar')",
+  "dependencies": {
+    "lodash": "^4.3.0"
+  }
+}

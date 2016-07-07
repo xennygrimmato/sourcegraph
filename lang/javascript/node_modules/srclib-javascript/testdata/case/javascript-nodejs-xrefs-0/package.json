@@ -1,0 +1,26 @@
+{
+  "name": "javascript-nodejs-xrefs-0",
+  "version": "0.0.0",
+  "description": "JavaScript (node.js) test repository for Sourcegraph with refs to the node.js core and other NPM modules",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sgtest/javascript-nodejs-xrefs-0.git"
+  },
+  "author": "Quinn Slack <sqs@sourcegraph.com>",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/sgtest/javascript-nodejs-xrefs-0/issues"
+  },
+  "homepage": "https://github.com/sgtest/javascript-nodejs-xrefs-0",
+  "dependencies": {
+    "minimatch": "~0.2.14",
+    "glob": "~3.2.9",
+    "read-package-json": "~1.1.9",
+    "mysql": "~2.2.0",
+    "pg": "~3.0.3",
+    "underscore": "~1.6.0",
+    "async": "~0.8.0",
+    "lodash": "~2.4.1"
+  }
+}

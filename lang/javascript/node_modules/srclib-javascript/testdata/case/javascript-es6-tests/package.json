@@ -1,0 +1,19 @@
+{
+  "name": "es6-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sgtest/javascript-es6-tests.git"
+  },
+  "author": "Sourcegraph",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sgtest/javascript-es6-tests/issues"
+  },
+  "homepage": "https://github.com/sgtest/javascript-es6-tests#readme"
+}

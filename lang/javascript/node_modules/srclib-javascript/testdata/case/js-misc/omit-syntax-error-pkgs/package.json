@@ -1,0 +1,6 @@
+{
+  "name":"omit-syntax-error-pkgs",
+  "version":"0.0.1",
+  "description":"omit package.json files with syntax errors",
+  This is a syntax error! Yikes!
+}

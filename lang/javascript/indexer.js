@@ -1,11 +1,39 @@
 const jsctags = require("jsctags");
+const srclibanalysis = require("srclib-javascript/lib/analysis");
 const path = require("path");
 
 function index(op, callback) {
 	const t0 = Date.now();
 	
 	const target = op.targets[0];
-	jsctags({
+
+	const resp = srclibanalysis.initTernServer({
+		targets: op.targets,
+		dir: ".",
+		sources: op.sources,
+	});
+	const res = resp.out;
+	const srv = resp.tern;
+	// console.log("TERN", JSON.stringify(res, null, 2));
+	const fileData = {};
+	res.Defs.forEach(def => {
+		if (!fileData[def.File]) fileData[def.File] = {defs: []};
+		const def2 = oldToNewDef(srv, def);
+		if (def2) fileData[def.File].defs.push(def2);
+	});
+	res.Refs.forEach(ref => {
+		if (!fileData[ref.File]) fileData[ref.File] = {refs: []};
+		if (!fileData[ref.File].refs) fileData[ref.File].refs = [];
+		const ref2 = old2ToNewRef(srv, ref);
+		if (ref2) fileData[ref.File].refs.push(ref2);
+	});
+	callback(null, {
+		files: fileData,
+		messages: [`took ${Date.now() - t0} msec`],
+	});
+
+	
+	if (false) jsctags({
 		file: target,
 		dir: path.dirname(target),
 		content: op.sources[target].toString(),
@@ -24,6 +52,78 @@ function index(op, callback) {
 			messages: [`took ${Date.now() - t0} msec`],
 		});
 	});
+}
+
+function oldToNewDef(tern, old) {
+	if (!old.DefStart) return null;
+
+	const f = tern.findFile(old.File);
+	if (!f) return null;
+	const start = f.asLineChar(old.DefStart);
+	const end = f.asLineChar(old.DefEnd);
+	return {
+		ident: old.Name,
+		parent_ident: parentDefPath(old.Path),
+		kind: old.Kind,
+		global: !old.Path.includes("✖"),
+		span: {
+			start_byte: old.DefStart,
+			byte_len: old.DefEnd - old.DefStart,
+			start_line: start.line + 1,
+			start_col: start.ch,
+			end_line: end.line + 1,
+			end_col: end.ch,
+		},
+	};
+}
+
+function parentDefPath(defPath) {
+	if (!defPath) return undefined;
+	const parts = defPath.split("/");
+	if (parts.length > 2) return parts[parts.length - 2];
+	return undefined;
+}
+
+function oldToNewRef(tern, old) {
+	if (!old.Start) return null;
+	const f = tern.findFile(old.file);
+	const start = f.asLineChar(old.start);
+	const end = f.asLineChar(old.end);
+	return {
+		target: {
+			context: parentDefPath(old.DefPath),
+		},
+		span: {
+			start_byte: old.Start,
+			byte_len: old.End - old.Start,
+			start_line: start.line + 1,
+			start_col: start.ch,
+			end_line: end.line + 1,
+			end_col: end.ch,
+		},
+	};
+}
+
+function old2ToNewRef(tern, old) {
+	console.log("EEEEEE", old);
+	if (!old.Start) return null;
+	const f = tern.findFile(old.File);
+	if (!f) return null;
+	const start = f.asLineChar(old.Start);
+	const end = f.asLineChar(old.End);
+	return {
+		target: {
+			context: parentDefPath(old.DefPath),
+		},
+		span: {
+			start_byte: old.Start,
+			byte_len: old.End - old.Start,
+			start_line: start.line + 1,
+			start_col: start.ch,
+			end_line: end.line + 1,
+			end_col: end.ch,
+		},
+	};
 }
 
 function tagsToDefs(tags) {

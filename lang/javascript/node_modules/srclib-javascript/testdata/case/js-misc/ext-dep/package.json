@@ -1,0 +1,7 @@
+{
+  "name":"ext-dep",
+  "version":"0.0.1",
+  "dependencies": {
+    "lodash.contains": "2.4.1"
+  }
+}

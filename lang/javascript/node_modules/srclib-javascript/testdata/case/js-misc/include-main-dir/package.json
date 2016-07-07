@@ -1,0 +1,6 @@
+{
+  "name":"include-main-dir",
+  "version":"0.0.1",
+  "description":"include all files in directory of main file",
+  "main":"foodir/asdf"
+}

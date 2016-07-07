@@ -1,0 +1,5 @@
+{
+  "name":"include-src-dir",
+  "description":"automatically include *.js files from the src/ dir (not just lib/)",
+  "version":"0.0.1"
+}

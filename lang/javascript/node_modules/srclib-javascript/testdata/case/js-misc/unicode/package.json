@@ -1,0 +1,5 @@
+{
+  "name":"unicode",
+  "version":"0.0.1",
+  "description":"test that byte positions not char positions are output for refs/defs/etc."
+}
