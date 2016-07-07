@@ -35,6 +35,23 @@ class SearchSettings extends Container {
 		eventLogger: React.PropTypes.object.isRequired,
 	};
 
+	constructor(props) {
+		super(props);
+		this.state.settings = UserStore.settings.get();
+		const langFromQuery = this.props.location.query.lang;
+		if (langFromQuery) {
+			const langs = (typeof (langFromQuery) === "string") ? [langFromQuery] : langFromQuery;
+			const newSettings = {
+				...this.state.settings,
+				search: {
+					...this.state.settings.search,
+					languages: langs,
+				},
+			};
+			Dispatcher.Stores.dispatch(new UserActions.UpdateSettings(newSettings));
+		}
+	}
+
 	state: {
 		settings: Settings;
 		betaLanguage: ?LanguageID;
@@ -86,6 +103,7 @@ class SearchSettings extends Container {
 			langs.push(lang);
 			langs.sort();
 		}
+		this.context.router.replace({...this.props.location, query: {...this.props.location.query, lang: langs}});
 
 		const newSettings = {
 			...this.state.settings,
