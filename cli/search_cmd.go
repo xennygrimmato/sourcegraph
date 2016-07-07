@@ -30,23 +30,18 @@ type searchCmd struct {
 
 func (c *searchCmd) Execute(args []string) error {
 	cl := cliClient
-	if c.Refresh != "" && c.RefreshAsync {
+	if c.Refresh != "" {
 		res, err := cl.Repos.Resolve(cliContext, &sourcegraph.RepoResolveOp{Path: c.Refresh})
 		if err != nil {
 			return err
 		}
-		_, err = cl.Async.RefreshIndexes(cliContext, &sourcegraph.AsyncRefreshIndexesOp{
-			Repo:   res.Repo,
-			Source: "searchCmd",
-			Force:  true,
-		})
-		if err != nil {
-			return err
-		}
-	} else if c.Refresh != "" {
-		log.Printf("Def.RefreshIndex")
-		res, err := cl.Repos.Resolve(cliContext, &sourcegraph.RepoResolveOp{Path: c.Refresh})
-		if err != nil {
+
+		if c.RefreshAsync {
+			_, err = cl.Async.RefreshIndexes(cliContext, &sourcegraph.AsyncRefreshIndexesOp{
+				Repo:   res.Repo,
+				Source: "searchCmd",
+				Force:  true,
+			})
 			return err
 		}
 
@@ -55,10 +50,7 @@ func (c *searchCmd) Execute(args []string) error {
 			RefreshRefLocations: true,
 			Force:               true,
 		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	}
 
 	query := strings.Join(c.Args.Query, " ")
