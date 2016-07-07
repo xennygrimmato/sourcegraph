@@ -139,10 +139,14 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 
 	switch n := node.(type) {
 	case *ast.FuncDecl:
-		n.Doc, n.Body = nil, nil // to avoid including full docs and body in def Title
 		v.defs = append(v.defs, &lang.Def{
-			Ident:    n.Name.Name,
-			Title:    astString(v.fset, n),
+			Ident: n.Name.Name,
+			Title: astString(v.fset, &ast.FuncDecl{
+				// avoid including full docs and body in def Title
+				Recv: n.Recv,
+				Name: n.Name,
+				Type: n.Type,
+			}),
 			Kind:     "func",
 			Global:   n.Name.IsExported(),
 			Span:     makeSpan(v.fset, n),

@@ -13,6 +13,9 @@ import (
 	// Server
 	_ "sourcegraph.com/sourcegraph/sourcegraph/services/backend/cmd"
 
+	// Lang
+	_ "sourcegraph.com/sourcegraph/sourcegraph/lang/all"
+
 	// Events
 	_ "sourcegraph.com/sourcegraph/sourcegraph/services/events"
 	_ "sourcegraph.com/sourcegraph/sourcegraph/services/events/listeners"

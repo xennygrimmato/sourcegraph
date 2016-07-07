@@ -9,6 +9,10 @@ import (
 	"sourcegraph.com/sourcegraph/srclib/graph"
 )
 
+func (r *Router) URLToSearch(query string) *url.URL {
+	return &url.URL{Path: fmt.Sprintf("/search?q=%s", url.QueryEscape(query))}
+}
+
 func (r *Router) URLToRepo(repo string) *url.URL {
 	return &url.URL{Path: fmt.Sprintf("/%s", repo)}
 }

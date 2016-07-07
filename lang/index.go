@@ -15,8 +15,12 @@ import (
 // for the given filesystem, based on the files' extensions and the
 // available indexers.
 //
+// If isTarget is set, only source files whose filename passes
+// isTarget are used as the target files. (All source files are still
+// included in the IndexOp.Sources maps).
+//
 // TODO(sqs): Only draws from InProcessIndexer.
-func IndexOps(ctx context.Context, vfs vfsutil.WalkableFileSystem) (map[InProcessIndexer][]*IndexOp, error) {
+func IndexOps(ctx context.Context, vfs vfsutil.WalkableFileSystem, isTarget func(filename string) bool) (map[InProcessIndexer][]*IndexOp, error) {
 	ops := map[InProcessIndexer][]*IndexOp{}
 
 	// Respect deadline.
@@ -68,11 +72,39 @@ func IndexOps(ctx context.Context, vfs vfsutil.WalkableFileSystem) (map[InProces
 					}
 
 					op.Sources[w.Path()] = data
-					op.Targets = append(op.Targets, w.Path())
+					if isTarget == nil || isTarget(w.Path()) {
+						op.Targets = append(op.Targets, w.Path())
+					}
 				}
 			}
 		}
 	}
 
 	return ops, nil
+}
+
+// MergeResults merges all of results into a single IndexResult. It
+// modifies the provided results; they should not be used after
+// calling MergeResults on them.
+func MergeResults(results []*IndexResult) *IndexResult {
+	merged := &IndexResult{}
+	for _, res := range results {
+		if merged.Files == nil {
+			merged.Files = res.Files
+		} else {
+			for f, d := range res.Files {
+				if x := merged.Files[f]; x == nil {
+					merged.Files[f] = d
+				} else {
+					merged.Files[f].Defs = append(merged.Files[f].Defs, d.Defs...)
+					merged.Files[f].Refs = append(merged.Files[f].Refs, d.Refs...)
+				}
+			}
+		}
+		merged.Messages = append(merged.Messages, res.Messages...)
+		if !res.Complete {
+			merged.Complete = false
+		}
+	}
+	return merged
 }

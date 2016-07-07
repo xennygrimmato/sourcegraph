@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -11,9 +12,13 @@ import (
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	approuter "sourcegraph.com/sourcegraph/sourcegraph/app/router"
+	"sourcegraph.com/sourcegraph/sourcegraph/lang"
 	annotationspkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/annotations"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/syntaxhighlight"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vfsutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/svc"
 	"sourcegraph.com/sourcegraph/srclib/graph"
@@ -144,6 +149,10 @@ func (s *annotations) listRefs(ctx context.Context, opt *sourcegraph.Annotations
 		return nil, err
 	}
 
+	if feature.Features.ExpUniverse {
+		return s.listRefsExpUniverse(ctx, opt, entry, repo.ID, repo.URI)
+	}
+
 	filters := []srcstore.RefFilter{
 		srcstore.ByRepos(repo.URI),
 		srcstore.ByCommitIDs(opt.Entry.RepoRev.CommitID),
@@ -203,4 +212,92 @@ func computeLineStartBytes(data []byte) []uint32 {
 		}
 	}
 	return pos
+}
+
+func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.AnnotationsListOptions, entry *sourcegraph.TreeEntry, repo int32, repoPath string) ([]*sourcegraph.Annotation, error) {
+	vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, vcs.CommitID(opt.Entry.RepoRev.CommitID)), filepath.Join)
+	opsByIndexer, err := lang.IndexOps(ctx, vfs, func(filename string) bool { return filename == opt.Entry.Path })
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(sqs): parallelize
+	var results []*lang.IndexResult
+	for indexer, ops := range opsByIndexer {
+		for _, op := range ops {
+			res, err := indexer.Index(ctx, op)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, res)
+		}
+	}
+
+	makeURL := func(t *lang.Target) string {
+		var u *url.URL
+		if t != nil && t.Exact {
+			if t.Path != "" {
+				u = approuter.Rel.URLToRepoTreeEntry(repoPath, opt.Entry.RepoRev.CommitID, opt.Entry.Path)
+				// TODO(sqs): include name in fragment (or something) to specially highlight the name
+			}
+			if t.Span != nil {
+				endLine := t.Span.EndLine
+				if endLine == 0 {
+					endLine = t.Span.StartLine
+				}
+				if u == nil {
+					u = &url.URL{}
+				}
+				u.Fragment = fmt.Sprintf("L%d:%d-%d:%d", t.Span.StartLine, t.Span.StartCol, endLine, t.Span.EndCol)
+			}
+		} else {
+			// TODO(sqs): support searching within a file or dir (not just repo)
+			//
+			// TODO(sqs): frontend has to add the text of the ref
+			query := t.Ident + " " + t.Context
+			if t != nil && t.Path != "" {
+				query += " r:" + repoPath
+			}
+			u = approuter.Rel.URLToSearch(strings.TrimSpace(query))
+		}
+		if u == nil {
+			return ""
+		}
+		return u.String()
+	}
+
+	return expUniverseResultsToAnnotations(lang.MergeResults(results), opt.Entry.Path, makeURL), nil
+}
+
+func expUniverseResultsToAnnotations(res *lang.IndexResult, targetFilename string, makeURL func(*lang.Target) string) []*sourcegraph.Annotation {
+	data := res.Files[targetFilename]
+	if data == nil {
+		return nil
+	}
+	anns := make([]*sourcegraph.Annotation, 0, len(data.Refs)+len(data.Defs))
+	for _, ref := range data.Refs {
+		anns = append(anns, &sourcegraph.Annotation{
+			URL:       makeURL(ref.Target),
+			StartByte: ref.Span.StartByte,
+			EndByte:   ref.Span.StartByte + ref.Span.ByteLen,
+		})
+	}
+	for _, def := range data.Defs {
+		anns = append(anns, &sourcegraph.Annotation{
+			URL: makeURL(&lang.Target{
+				Span:  def.NameSpan,
+				Path:  targetFilename,
+				Exact: true,
+			}),
+			StartByte: def.NameSpan.StartByte,
+			EndByte:   def.NameSpan.StartByte + def.NameSpan.ByteLen,
+			Def:       true,
+		})
+	}
+	return anns
 }

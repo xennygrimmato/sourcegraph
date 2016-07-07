@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -22,6 +23,7 @@ import (
 var (
 	dir     = flag.String("dir", ".", "directory to index (recursively)")
 	timeout = flag.Duration("timeout", time.Second, "maximum allowed time")
+	target  = flag.String("target", "", "glob pattern to specify targets (see `godoc path Match`)")
 	verbose = flag.Bool("v", false, "show verbose output")
 )
 
@@ -43,7 +45,19 @@ func main() {
 		os.Exit(int(syscall.ENOTDIR))
 	}
 
-	opsByIndexer, err := lang.IndexOps(ctx, vfsutil.Walkable(vfs.OS(*dir), filepath.Join))
+	var isTarget func(string) bool
+	if *target != "" {
+		if _, err := path.Match(*target, "test pattern"); err != nil {
+			fmt.Fprintf(os.Stderr, "error: bad target pattern %q: %s\n", *target, err)
+			os.Exit(1)
+		}
+		isTarget = func(filename string) bool {
+			matched, _ := path.Match(*target, filename)
+			return matched
+		}
+	}
+
+	opsByIndexer, err := lang.IndexOps(ctx, vfsutil.Walkable(vfs.OS(*dir), filepath.Join), isTarget)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: finding index ops for %s: %s\n", *dir, err)
 		os.Exit(1)
