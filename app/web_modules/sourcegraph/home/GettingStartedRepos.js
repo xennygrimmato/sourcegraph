@@ -3,18 +3,18 @@
 import React from "react";
 import RepoLink from "sourcegraph/components/RepoLink";
 import CSSModules from "react-css-modules";
-import styles from "sourcegraph/user/settings/styles/Repos.css";
+import styles from "sourcegraph/home/styles/GettingStarted.css";
 import base from "sourcegraph/components/styles/_base.css";
 import {Input, Table, CheckboxList} from "sourcegraph/components";
 import debounce from "lodash.debounce";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
 import {privateGitHubOAuthScopes} from "sourcegraph/util/urlTo";
+import {Button} from "sourcegraph/components";
 
 class GettingStartedRepos extends React.Component {
 	static propTypes = {
 		repos: React.PropTypes.arrayOf(React.PropTypes.object),
 		location: React.PropTypes.object.isRequired,
-		isPrivate: React.PropTypes.bool.isRequired,
 	};
 
 	static contextTypes = {
@@ -48,7 +48,6 @@ class GettingStartedRepos extends React.Component {
 			this._qualifiedName(repo).indexOf(this._filterInput.value.trim().toLowerCase()) === -1) {
 			return false;
 		}
-		//if (repo.Private !== this.props.isPrivate) return false;
 		return true; // no filter; return all
 	}
 
@@ -62,6 +61,19 @@ class GettingStartedRepos extends React.Component {
 
 	_hasPrivateGitHubToken() {
 		return this.context.githubToken && this.context.githubToken.scope && this.context.githubToken.scope.includes("repo") && this.context.githubToken.scope.includes("read:org") && this.context.githubToken.scope.includes("user:email");
+	}
+
+	_sendForm(ev) {
+		ev.preventDefault();
+		let reposToIndex = [];
+		let repoList = ev.currentTarget.children[0].childNodes;
+		console.log(repoList);
+		for (let i = 0; i < repoList.length; i++) {
+			if (repoList[i].childNodes[3].checked === true) {
+				reposToIndex.push(repoList[i].id);
+			}
+		}
+		console.log(reposToIndex);
 	}
 
 	render() {
@@ -90,40 +102,52 @@ class GettingStartedRepos extends React.Component {
 		};
 
 		let repos = (this.props.repos || []).filter(this._showRepo).sort(this._repoSort);
-		repos.push(test);
-		repos.push(test1);
-		repos.push(test2);
-		repos = repos.filter(this._showRepo);
+		//repos.push(test);
+		//repos.push(test1);
+		//repos.push(test2);
+		//repos = repos.filter(this._showRepo);
 
 		return (
 			<div className={base.pb4}>
-				<div>
-					<div styleName="input-bar">
-						{this._hasGithubToken() && <Input type="text"
-							placeholder="Find a repository..."
-							domRef={(e) => this._filterInput = e}
-							spellCheck={false}
-							styleName="filter-input"
-							onChange={this._handleFilter} />}
-					</div>
+				<form onSubmit={this._sendForm.bind(this)}>
+					<div>
 						{repos.length > 0 && repos.map((repo, i) =>
-							<span key={i}> <button/>
+							<span key={i} id={repo.URI}> <input type="checkbox"/>
 								<label>
 								<RepoLink styleName="repo-link" repo={repo.URI || `github.com/${repo.Owner}/${repo.Name}`} />
 								{repo.Description && <p styleName="description">{repo.Description}</p>}
-							</label></span>
+								<p/>
+								</label>
+							</span>
 						)}
-					{this._hasGithubToken() && repos.length === 0 && (!this._filterInput || !this._filterInput.value) &&
-						<p styleName="indicator">Loading...</p>
-					}
+					</div>
+					<div>
+						{repos.length > 0 && repos.map &&
+							<Button className="submit-button" type="submit"> Submit </Button>
+						}
+					</div>
+					<div>
+						{this._hasGithubToken() && repos.length === 0 && (!this._filterInput || !this._filterInput.value) &&
+							<p styleName="indicator">Loading...</p>
+						}
 
-					{this._hasGithubToken() && this._filterInput && this._filterInput.value && repos.length === 0 &&
-						<p styleName="indicator">No matching repositories</p>
-					}
-				</div>
+						{this._hasGithubToken() && this._filterInput && this._filterInput.value && repos.length === 0 &&
+							<p styleName="indicator">No matching repositories</p>
+						}
+					</div>
+				</form>
 			</div>
 		);
 	}
 }
+					// search repos:
+					// <div styleName="input-bar">
+					// 	{this._hasGithubToken() && <Input type="text"
+					// 		placeholder="Find a repository..."
+					// 		domRef={(e) => this._filterInput = e}
+					// 		spellCheck={false}
+					// 		styleName="filter-input"
+					// 		onChange={this._handleFilter} />}
+					// </div>
 
 export default CSSModules(GettingStartedRepos, styles, {allowMultiple: true});

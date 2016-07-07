@@ -5,10 +5,11 @@ import Container from "sourcegraph/Container";
 import Dispatcher from "sourcegraph/Dispatcher";
 import "sourcegraph/repo/RepoBackend"; // for side effects
 import RepoStore from "sourcegraph/repo/RepoStore";
-import GettingStartedPage from "sourcegraph/page/GettingStartedPage";
+import GettingStartedLayout from "sourcegraph/home/GettingStartedLayout";
 import * as RepoActions_typed from "sourcegraph/repo/RepoActions_typed";
 
-const reposQuerystring = "IncludeRemote=true";
+const reposPublicQuerystring = "IncludeRemote=true&Type=public";
+const reposPrivateQuerystring = "IncludeRemote=true&Type=private";
 
 export default class GettingStartedMain extends Container {
 	static propTypes = {
@@ -26,20 +27,24 @@ export default class GettingStartedMain extends Container {
 
 	reconcileState(state, props, context) {
 		Object.assign(state, props);
-		state.repos = RepoStore.repos.list(reposQuerystring);
+		state.publicRepos = RepoStore.repos.list(reposPublicQuerystring);
+		state.privateRepos = RepoStore.repos.list(reposPrivateQuerystring);
 		state.githubToken = context.githubToken;
 		state.user = context.user;
 	}
 
 	onStateTransition(prevState, nextState) {
-		if (nextState.repos !== prevState.repos) {
-			Dispatcher.Backends.dispatch(new RepoActions_typed.WantRepos(reposQuerystring));
+		if (nextState.publicRepos !== prevState.publicRepos) {
+			Dispatcher.Backends.dispatch(new RepoActions_typed.WantRepos(reposPublicQuerystring));
+		}
+		if (nextState.privateRepos !== prevState.privateRepos) {
+			Dispatcher.Backends.dispatch(new RepoActions_typed.WantRepos(reposPrivateQuerystring));
 		}
 	}
 
 	stores() { return [RepoStore]; }
 
 	render() {
-		return <GettingStartedPage repos={this.state.repos ? this.state.repos.Repos : null} location={this.props.location} />;
+		return <GettingStartedLayout privateRepos={this.state.privateRepos ? this.state.privateRepos.Repos : null} publicRepos={this.state.publicRepos ? this.state.publicRepos.Repos : null} location={this.props.location} />;
 	}
 }

@@ -91,7 +91,7 @@ export const routes: Array<Route> = [
 		getComponents: (location, callback) => {
 			require.ensure([], (require) => {
 				callback(null, {
-					main: require("sourcegraph/page/GettingStartedMain").default,
+					main: require("sourcegraph/home/GettingStartedMain").default,
 				});
 			});
 		},

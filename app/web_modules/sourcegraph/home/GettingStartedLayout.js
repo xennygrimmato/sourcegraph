@@ -2,8 +2,7 @@
 
 import React from "react";
 import {Hero, Heading} from "sourcegraph/components";
-import styles from "./Page.css";
-import {Button} from "sourcegraph/components";
+import styles from "sourcegraph/page/Page.css";
 import base from "sourcegraph/components/styles/_base.css";
 import CSSModules from "react-css-modules";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
@@ -13,9 +12,10 @@ import {Label, Modal} from "sourcegraph/components";
 import {privateGitHubOAuthScopes} from "sourcegraph/util/urlTo";
 import GettingStartedRepos from "sourcegraph/home/GettingStartedRepos";
 
-class GettingStartedPage extends React.Component {
+class GettingStartedLayout extends React.Component {
 	static propTypes = {
-		repos: React.PropTypes.arrayOf(React.PropTypes.object),
+		privateRepos: React.PropTypes.arrayOf(React.PropTypes.object),
+		publicRepos: React.PropTypes.arrayOf(React.PropTypes.object),
 		location: React.PropTypes.object.isRequired,
 	};
 
@@ -53,7 +53,7 @@ class GettingStartedPage extends React.Component {
 
 									{this.context.signedIn && <div>
 										<p styleName="p">Check to enable Sourcegraph for private repositories:</p>
-										<GettingStartedRepos location={location} repos={this.props.repos} isPrivate={true} />
+										<GettingStartedRepos location={location} repos={this.props.privateRepos} />
 									</div>}
 								</h3>
 						</div>
@@ -72,7 +72,7 @@ class GettingStartedPage extends React.Component {
 
 									{this.context.signedIn && <div>
 										<p styleName="p">Check to enable Sourcegraph for public repositories:</p>
-										<GettingStartedRepos location={location} repos={this.props.repos} isPrivate={false} />
+										<GettingStartedRepos location={location} repos={this.props.publicRepos} />
 									</div>}
 								</h3>
 							</div>
@@ -92,4 +92,4 @@ class GettingStartedPage extends React.Component {
 	}
 }
 
-export default CSSModules(GettingStartedPage, styles);
+export default CSSModules(GettingStartedLayout, styles);
