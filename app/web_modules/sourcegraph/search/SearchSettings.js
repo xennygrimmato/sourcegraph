@@ -11,7 +11,6 @@ import Dispatcher from "sourcegraph/Dispatcher";
 import UserStore from "sourcegraph/user/UserStore";
 import * as UserActions from "sourcegraph/user/UserActions";
 import * as RepoActions_typed from "sourcegraph/repo/RepoActions_typed";
-import type {Settings} from "sourcegraph/user";
 import {allLangs, langName} from "sourcegraph/Language";
 import type {LanguageID} from "sourcegraph/Language";
 import {privateGitHubOAuthScopes} from "sourcegraph/util/urlTo";
@@ -37,7 +36,7 @@ class SearchSettings extends Container {
 
 	constructor(props) {
 		super(props);
-		this.state = {settings: UserStore.settings.get()}
+		this.state = {settings: UserStore.settings.get()};
 	}
 
 	componentDidMount() {
@@ -147,7 +146,6 @@ class SearchSettings extends Container {
 	}
 
 	_renderLanguages() {
-		console.log(this.state)
 		const langs = this._langs();
 		return (
 			<div styleName="group">
