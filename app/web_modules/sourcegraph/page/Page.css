@@ -59,12 +59,6 @@
 	composes: tc from typography;
 }
 
-/*Getting started */
-.code-auth-modal {
-	composes: col-9 from grid;
-	composes: modal from "sourcegraph/components/styles/modal.css";
-}
-
 /* Pricing */
 .plans {
 	display: flex;

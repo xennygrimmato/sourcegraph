@@ -269,7 +269,7 @@ export default class BlobAnnotator extends Component {
 		let dataVer = this._getSrclibDataVersion(repoURI, rev);
 		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
 		let name = (scopeAuth.includes("read") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
-		if (dataVer) return "Indexed";		
+		if (dataVer) return "Indexed";
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
 		if (name === "") return "Enable Sourcegraph";
 		if (build.Failure) return "Build failure";
@@ -279,7 +279,6 @@ export default class BlobAnnotator extends Component {
 
 	render() {
 		let indicatorText = "";
-		console.log(this.props.authentication);
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
 		} else if (this.state.isDelta) {

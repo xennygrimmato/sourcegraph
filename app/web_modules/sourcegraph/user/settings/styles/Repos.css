@@ -56,10 +56,3 @@
 .github-button {
 	composes: mr3 mb2 from base;
 }
-
-.checkbox {
-	composes: pt1 ph2 from base;
-	min-width: 100rem;
-	display: inline-block;
-	user-select: none;
-}

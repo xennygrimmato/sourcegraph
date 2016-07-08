@@ -7,7 +7,6 @@
 // Currently (in Firefox 45) fetch does not see/respect these permissions
 // so cross-site requests violate the browser content security policy.
 
-
 (function(self) {
   'use strict';
 
