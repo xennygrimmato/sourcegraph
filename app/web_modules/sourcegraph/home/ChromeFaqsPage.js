@@ -37,7 +37,7 @@ class ChromeFaqsPage extends React.Compo {
 					<Heading level="3" underline="blue" className={styles.h5}>How it works</Heading>
 					<p styleName="p"> Sourcegraph is how developers discover and understand code. It is a fast, global, semantic code search and cross-reference engine.
 					You can search for any function, type, or package, and see how other developers use it, globally. It's cross-repository and massively scalable, with
-					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
+					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Using the extension anonymously</Heading>
 					<p styleName="p"> Sourcegraph indexes all public code written in supported languages that someone who is using the extension has visited. You'll be able to use the Sourcegraph Chrome extension on any
