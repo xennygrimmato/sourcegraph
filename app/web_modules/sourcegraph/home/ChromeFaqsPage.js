@@ -8,7 +8,7 @@ import CSSModules from "react-css-modules";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
 import Helmet from "react-helmet";
 
-class ChromeFaqsPage extends React.Component {
+class ChromeFaqsPage extends React.Compo {
 	static propTypes = {
 		location: React.PropTypes.object.isRequired,
 	};
@@ -39,10 +39,9 @@ class ChromeFaqsPage extends React.Component {
 					You can search for any function, type, or package, and see how other developers use it, globally. It's cross-repository and massively scalable, with
 					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
 
-					<a id="anon"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Using the extension anonymously</Heading>
-					<p styleName="p"> Sourcegraph automatically indexes all public code. You'll be able to use the Sourcegraph Chrome extension on any
-					supported public repository without even signing up. However, the Sourcegraph Chrome extension will not work on your private repositories. </p>
+					<p styleName="p"> Sourcegraph indexes all public code written in supported languages that someone who is using the extension has visited. You'll be able to use the Sourcegraph Chrome extension on any
+					supported public repository or public repositories that we haven't yet indexed without even signing up. However, the Sourcegraph Chrome extension will not work on your private repositories. </p>
 
 					<a id="signin"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Using the extension</Heading>
@@ -58,8 +57,8 @@ class ChromeFaqsPage extends React.Component {
 					sourcegraph.com/settings/repos </a>. </p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Where else is Sourcegraph?</Heading>
-					<p styleName="p"> Liked the Sourcegraph Chrome extension? Sourcegraph can also help you out on you desktop, in your editor.
-					Check out the tools page at <a href="https://sourcegraph.com/tools"> sourcegraph.com/tools</a>.</p>
+					<p styleName="p"> Liked the Sourcegraph Chrome extension? Sourcegraph can also help you out on you desktop, in your editor. Try global semantic search on our homepage
+					at <a href="https://sourcegraph.com"> sourcegraph.com</a> and check out more tools at <a href="https://sourcegraph.com/tools"> sourcegraph.com/tools</a>.</p>
 
 					<a id="buildfailure"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Troubleshooting</Heading>
