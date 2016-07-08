@@ -277,6 +277,10 @@ export default class BlobAnnotator extends Component {
 		return "Error not found";
 	}
 
+	onClick(ev) {
+		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text});
+	}
+
 	render() {
 		let indicatorText = "";
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
@@ -288,10 +292,10 @@ export default class BlobAnnotator extends Component {
 		}
 		return (<span>
 			{indicatorText && <SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} />}
-			{(indicatorText === "Indexed" || indicatorText === "") && <a className="btn btn-sm" href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
-			{indicatorText === "Sign in to Sourcegraph"  && <a className="btn btn-sm" href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
-			{indicatorText === "Enable Sourcegraph"  && <a className="btn btn-sm" href="https://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
-			{indicatorText === "Report build failure"  && <a className="btn btn-sm" href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
+			{(indicatorText === "Indexed" || indicatorText === "") && <span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>}
+			{indicatorText === "Sign in to Sourcegraph"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
+			{indicatorText === "Enable Sourcegraph"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#enable">{indicatorText}</a>}
+			{indicatorText === "Report build failure"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
 		</span>);
 	}
 }

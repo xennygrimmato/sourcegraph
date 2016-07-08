@@ -40,10 +40,15 @@ export const ACTION_REDIRECT = "Redirect";
 export const PAGE_HOME = "Home";
 export const PAGE_TOOLS = "DashboardTools";
 export const PAGE_PRICING = "Pricing";
+export const PAGE_CHROME_FAQS = "ChromeFaqs";
 
 // Location on page constants
 // Page location constants are used to provide additional context around where on a page an event was fired from
 export const PAGE_LOCATION_GLOBAL_NAV = "GlobalNav";
+export const PAGE_LOCATION_CHROMFAQS_SIGNIN = "Signin";
+export const PAGE_LOCATION_CHROMFAQS_ENABLEPRIVATE = "EnablePrivate";
+export const PAGE_LOCATION_CHROMFAQS_BUILDFAIL = "FailedBuild";
+
 
 // Integrations constants
 // Names for Sourcegraph integrations
