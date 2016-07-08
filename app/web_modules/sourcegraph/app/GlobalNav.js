@@ -23,6 +23,7 @@ import {rel} from "sourcegraph/app/routePatterns";
 import {repoPath, repoParam} from "sourcegraph/repo";
 import {isPage} from "sourcegraph/page";
 import debounce from "lodash.debounce";
+import UserStore from "sourcegraph/user/UserStore";
 
 function GlobalNav({navContext, location, params, channelStatusCode}, {user, siteConfig, signedIn, router, eventLogger}) {
 	const isHomepage = location.pathname === "/";
@@ -245,6 +246,11 @@ class SearchForm extends React.Component {
 	_handleReset(ev: Event) {
 		this.props.router.push(locationForSearch(this.props.location, null, false, true));
 		this.setState({focused: false, open: false});
+
+		const settings = UserStore.settings.get();
+		const langs = settings && settings.search ? settings.search.languages : null;
+		const scope = settings && settings.search ? settings.search.scope : null;
+		this.props.router.push(locationForSearch(this.props.location, this.state.query, langs, scope, true, true));
 	}
 
 	_handleKeyDown(ev: KeyboardEvent) {
@@ -263,7 +269,11 @@ class SearchForm extends React.Component {
 		const value = ev.currentTarget.value;
 		this.setState({query: value});
 		if (value) this.setState({open: true});
-		this._goToDebounced(this.props.router.replace, locationForSearch(this.props.location, value, false, this.props.location.pathname.slice(1) === rel.search));
+		const settings = UserStore.settings.get();
+		const langs = settings && settings.search ? settings.search.languages : null;
+		const scope = settings && settings.search ? settings.search.scope : null;
+
+		this._goToDebounced(this.props.router.replace, locationForSearch(this.props.location, value, langs, scope, false, this.props.location.pathname.slice(1) === rel.search));
 	}
 
 	_goToDebounced = debounce((routerFunc: any, loc: Location) => {

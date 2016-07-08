@@ -2,6 +2,7 @@
 
 import {rel} from "sourcegraph/app/routePatterns";
 import type {Route, RouterLocation} from "react-router";
+import {searchScopes} from "sourcegraph/search";
 
 export const routes: Array<Route> = [
 	{
@@ -29,24 +30,40 @@ export function urlToSearch(query?: ?string): string {
 // location and the updatePath/updateQuery parameters.
 //
 // This function modifies loc.
-export function locationForSearch(loc: RouterLocation, query: ?string, updatePath: bool, updateQuery: bool): RouterLocation {
+// @NOTE loc cannot have immutable properties. lang and scope might be immutable.
+//		 Ensure that if you assign new properties to loc that the properties are mutable
+export function locationForSearch(loc: RouterLocation, query: ?string, lang: ?string[], scope: ?Object, updatePath: bool, updateQuery: bool): RouterLocation {
 	if (updatePath) {
 		loc.pathname = `/${rel.search}`;
 	}
 
+	if (!lang) lang = [];
+
 	if (!updateQuery) {
+		loc.state = updateScopeAndLanguage(loc.state, scope, lang);
 		if (query && !loc.state) loc.state = {};
 		if (query) loc.state.q = query;
 		else delete loc.state.q;
 		return loc;
 	}
 
+	loc.query = updateScopeAndLanguage(loc.query, scope, lang);
 	if (query && !loc.query) loc.query = {};
 	if (query) loc.query.q = query;
 	else delete loc.query.q;
 	if (loc.state) delete loc.state.q;
-
 	return loc;
+}
+
+function updateScopeAndLanguage(oldState: any, scope, lang) {
+	let state = {...oldState};
+	SearchScopes.map((scopeName) => {
+		if (scope && scope[scopeName]) state[scopeName] = true;
+		else delete state[scopeName];
+	});
+	// creating a mutable version of lang since loc requires all properties to be mutable
+	state.lang = lang.slice();
+	return state;
 }
 
 function firstQueryValue(v: string | string[]): string {
