@@ -261,12 +261,6 @@ export default class BlobAnnotator extends Component {
 	}
 
 	_indicatorText(repoURI, rev) {
-		const dataVer = this._getSrclibDataVersion(repoURI, rev);
-		if (dataVer) return "Indexed";
-		return this._buildStatus(this._getBuild(repoURI, rev));
-
-		// TODO(caroline): this code is inaccessible; fix.
-
 		let build = this._getBuild(repoURI, rev);
 		let webToken = this.props.accessToken;
 		let dataVer = this._getSrclibDataVersion(repoURI, rev);
