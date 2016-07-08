@@ -4,6 +4,10 @@
 @value typography "sourcegraph/components/styles/_typography.css";
 @value layout "sourcegraph/components/styles/_layout.css";
 
+.tc {
+	composes: tc from typography;
+}
+
 .container {
 	composes: containerFixed from layout;
 	composes: col-12-ns col-11 from grid;

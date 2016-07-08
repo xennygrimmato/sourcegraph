@@ -86,4 +86,14 @@ export const routes: Array<Route> = [
 			});
 		},
 	},
+	{
+		path: rel.chromeFaqs,
+		getComponents: (location, callback) => {
+			require.ensure([], (require) => {
+				callback(null, {
+					main: require("sourcegraph/home/ChromeFaqsPage").default,
+				});
+			});
+		},
+	},
 ];

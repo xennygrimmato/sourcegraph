@@ -264,6 +264,25 @@ export default class BlobAnnotator extends Component {
 		const dataVer = this._getSrclibDataVersion(repoURI, rev);
 		if (dataVer) return "Indexed";
 		return this._buildStatus(this._getBuild(repoURI, rev));
+
+		// TODO(caroline): this code is inaccessible; fix.
+
+		let build = this._getBuild(repoURI, rev);
+		let webToken = this.props.accessToken;
+		let dataVer = this._getSrclibDataVersion(repoURI, rev);
+		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
+		let name = (scopeAuth.includes("read") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
+		if (dataVer) return "Indexed";
+		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+		if (name === "") return "Enable Sourcegraph";
+		if (build.Failure) return "Build failure";
+		if (!build) return ""
+		return "Error not found";
+	}
+
+	onClick(ev) {
+		let userCreds = this.props.authentication;
+		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text, userLogin: userCreds.Login, userEmails: userCreds["IncludedEmails"], userID: userCreds.UID});
 	}
 
 	render() {
@@ -276,8 +295,11 @@ export default class BlobAnnotator extends Component {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
 		}
 		return (<span>
-			{indicatorText && <SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", fontSize: "16px"}} />}
-			{indicatorText && <span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>}
+			{indicatorText && <SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} />}
+			{(indicatorText === "Indexed" || indicatorText === "") && <span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>}
+			{indicatorText === "Sign in to Sourcegraph"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
+			{indicatorText === "Enable Sourcegraph"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#enable">{indicatorText}</a>}
+			{indicatorText === "Report build failure"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
 		</span>);
 	}
 }

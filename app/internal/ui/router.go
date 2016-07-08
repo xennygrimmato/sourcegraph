@@ -37,6 +37,7 @@ func newRouter() *mux.Router {
 		"contact",
 		"coverage",
 		"forgot",
+		"chrome-faqs",
 		"join",
 		"legal",
 		"login",
