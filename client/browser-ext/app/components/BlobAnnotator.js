@@ -266,20 +266,24 @@ export default class BlobAnnotator extends Component {
 	_indicatorText(repoURI, rev) {
 		let build = this._getBuild(repoURI, rev);
 		let webToken = this.props.accessToken;
-		let dataVer = this._getSrclibDataVersion(repoURI, rev);
+		let data = this._getSrclibDataVersion(repoURI, rev);
 		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
-		let name = (scopeAuth.includes("read") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
-		if (dataVer) return "Indexed";
+		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
+		if (data) return "Indexed";
+		if(this._buildStatus(build) === "Indexing...") return "Indexing";
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+		if (!build || build.Failure) return "Report build failure";
 		if (name === "") return "Enable Sourcegraph";
-		if (build.Failure) return "Build failure";
-		if (!build) return ""
-		return "Error not found";
+		return "";
 	}
 
 	onClick(ev) {
-		let userCreds = this.props.authentication;
-		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text, userLogin: userCreds.Login, userEmails: userCreds["IncludedEmails"], userID: userCreds.UID});
+		let userCreds = this.props.authentication
+		if (userCreds) {
+			EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text, userLogin: userCreds.Login, userEmails: userCreds["IncludedEmails"], userID: userCreds.UID});
+		} else {
+			EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text});
+		}
 	}
 
 	render() {
