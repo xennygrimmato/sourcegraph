@@ -44,14 +44,14 @@ class ChromeFaqsPage extends React.Compo {
 					supported public repository or public repositories that we haven't yet indexed without even signing up. However, the Sourcegraph Chrome extension will not work on your private repositories. </p>
 
 					<a id="signin"/>
-					<Heading level="3" underline="blue" className={styles.h5}>Using the extension</Heading>
+					<Heading level="3" underline="blue" className={styles.h5}>Sign in to continue using the extension</Heading>
 					<p styleName="p"> To access your private repositories, please sign in or sign up below with GitHub OAuth.</p>
 					<div styleName="tc">
 					<GitHubAuthButton returnTo="/chrome-faqs#signin"> Enable for private repositories</GitHubAuthButton>
 					</div>
 
 					<a id="enable"/>
-					<Heading level="3" underline="blue" className={styles.h5}>Using the extension with private code</Heading>
+					<Heading level="3" underline="blue" className={styles.h5}>Enable Sourcegraph to use the extension with private code</Heading>
 					<p styleName="p"> You haven't enabled Sourcegraph for this private repository yet. Only you have access to examples
 					and definitions that are in your private repositories. Authorize your repositories at <a href={"https://sourcegraph.com/settings/repos"}>
 					sourcegraph.com/settings/repos </a>. </p>

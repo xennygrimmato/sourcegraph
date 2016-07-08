@@ -278,7 +278,8 @@ export default class BlobAnnotator extends Component {
 	}
 
 	onClick(ev) {
-		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text});
+		let userCreds = this.props.authentication;
+		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text, userLogin: userCreds.Login, userEmails: userCreds["IncludedEmails"], userID: userCreds.UID});
 	}
 
 	render() {
