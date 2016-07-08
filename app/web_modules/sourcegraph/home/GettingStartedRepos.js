@@ -74,6 +74,7 @@ class GettingStartedRepos extends React.Component {
 			}
 		}
 		console.log(reposToIndex);
+		//dispatch({type: types.CREATED_BUILD, repo, commitID, json: {Builds: [{}]}});
 	}
 
 	render() {

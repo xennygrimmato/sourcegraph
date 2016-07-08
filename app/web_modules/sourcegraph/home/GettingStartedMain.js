@@ -45,6 +45,6 @@ export default class GettingStartedMain extends Container {
 	stores() { return [RepoStore]; }
 
 	render() {
-		return <GettingStartedLayout privateRepos={this.state.privateRepos ? this.state.privateRepos.Repos : null} publicRepos={this.state.publicRepos ? this.state.publicRepos.Repos : null} location={this.props.location} />;
+		return <GettingStartedLayout location={this.props.location} />;
 	}
 }

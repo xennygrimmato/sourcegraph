@@ -40,7 +40,7 @@ export const rel: {[key: RouteName]: string} = {
 	search: "search",
 	about: "about",
 	beta: "beta",
-	gettingStarted: "getting-started",
+	gettingStarted: "chrome-faqs",
 	contact: "contact",
 	security: "security",
 	pricing: "pricing",

@@ -10,7 +10,6 @@ import Helmet from "react-helmet";
 import Container from "sourcegraph/Container";
 import {Label, Modal} from "sourcegraph/components";
 import {privateGitHubOAuthScopes} from "sourcegraph/util/urlTo";
-import GettingStartedRepos from "sourcegraph/home/GettingStartedRepos";
 
 class GettingStartedLayout extends React.Component {
 	static propTypes = {
@@ -32,61 +31,47 @@ class GettingStartedLayout extends React.Component {
 	render() {
 		return (
 			<div>
-				<Helmet title="getting-started" />
+				<Helmet title="chroms-faqs" />
 				<Hero pattern="objects" className={base.pv5}>
 					<div styleName="container">
-						<Heading level="2" color="blue">Welcome to Sourcegraph</Heading>
+						<Heading level="2" color="blue">Chrome Extension FAQs</Heading>
 					</div>
 				</Hero>
 
 				<div styleName="content">
-					{location.hash === "#private" &&
-						<Modal onDismiss={() => location.hash=""}>
-							<div styleName="code-auth-modal">
-								<h3>
-									{!this.context.signedIn && <div styleName="cta">
-										<p styleName="p">Sign in to enable Sourcegraph for private code.</p>
-										<GitHubAuthButton returnTo={"/getting-started"+location.hash} color="blue" className={base.mr3}>
-											<strong>Sign in with GitHub</strong>
-										</GitHubAuthButton>
-									</div>}
-
-									{this.context.signedIn && <div>
-										<p styleName="p">Check to enable Sourcegraph for private repositories:</p>
-										<GettingStartedRepos location={location} repos={this.props.privateRepos} />
-									</div>}
-								</h3>
-						</div>
-						</Modal>
-					}
-					{location.hash === "#public" &&
-						<Modal onDismiss={() => location.hash=""}>
-							<div styleName="code-auth-modal">
-								<h3>
-									{!this.context.signedIn && <div styleName="cta">
-										<p styleName="p">Sign in to configure your public repositories.</p>
-										<GitHubAuthButton returnTo={"/getting-started"+location.hash} color="blue" className={base.mr3}>
-											<strong>Sign in with GitHub</strong>
-										</GitHubAuthButton>
-									</div>}
-
-									{this.context.signedIn && <div>
-										<p styleName="p">Check to enable Sourcegraph for public repositories:</p>
-										<GettingStartedRepos location={location} repos={this.props.publicRepos} />
-									</div>}
-								</h3>
-							</div>
-						</Modal>
-					}
-
 					<Heading level="3" underline="blue" className={styles.h5}>How it works</Heading>
-					<p styleName="p"> This is how it works. </p>
-					<Heading level="3" underline="blue" className={styles.h5}>Using Sourcegraph with your code</Heading>
-					<p styleName="p">You can enable Sourcegraph for your <a href="#public"> public </a> and <a href="#private"> private </a> code. </p>
-					<Heading level="3" underline="blue" className={styles.h5}>Troubleshooting</Heading>
-					<p styleName="p"> Here are some common issues. Otherwise, please log a bug with us. </p>
+					<p styleName="p"> Sourcegraph is how developers discover and understand code. It is a fast, global, semantic code search and cross-reference engine. 
+					You can search for any function, type, or package, and see how other developers use it, globally. It's cross-repository and massively scalable, with 
+					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph's code index powers the Chrome Extension.</p>
+
+					<a id="anon"/>
+					<Heading level="3" underline="blue" className={styles.h5}>Using the extension anonymously</Heading>
+					<p styleName="p"> Sourcegraph automatically indexes all public code. You'll be able to use the Chrome extension on any 
+					supported public repository without even signing up. However, the Chrome extension will not work on your private repositories. </p>
 					
+					<a id="signin"/>
+					<Heading level="3" underline="blue" className={styles.h5}>Using the extension</Heading>
+					<p styleName="p"> To access your private repositories, please sign in or sign up below with GitHub OAuth.</p>
+					<div styleName="tc">
+					<GitHubAuthButton returnTo="/chrome-faqs#signin"> Enable for private repositories</GitHubAuthButton>
+					</div>
+
+					<a id="enable"/>
+					<Heading level="3" underline="blue" className={styles.h5}>Using the extension with private code</Heading>
+					<p styleName="p"> You haven't enabled Sourcegraph for this private repository yet. Only you have access to examples 
+					and definitions that are in your private repositories. Authorize your repositories at <a href={"https://sourcegraph.com/settings/repos"}> 
+					sourcegraph.com/settings/repos </a>. </p>
+					
+					<Heading level="3" underline="blue" className={styles.h5}>Where else is Sourcegraph?</Heading>
+					<p styleName="p"> Liked the Chrome extension? Sourcegraph can also help you out on you desktop, in your editor.
+					Check out the tools page at <a href="https://sourcegraph.com/tools"> sourcegraph.com/tools</a>.</p>
+					
+					<a id="buildfailure"/>
+					<Heading level="3" underline="blue" className={styles.h5}>Troubleshooting</Heading>
+					<p styleName="p"> Sourcegraph first compiles code before indexing it. If there are errors when the code is compiled, Sourcegraph does not index the code.
+					If you'd like to report a bug, please send an email to <a href="mailto:support@sourcegraph.com"> support@sourcegraph.com</a>.</p>
 				</div>
+				<Hero pattern="objects" className={base.pv5}/>
 			</div>
 		);
 	}

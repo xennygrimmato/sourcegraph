@@ -267,17 +267,19 @@ export default class BlobAnnotator extends Component {
 		let build = this._getBuild(repoURI, rev);
 		let webToken = this.props.accessToken;
 		let dataVer = this._getSrclibDataVersion(repoURI, rev);
-		let name = this.props.authentication ? this.props.authentication.Login : "";
-
+		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
+		let name = (scopeAuth.includes("read") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (dataVer) return "Indexed";		
-		if (!webToken || webToken === "") return "Not signed into Sourcegraph";
-		if (name === "") return "Not authed private code";
-		if (!build || build.Failure) return "This build failed";
+		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+		if (name === "") return "Enable Sourcegraph";
+		if (build.Failure) return "Build failure";
+		if (!build) return ""
 		return "Error not found";
 	}
 
 	render() {
 		let indicatorText = "";
+		console.log(this.props.authentication);
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
 		} else if (this.state.isDelta) {
@@ -286,8 +288,11 @@ export default class BlobAnnotator extends Component {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
 		}
 		return (<span>
-			{indicatorText && <SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", fontSize: "16px"}} />}
-			{indicatorText && <span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>}
+			{indicatorText && <SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} />}
+			{(indicatorText === "Indexed" || indicatorText === "") && <a className="btn btn-sm" href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
+			{indicatorText === "Sign in to Sourcegraph"  && <a className="btn btn-sm" href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
+			{indicatorText === "Enable Sourcegraph"  && <a className="btn btn-sm" href="https://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
+			{indicatorText === "Report build failure"  && <a className="btn btn-sm" href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
 		</span>);
 	}
 }
