@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/jsonutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
@@ -411,6 +412,41 @@ func TestRepos_List_remoteOnly(t *testing.T) {
 	}
 	if !*calledListAccessible {
 		t.Error("!calledListAccessible")
+	}
+}
+
+func TestRepos_List_all(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	ctx, mock, done := testContext()
+	ctx = accesscontrol.WithInsecureSkip(ctx, false) // use real access controls
+	defer done()
+
+	mock.githubRepos.MockListAccessible(ctx, nil)
+	ctx = github.WithMockHasAuthedUser(ctx, false)
+
+	s := &repos{}
+
+	if _, err := s.Create(ctx, &sourcegraph.Repo{URI: "github.com/private", DefaultBranch: "master", Mirror: true, Origin: &sourcegraph.Origin{ID: "456"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = auth.WithActor(ctx, auth.Actor{UID: 1, Login: "test", Admin: false})
+	if _, err := s.List(ctx, &sourcegraph.RepoListOptions{All: true}); err == nil {
+		t.Fatalf("got err == nil, want an error when creating a duplicate repo")
+	}
+
+	ctx = auth.WithActor(ctx, auth.Actor{UID: 1, Login: "test", Admin: true})
+	repoList, err := s.List(ctx, &sourcegraph.RepoListOptions{All: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{"github.com/private"}
+	if got := sortedRepoURIs(repoList); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got repos: %v, want %v", got, want)
 	}
 }
 

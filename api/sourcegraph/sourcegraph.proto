@@ -199,6 +199,9 @@ message RepoListOptions {
 	// repositories that the currently authenticated user has access
 	// to, and return only those.
 	bool RemoteOnly = 12 [(gogoproto.moretags) = "url:\",omitempty\""];
+
+  // All makes the list operation return all repos. This requires admin permissions.
+	bool All = 13 [(gogoproto.moretags) = "url:\",omitempty\""];
 }
 
 // RepoRevSpec specifies a repository at a specific commit.

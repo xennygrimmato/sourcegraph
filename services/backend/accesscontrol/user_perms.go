@@ -85,6 +85,10 @@ func VerifyActorHasGitHubRepoAccess(ctx context.Context, actor auth.Actor, metho
 		panic("both repo and repoURI must be set")
 	}
 
+	if actor.HasAdminAccess() {
+		return nil
+	}
+
 	if strings.HasPrefix(strings.ToLower(repoURI), "github.com/") {
 		if !VerifyScopeHasAccess(ctx, actor.Scope, method, repo) {
 			_, err := github.ReposFromContext(ctx).Get(ctx, repoURI)

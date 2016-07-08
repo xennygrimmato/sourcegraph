@@ -377,7 +377,7 @@ func (s *repos) listAllAccessibleGitHubRepos(ctx context.Context, opt *sourcegra
 }
 
 func (s *repos) listFromDB(ctx context.Context, opt *sourcegraph.RepoListOptions, allowGitHubRepoIDs []string) ([]*sourcegraph.Repo, error) {
-	sql, args, err := s.listSQL(opt, allowGitHubRepoIDs)
+	sql, args, err := s.listSQL(ctx, opt, allowGitHubRepoIDs)
 	if err != nil {
 		if err == errOptionsSpecifyEmptyResult {
 			err = nil
@@ -521,7 +521,15 @@ func (s *repos) Search(ctx context.Context, query string) ([]*sourcegraph.RepoSe
 
 var errOptionsSpecifyEmptyResult = errors.New("pgsql: options specify and empty result set")
 
-func (s *repos) listSQL(opt *sourcegraph.RepoListOptions, allowGitHubRepoIDs []string) (string, []interface{}, error) {
+func (s *repos) listSQL(ctx context.Context, opt *sourcegraph.RepoListOptions, allowGitHubRepoIDs []string) (string, []interface{}, error) {
+	if opt.All {
+		if err := accesscontrol.VerifyUserHasAdminAccess(ctx, "Repos.List"); err != nil {
+			return "", nil, err
+		}
+
+		return "SELECT repo.* FROM repo", nil, nil
+	}
+
 	var selectSQL, fromSQL, whereSQL, orderBySQL string
 
 	var args []interface{}

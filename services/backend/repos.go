@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"gopkg.in/inconshreveable/log15.v2"
+
 	"github.com/neelance/parallel"
 
 	"strings"
@@ -15,7 +17,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"gopkg.in/inconshreveable/log15.v2"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	app_router "sourcegraph.com/sourcegraph/sourcegraph/app/router"
 	authpkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
@@ -81,6 +82,10 @@ func (s *repos) List(ctx context.Context, opt *sourcegraph.RepoListOptions) (*so
 	repos, err := store.ReposFromContext(ctx).List(ctx, opt)
 	if err != nil {
 		return nil, err
+	}
+
+	if opt.All {
+		return &sourcegraph.RepoList{Repos: repos}, nil
 	}
 
 	// deletedRepoURI is used to prune repos from list. Its value should be something an existing repo cannot have, like empty string.
