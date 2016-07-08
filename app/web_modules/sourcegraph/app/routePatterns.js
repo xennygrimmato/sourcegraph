@@ -32,7 +32,8 @@ export type RouteName = "styleguide" |
 	"admin" |
 	"adminBuilds" |
 	"coverage" |
-	"adminCoverage";
+	"adminCoverage" |
+	"chromeFaqs";
 
 // NOTE: If you add a top-level route (e.g., "/about"), add it to the
 // topLevel list in app/internal/ui/router.go.
@@ -73,6 +74,7 @@ export const abs: {[key: RouteName]: string} = {
 	about: rel.about,
 	contact: rel.contact,
 	security: rel.security,
+	chromeFaqs: rel.chromeFaqs,
 	pricing: rel.pricing,
 	terms: rel.terms,
 	privacy: rel.privacy,
