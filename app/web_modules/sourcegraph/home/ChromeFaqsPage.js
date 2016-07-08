@@ -8,7 +8,7 @@ import CSSModules from "react-css-modules";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
 import Helmet from "react-helmet";
 
-class ChromeFaqsPage extends React.Compo {
+class ChromeFaqsPage extends React.Component {
 	static propTypes = {
 		location: React.PropTypes.object.isRequired,
 	};
