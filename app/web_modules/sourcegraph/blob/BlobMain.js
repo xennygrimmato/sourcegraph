@@ -117,7 +117,7 @@ export default class BlobMain extends Container {
 			let otherNameMatch = false;
 			for (let i = 1; i < nextState.fuzzyDefs.length; i++) {
 				let def = nextState.fuzzyDefs[i];
-				if (nextState.fuzzyDefQuery.name == def.Name) {
+				if (nextState.fuzzyDefQuery.name === def.Name) {
 					otherNameMatch = true;
 					break;
 				}
