@@ -14,7 +14,6 @@ module.exports = function defs(op, callback) {
 	});
 	const res = resp.out;
 	const srv = resp.tern;
-	console.log("TERN", JSON.stringify(res, null, 2));
 	const defs = [];
 	res.Defs.forEach(def => {
 		const def2 = oldToNewDef(srv, def);
@@ -27,21 +26,28 @@ module.exports = function defs(op, callback) {
 	}
 
 	
-	if (true) jsctags({
-		file: origin,
-		dir: path.dirname(origin),
-		content: op.sources[origin].toString(),
-	}, (err, tags) => {
-		if (err) {
-			callback(err);
-			return;
-		}
-		console.log("TAGS", JSON.stringify(tags, null, 2));
+	if (true) {
+		const defs = [];
+		op.origins.forEach(origin => {
+			if (!((origin === "modules/Link.js" || origin === "modules/routerWarning.js" || origin === "modules/PropTypes.js" || origin.includes("src/") || origin.startsWith("modules/") || origin.includes("invariant")) && !origin.includes("__test") && !origin.includes("example"))) return;
+			jsctags({
+				file: origin,
+				dir: ".",
+				content: op.sources[origin].toString(),
+			}, (err, tags) => {
+				if (err) {
+					throw err;
+				}
+				// console.log("TAGS", JSON.stringify(tags, null, 2));
+				defs.push.apply(defs, tagsToDefs(tags).map(def => Object.assign(def, {path: origin})));
+			});
+		});
 		callback(null, {
-			defs: tagsToDefs(tags),
+			defs: defs,
 			messages: [`took ${Date.now() - t0} msec`],
 		});
-	});
+		console.log(`took ${Date.now() - t0} msec`);
+	}
 }
 
 function oldToNewDef(tern, old) {

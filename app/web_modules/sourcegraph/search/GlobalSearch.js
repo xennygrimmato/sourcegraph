@@ -55,6 +55,7 @@ class GlobalSearch extends Container {
 	};
 
 	static contextTypes = {
+		features: React.PropTypes.object.isRequired,
 		router: React.PropTypes.object.isRequired,
 		eventLogger: React.PropTypes.object.isRequired,
 	};
@@ -132,6 +133,7 @@ class GlobalSearch extends Container {
 	}
 
 	_canSearch(state): bool {
+		if (this.context.features.ExpUniverse && state.query.length <= 5) return false;
 		const scope = state.searchSettings ? state.searchSettings.scope : null;
 		if (!scope) return false;
 		return scope.public || scope.private || scope.repo || scope.popular;
@@ -377,7 +379,7 @@ class GlobalSearch extends Container {
 		}
 
 		const def = this.state.matchingResults.Defs[i - offset];
-		let url = urlToDefInfo(def) ? urlToDefInfo(def) : urlToDef(def);
+		let url = this.context.features.ExpUniverse ? urlToDef(def) : urlToDefInfo(def);
 		url = url.replace(/GoPackage\/pkg\//, "GoPackage/"); // TEMP HOTFIX
 
 		eventProps.selectedItem = url;
@@ -479,7 +481,7 @@ class GlobalSearch extends Container {
 
 		for (let i = numRepos; i < numRepos + numDefs; i++) {
 			let def = this.state.matchingResults.Defs[i - numRepos];
-			let defURL = urlToDefInfo(def) ? urlToDefInfo(def) : urlToDef(def);
+			let defURL = this.context.features.ExpUniverse ? urlToDef(def) : urlToDefInfo(def);
 
 			const selected = this._normalizedSelectionIndex() === i;
 

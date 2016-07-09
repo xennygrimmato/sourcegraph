@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/fatih/camelcase"
 	"github.com/lib/pq"
 	"github.com/microcosm-cc/bluemonday"
@@ -18,9 +21,14 @@ import (
 
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/lang"
+	"sourcegraph.com/sourcegraph/sourcegraph/lang/expuniversemigrate"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/dbutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/inventory/filelang"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vfsutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
 	"sourcegraph.com/sourcegraph/srclib/graph"
 	sstore "sourcegraph.com/sourcegraph/srclib/store"
@@ -184,6 +192,10 @@ type defs struct{}
 var _ store.Defs = (*defs)(nil)
 
 func (s *defs) Search(ctx context.Context, op store.DefSearchOp) (*sourcegraph.SearchResultsList, error) {
+	if feature.Features.ExpUniverse {
+		return s.searchExpUniverse(ctx, op)
+	}
+
 	startTime := time.Now()
 	var args []interface{}
 	arg := func(v interface{}) string {
@@ -395,6 +407,86 @@ func (s *defs) Search(ctx context.Context, op store.DefSearchOp) (*sourcegraph.S
 	log15.Debug("TRACE defs.Search", "tokens", strings.Join(op.TokQuery, ","), "opts", fmt.Sprintf("%+v", op.Opt), "results_len", len(results), "duration", time.Since(startTime))
 
 	return &sourcegraph.SearchResultsList{DefResults: results}, nil
+}
+
+func (s *defs) searchExpUniverse(ctx context.Context, op store.DefSearchOp) (*sourcegraph.SearchResultsList, error) {
+	if len(op.Opt.Repos) != 1 {
+		return nil, grpc.Errorf(codes.InvalidArgument, "searchExpUniverse requires exactly 1 repo specified in options")
+	}
+	repo := op.Opt.Repos[0]
+
+	vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+	commitID, err := vcsrepo.ResolveRevision("HEAD")
+	if err != nil {
+		return nil, err
+	}
+
+	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, commitID), filepath.Join)
+	filesByLang, err := lang.Files(ctx, vfs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := strings.ToLower(strings.Join(op.TokQuery, "."))
+	q = strings.Replace(q, "golang", "", -1)
+	q = strings.Replace(q, "javascript", "", -1)
+
+	// TODO(sqs): parallelize
+	var results []*lang.DefsResult
+	for langName, fis := range filesByLang {
+		for _, fi := range fis {
+			cl, err := lang.ClientForLang(langName)
+			if err != nil {
+				return nil, err
+			}
+			res, err := cl.Defs(ctx, &lang.DefsOp{
+				Sources: fi.Sources,
+				Origins: fi.Origins,
+			})
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, res)
+		}
+	}
+
+	q = strings.TrimSpace(q)
+	var matches []*lang.Def
+	for _, res := range results {
+		for _, def := range res.Defs {
+			if strings.Contains(strings.ToLower(def.Id), q) {
+				matches = append(matches, def)
+			}
+		}
+	}
+
+	repoObj, err := store.ReposFromContext(ctx).Get(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(security): this does not yet have access checks
+	var oldDefs []*sourcegraph.Def
+	for _, def := range matches {
+		if d := expuniversemigrate.ToOldDef(def, repoObj.URI, string(commitID)); d != nil {
+			oldDefs = append(oldDefs, d)
+		}
+	}
+
+	var defResults []*sourcegraph.DefSearchResult
+	for _, def := range oldDefs {
+		defResults = append(defResults, &sourcegraph.DefSearchResult{
+			Def:   *def,
+			Score: 1, RefCount: 1,
+		})
+	}
+
+	//oldDef, err := svc.Defs(ctx).Get(ctx, &sourcegraph.DefsGetOp{
+	//Def:sourcegraph.DefSpec{Repo:repo,
+	return &sourcegraph.SearchResultsList{DefResults: defResults}, nil
 }
 
 // UpdateFromSrclibStore is a stop-gap method. Eventually, defs will replace

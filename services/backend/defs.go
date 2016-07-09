@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"path/filepath"
 
 	"gopkg.in/inconshreveable/log15.v2"
 
@@ -11,8 +12,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/lang"
+	"sourcegraph.com/sourcegraph/sourcegraph/lang/expuniversemigrate"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/htmlutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vfsutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/svc"
 	"sourcegraph.com/sourcegraph/srclib/graph"
@@ -35,6 +41,10 @@ func (s *defs) Get(ctx context.Context, op *sourcegraph.DefsGetOp) (*sourcegraph
 
 	if !isAbsCommitID(defSpec.CommitID) {
 		return nil, grpc.Errorf(codes.InvalidArgument, "absolute commit ID required (got %q)", defSpec.CommitID)
+	}
+
+	if feature.Features.ExpUniverse {
+		return s.getExpUniverse(ctx, op)
 	}
 
 	rawDef, err := s.get(ctx, defSpec)
@@ -64,6 +74,49 @@ func (s *defs) Get(ctx context.Context, op *sourcegraph.DefsGetOp) (*sourcegraph
 	}
 	populateDefFormatStrings(def)
 	return def, nil
+}
+
+func (s *defs) getExpUniverse(ctx context.Context, op *sourcegraph.DefsGetOp) (*sourcegraph.Def, error) {
+	vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, op.Def.Repo)
+	if err != nil {
+		return nil, err
+	}
+	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, vcs.CommitID(op.Def.CommitID)), filepath.Join)
+	filesByLang, err := lang.Files(ctx, vfs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	repoObj, err := store.ReposFromContext(ctx).Get(ctx, op.Def.Repo)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(sqs): parallelize
+	for langName, fis := range filesByLang {
+		for _, fi := range fis {
+			cl, err := lang.ClientForLang(langName)
+			if err != nil {
+				return nil, err
+			}
+			res, err := cl.Defs(ctx, &lang.DefsOp{
+				Sources: fi.Sources,
+				Origins: fi.Origins,
+				Id:      op.Def.Path,
+			})
+			if err != nil {
+				return nil, err
+			}
+			for _, def := range res.Defs {
+				if def.Id == op.Def.Path {
+					if d := expuniversemigrate.ToOldDef(def, repoObj.URI, op.Def.CommitID); d != nil {
+						return d, nil
+					}
+				}
+			}
+		}
+	}
+	return nil, grpc.Errorf(codes.NotFound, "defs.getExpUniverse def not found: %v", op.Def)
 }
 
 func computeLineRange(ctx context.Context, entrySpec sourcegraph.TreeEntrySpec, startByte, endByte uint32) (startLine, endLine uint32, err error) {

@@ -225,7 +225,7 @@ func hydrateDefsResults(ctx context.Context, defs []*sourcegraph.DefSearchResult
 			defResult.Def = *d
 			hydratedResults = append(hydratedResults, defResult)
 		} else {
-			log15.Warn("did not find def in graph store, excluding from search results", "def", defResult)
+			log15.Warn("did not find def in graph store, excluding from search results", "def", defResult, "found", hydratedDefs)
 		}
 	}
 	return hydratedResults, nil

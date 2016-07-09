@@ -55,7 +55,7 @@ module.exports = function refs(op, callback) {
 				origin: true,
 			},
 		}, (err, data) => {
-			if (data && Object.keys(data).length > 0 && data.origin && !isStandardOrigin(data.origin) && (data.end - data.start) < 30) {
+			if (data && Object.keys(data).length > 0 && data.origin && !isStandardOrigin(data.origin) && (data.end - data.start) < 25) {
 				refs.push({
 					span: makeSpan(s, origin, i, i + (data.end - data.start)),
 					target: {

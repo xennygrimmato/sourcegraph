@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"gopkg.in/inconshreveable/log15.v2"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/errcode"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
@@ -23,6 +24,11 @@ func (s *repos) GetSrclibDataVersionForPath(ctx context.Context, entry *sourcegr
 
 	if !isAbsCommitID(entry.RepoRev.CommitID) {
 		return nil, errNotAbsCommitID
+	}
+
+	if feature.Features.ExpUniverse {
+		// Not needed anymore. Always return success.
+		return &sourcegraph.SrclibDataVersion{CommitID: entry.RepoRev.CommitID}, nil
 	}
 
 	repo, err := store.ReposFromContext(ctx).Get(ctx, entry.RepoRev.Repo)
