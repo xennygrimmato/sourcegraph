@@ -7,6 +7,7 @@ export class UserStore extends Store {
 	reset(data?: any) {
 		this.activeAccessToken = data && data.activeAccessToken ? data.activeAccessToken : null;
 		this.activeGitHubToken = data && data.activeGitHubToken ? data.activeGitHubToken : null;
+		this.activeGoogleToken = data && data.activeGoogleToken ? data.activeGoogleToken : null;
 		this.authInfo = deepFreeze({
 			byAccessToken: data && data.authInfo ? data.authInfo.byAccessToken : {},
 			get(accessToken) {
@@ -69,6 +70,7 @@ export class UserStore extends Store {
 		return {
 			activeAccessToken: this.activeAccessToken,
 			activeGitHubToken: this.activeGitHubToken,
+			activeGoogleToken: this.activeGoogleToken,
 			authInfo: this.authInfo,
 			users: this.users,
 			emails: this.emails,
@@ -140,6 +142,10 @@ export class UserStore extends Store {
 			return;
 		} else if (action instanceof UserActions.FetchedGitHubToken) {
 			this.activeGitHubToken = action.token;
+			this.__emitChange();
+			return;
+		} else if (action instanceof UserActions.FetchedGoogleToken) {
+			this.activeGoogleToken = action.token;
 			this.__emitChange();
 			return;
 		} else if (action instanceof UserActions.UpdateSettings) {

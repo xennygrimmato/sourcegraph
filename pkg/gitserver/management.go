@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/shurcooL/go-goon"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/statsutil"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
@@ -75,6 +76,13 @@ func handleCreateRequest(req *createRequest) {
 
 	if req.MirrorRemote != "" {
 		cmd := exec.Command("git", "clone", "--mirror", req.MirrorRemote, dir)
+		// TODO.
+		if req.Opt != nil && req.Opt.HTTPS != nil && req.Opt.HTTPS.User != "" {
+			goon.DumpExpr(cmd.Args[3])
+		} else {
+			goon.DumpExpr(req.Opt)
+			goon.DumpExpr(cmd.Args)
+		}
 
 		var outputBuf bytes.Buffer
 		cmd.Stdout = &outputBuf
@@ -127,8 +135,7 @@ func create(repo string, mirrorRemote string, opt *vcs.RemoteOpts) error {
 	if err == nil {
 		return vcs.ErrRepoExist
 	}
-	if !vcs.IsRepoNotExist(err) {
-		// The only acceptable error is repo doesn't exist, if it's something else, there's a problem. Return the error.
+	if !vcs.IsRepoNotExist(err) { // The only acceptable error is repo doesn't exist, if it's something else, there's a problem. Return the error.
 		return err
 	}
 	if repoNotExistError := err.(vcs.RepoNotExistError); repoNotExistError.CloneInProgress {

@@ -1,12 +1,15 @@
 package gitserver
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/shurcooL/go-goon"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs/util"
@@ -39,7 +42,8 @@ func runWithRemoteOpts(cmd *exec.Cmd, opt *vcs.RemoteOpts) error {
 	}
 
 	if opt != nil && opt.HTTPS != nil {
-		gitPassHelper, gitPassHelperDir, err := makeGitPassHelper(opt.HTTPS.Pass)
+		fmt.Printf("=================\n\n\ncalling makeGitPassHelper(%q, %q)\n\n", opt.HTTPS.User, opt.HTTPS.Pass)
+		gitPassHelper, gitPassHelperDir, err := makeGitPassHelper(opt.HTTPS.User, opt.HTTPS.Pass)
 		if err != nil {
 			return err
 		}
@@ -47,7 +51,9 @@ func runWithRemoteOpts(cmd *exec.Cmd, opt *vcs.RemoteOpts) error {
 		if gitPassHelperDir != "" {
 			defer os.RemoveAll(gitPassHelperDir)
 		}
-		cmd.Env = append(cmd.Env, "GIT_ASKPASS="+gitPassHelper)
+		//cmd.Env = append(cmd.Env, "GIT_ASKPASS="+gitPassHelper)
+		cmd.Args = append(cmd.Args[:1], append([]string{"-c", "credential.helper=go-vcs-gitcmd-ch"}, cmd.Args[1:]...)...)
+		cmd.Env = append(cmd.Env, "PATH="+gitPassHelperDir+":"+os.Getenv("PATH")) // TODO.
 	}
 
 	return cmd.Run()
@@ -105,16 +111,24 @@ func gitSSHWrapper(keyFile string, otherOpt string) (sshWrapperFile string, temp
 	return sshWrapperName, tempDir, err
 }
 
-// makeGitPassHelper writes a GIT_ASKPASS helper that supplies password over stdout.
+// makeGitPassHelper writes a GIT_ASKPASS helper that supplies username and password over stdout.
 // You should remove the passHelper (and tempDir if any) after using it.
-func makeGitPassHelper(pass string) (passHelper string, tempDir string, err error) {
-	tmpFile, dir, err := util.ScriptFile("go-vcs-gitcmd-ask")
+func makeGitPassHelper(user, pass string) (passHelper string, tempDir string, err error) {
+	// TODO: Make it available to git in PATH, etc.
+	tmpFile, dir, err := util.ScriptFile("git-credential-go-vcs-gitcmd-ch")
 	if err != nil {
 		return tmpFile, dir, err
 	}
 
 	passPath := filepath.Join(dir, "password")
-	err = util.WriteFileWithPermissions(passPath, []byte(pass), 0600)
+	var content string
+	if user == "" {
+		content = "password=" + pass + "\n"
+	} else {
+		content = "username=" + user + "\n" + "password=" + pass + "\n"
+	}
+	goon.DumpExpr(content)
+	err = util.WriteFileWithPermissions(passPath, []byte(content), 0600)
 	if err != nil {
 		return tmpFile, dir, err
 	}

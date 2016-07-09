@@ -23,6 +23,8 @@ export const getChildContext = (state: any): childContext => ({
 	signedIn: Boolean(state.accessToken && (!state.authInfo || state.authInfo.UID) && (!state.user || state.user.UID)),
 
 	githubToken: state.githubToken || null,
+
+	googleToken: state.googleToken || null,
 });
 
 // withUserContext passes user-related context items
@@ -39,6 +41,9 @@ export function withUserContext(Component: ReactClass): ReactClass {
 
 			// githubToken is the user's ExternalToken for github.com.
 			githubToken: React.PropTypes.object,
+
+			// googleToken is the user's ExternalToken for source.developers.google.com.
+			googleToken: React.PropTypes.object,
 		};
 
 		constructor(props) {
@@ -53,6 +58,7 @@ export function withUserContext(Component: ReactClass): ReactClass {
 			state.accessToken = UserStore.activeAccessToken || null;
 			state.authInfo = state.accessToken ? UserStore.authInfo.get(state.accessToken) : null;
 			state.githubToken = UserStore.activeGitHubToken || null;
+			state.googleToken = UserStore.activeGoogleToken || null;
 			state.user = state.authInfo && !state.authInfo.Error ? UserStore.users.get(state.authInfo.UID) : null;
 		}
 

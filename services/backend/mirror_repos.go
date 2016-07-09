@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"os"
 	"strings"
 
 	"github.com/AaronO/go-git-http"
@@ -47,10 +48,17 @@ func (s *mirrorRepos) RefreshVCS(ctx context.Context, op *sourcegraph.MirrorRepo
 	// otherwise proceed without their credentials. It will work for public repos.
 	remoteOpts := vcs.RemoteOpts{}
 	if asUserUID != 0 {
-		extToken, err := svc.Auth(ctx).GetExternalToken(ctx, &sourcegraph.ExternalTokenSpec{UID: asUserUID})
+		extToken, err := svc.Auth(ctx).GetExternalToken(ctx, &sourcegraph.ExternalTokenSpec{
+			Host:     "source.developers.google.com", // TODO: Should be determined dynamically.
+			UID:      asUserUID,
+			ClientID: os.Getenv("GOOGLE_CLIENT_ID"), // TODO: Cache, don't os.Getenv here.
+		})
 		if err == nil {
 			// Set the auth token to be used in repo VCS operations.
+			// TODO: Do this based on host, dynamically, etc.
+			// TODO: Also see if it can be optimized to get repo host, user name for Google, etc.
 			remoteOpts.HTTPS = &vcs.HTTPSConfig{
+				User: "shurcool.testing@gmail.com", // TODO: The user id should come from Google in this case, via our ExternalUID.
 				Pass: extToken.Token,
 			}
 

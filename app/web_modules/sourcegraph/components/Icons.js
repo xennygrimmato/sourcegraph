@@ -6,6 +6,7 @@ import styles from "./styles/icon.css";
 export const FileIcon = iconWrapper(require("react-icons/lib/go/file-text"));
 export const FolderIcon = iconWrapper(require("react-icons/lib/go/file-directory"));
 export const GitHubIcon = iconWrapper(require("react-icons/lib/go/mark-github"));
+export const GoogleIcon = iconWrapper(require("react-icons/lib/fa/google"));
 export const CloudDownloadIcon = iconWrapper(require("react-icons/lib/go/cloud-download"));
 export const TriangleUpIcon = iconWrapper(require("react-icons/lib/go/triangle-up"));
 export const TriangleDownIcon = iconWrapper(require("react-icons/lib/go/triangle-down"));

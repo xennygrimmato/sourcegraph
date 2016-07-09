@@ -56,9 +56,18 @@ export class FetchedEmails {
 	}
 }
 
-// No WantGitHubToken because it is included in the AuthInfo response.
+// No WantGitHubToken or WantGoogleToken because they are included in the AuthInfo response.
 
 export class FetchedGitHubToken {
+	uid: number;
+	token: ExternalToken | {Error: any};
+
+	constructor(uid: number, token: ExternalToken | {Error: any}) {
+		this.uid = uid;
+		this.token = token;
+	}
+}
+export class FetchedGoogleToken {
 	uid: number;
 	token: ExternalToken | {Error: any};
 

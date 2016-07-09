@@ -11,6 +11,9 @@ function SettingsMain({main, location}: {main: React$Element, location: Location
 		<div styleName="container">
 			<div styleName="main">
 				<nav styleName="nav">
+					<Link to="/settings/accounts">
+						<TabItem color="blue" active={location.pathname === "/settings/accounts"} direction="vertical">Accounts</TabItem>
+					</Link>
 					<Link to="/settings/repos">
 						<TabItem color="blue" active={location.pathname === "/settings/repos"} direction="vertical">Repositories</TabItem>
 					</Link>

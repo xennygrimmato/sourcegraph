@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"gopkg.in/inconshreveable/log15.v2"
 
@@ -22,6 +23,7 @@ type authInfo struct {
 	IncludedUser   *sourcegraph.User          `json:",omitempty"`
 	IncludedEmails []*sourcegraph.EmailAddr   `json:",omitempty"`
 	GitHubToken    *sourcegraph.ExternalToken `json:",omitempty"`
+	GoogleToken    *sourcegraph.ExternalToken `json:",omitempty"`
 }
 
 func serveAuthInfo(w http.ResponseWriter, r *http.Request) error {
@@ -46,7 +48,22 @@ func serveAuthInfo(w http.ResponseWriter, r *http.Request) error {
 
 			res.GitHubToken = tok
 		} else if grpc.Code(err) != codes.NotFound {
-			log15.Warn("Error getting GitHub token in serveAuthInfo", "uid", info.UID, "err", err)
+			log15.Error("Error getting GitHub token in serveAuthInfo", "uid", info.UID, "err", err)
+		}
+	}
+	if info.UID != 0 {
+		tok, err := cl.Auth.GetExternalToken(ctx, &sourcegraph.ExternalTokenSpec{
+			UID:      info.UID,
+			Host:     "source.developers.google.com",
+			ClientID: os.Getenv("GOOGLE_CLIENT_ID"), // TODO: Cache, don't os.Getenv here.
+		})
+		if err == nil {
+			// No need to include the actual access token.
+			tok.Token = ""
+
+			res.GoogleToken = tok
+		} else if grpc.Code(err) != codes.NotFound {
+			log15.Error("Error getting Google token in serveAuthInfo", "uid", info.UID, "err", err)
 		}
 	}
 

@@ -42,6 +42,7 @@ func newRouter() *mux.Router {
 		"login",
 		"pricing",
 		"privacy",
+		"settings/accounts",
 		"settings/repos",
 		"reset",
 		"search",

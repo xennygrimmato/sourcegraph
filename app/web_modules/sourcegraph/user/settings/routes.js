@@ -11,6 +11,12 @@ export const routes: Array<Route> = [
 				.then(m => callback(null, {main: m.default})),
 		childRoutes: [
 			{
+				path: rel.settingsAccounts,
+				getComponent: (location, callback) =>
+					System.import("sourcegraph/user/settings/UserSettingsAccountsMain")
+						.then(m => callback(null, {main: m.default})),
+			},
+			{
 				path: rel.settingsRepos,
 				getComponent: (location, callback) =>
 					System.import("sourcegraph/user/settings/UserSettingsReposMain")

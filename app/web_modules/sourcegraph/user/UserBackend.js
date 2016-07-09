@@ -25,8 +25,10 @@ const UserBackend = {
 							if (user) delete data.IncludedUser;
 							let emails = data.IncludedEmails;
 							if (emails) delete data.IncludedEmails;
-							let token = data.GitHubToken;
-							if (token) delete data.GitHubToken;
+							let githubToken = data.GitHubToken;
+							if (githubToken) delete data.GitHubToken;
+							let googleToken = data.GoogleToken;
+							if (googleToken) delete data.GoogleToken;
 
 							// Dispatch FetchedUser before FetchedAuthInfo because it's common for components
 							// to dispatch a WantUser when the auth info is received, and dispatching FetchedUser
@@ -40,8 +42,11 @@ const UserBackend = {
 							if (emails && data.UID) {
 								Dispatcher.Stores.dispatch(new UserActions.FetchedEmails(data.UID, emails));
 							}
-							if (token && data.UID) {
-								Dispatcher.Stores.dispatch(new UserActions.FetchedGitHubToken(data.UID, token));
+							if (githubToken && data.UID) {
+								Dispatcher.Stores.dispatch(new UserActions.FetchedGitHubToken(data.UID, githubToken));
+							}
+							if (googleToken && data.UID) {
+								Dispatcher.Stores.dispatch(new UserActions.FetchedGoogleToken(data.UID, googleToken));
 							}
 						})
 				);

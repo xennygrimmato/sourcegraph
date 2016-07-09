@@ -30,3 +30,5 @@ export function urlToGitHubOAuth(scopes: ?string, returnTo: ?(string | Location)
 	return `/-/github-oauth/initiate${q ? `?${q}` : ""}`;
 }
 export const privateGitHubOAuthScopes = "read:org,repo,user:email";
+
+export const urlToGoogleOAuth = "/-/google-oauth/initiate";

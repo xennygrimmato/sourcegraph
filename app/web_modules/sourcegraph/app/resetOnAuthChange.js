@@ -18,9 +18,9 @@ export default function resetOnAuthChange() {
 
 			// Keep some UserStore data related to the status of the just-occurred
 			// auth change and the new/empty access token.
-			const {activeAccessToken, activeGitHubToken, pendingAuthActions, authResponses} = UserStore.toJSON();
+			const {activeAccessToken, activeGitHubToken, activeGoogleToken, pendingAuthActions, authResponses} = UserStore.toJSON();
 			resetStores({
-				UserStore: {activeAccessToken, activeGitHubToken, pendingAuthActions, authResponses},
+				UserStore: {activeAccessToken, activeGitHubToken, activeGoogleToken, pendingAuthActions, authResponses},
 			});
 
 			forEachStore((store) => {
