@@ -13,8 +13,11 @@ It has these top-level messages:
 	Ref
 	Target
 	Span
-	IndexOp
-	IndexResult
+	DefsOp
+	DefsResult
+	RefsOp
+	Refs
+	RefsResult
 */
 package lang
 
@@ -38,13 +41,54 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion1
 
 type Def struct {
-	Ident       string `protobuf:"bytes,1,opt,name=ident,proto3" json:"ident,omitempty"`
-	ParentIdent string `protobuf:"bytes,2,opt,name=parent_ident,proto3" json:"parent_ident,omitempty"`
-	Title       string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Kind        string `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	Global      bool   `protobuf:"varint,5,opt,name=global,proto3" json:"global,omitempty"`
-	Span        *Span  `protobuf:"bytes,6,opt,name=span" json:"span,omitempty"`
-	NameSpan    *Span  `protobuf:"bytes,7,opt,name=name_span" json:"name_span,omitempty"`
+	// ident is an opaque identifier for the def. It is not required to
+	// be unique. External code that refers to this def should be able
+	// to reconstruct this id.
+	//
+	// Examples:
+	//
+	//   "x" for `var x = 7`
+	//
+	//   "X.prototype.y" for y in `class X { y() {} }`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// meta is a collection of key-value pairs that contain
+	// information that can be used to resolve or narrow references to
+	// this def.
+	//
+	// Examples:
+	//
+	//   {"go_package_import_path": "example.com/pkg"} to indicate
+	//   that this def is defined in a Go package whose import path is
+	//   "example.com/pkg".
+	//
+	//   {"javascript_module": "mod"} to indicate that this def is
+	//   defined in a JavaScript (CommonJS-style) package named "mod".
+	//
+	// TODO(sqs): How to deal with re-exporting in JavaScript? E.g.,
+	// react-router Link is exported by the react-router lib/index.js
+	// file as well as by lib/Link.js. We want both to be the same
+	// def.
+	Meta map[string]string `protobuf:"bytes,2,rep,name=meta" json:"meta,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// title is the full human-readable declaration title (e.g., "var
+	// x int" for `var x = 7`)
+	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	// doc is the plain-text documentation.
+	//
+	// TODO(sqs): support multiple formats, HTML, etc.
+	Doc string `protobuf:"bytes,4,opt,name=doc,proto3" json:"doc,omitempty"`
+	// path is the path to the file or directory in which this def is
+	// defined.
+	//
+	// TODO(sqs): How to handle C-style decls and defns? How to handle
+	// Ruby-style class reopening (defining a class across multiple
+	// files)?
+	Path string `protobuf:"bytes,5,opt,name=path,proto3" json:"path,omitempty"`
+	// span is the range containing the entire def and decl. (e.g.,
+	// the entire statement `var foo = 3`).
+	Span *Span `protobuf:"bytes,6,opt,name=span" json:"span,omitempty"`
+	// name_span is the range containing only the def's name (e.g.,
+	// just `foo` in `var foo = 3`)
+	NameSpan *Span `protobuf:"bytes,7,opt,name=name_span" json:"name_span,omitempty"`
 }
 
 func (m *Def) Reset()                    { *m = Def{} }
@@ -65,11 +109,16 @@ func (*Ref) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{1} }
 // Target contains information that can be used to determine which def
 // a ref points to.
 type Target struct {
-	Ident   string `protobuf:"bytes,1,opt,name=ident,proto3" json:"ident,omitempty"`
-	Context string `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
-	Span    *Span  `protobuf:"bytes,3,opt,name=span" json:"span,omitempty"`
-	Path    string `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
-	Exact   bool   `protobuf:"varint,5,opt,name=exact,proto3" json:"exact,omitempty"`
+	// id is the identifier of the def that this ref points to.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// constraints to narrow or resolve the target def. Each entry in
+	// this map further constrains the match to only those defs
+	// containing an identical meta entry.
+	Constraints map[string]string `protobuf:"bytes,2,rep,name=constraints" json:"constraints,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// For local/internal targets:
+	Span  *Span  `protobuf:"bytes,3,opt,name=span" json:"span,omitempty"`
+	File  string `protobuf:"bytes,4,opt,name=file,proto3" json:"file,omitempty"`
+	Exact bool   `protobuf:"varint,5,opt,name=exact,proto3" json:"exact,omitempty"`
 }
 
 func (m *Target) Reset()                    { *m = Target{} }
@@ -77,6 +126,13 @@ func (m *Target) String() string            { return proto.CompactTextString(m) 
 func (*Target) ProtoMessage()               {}
 func (*Target) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{2} }
 
+// A Span describes a range in a file. Byte offsets start counting at
+// 0. Line and column numbers start counting at 1. Column numbers
+// refer to a character position (not a byte offset) in the line.
+//
+// It is useful to have both. Byte offsets are most useful for
+// programmatic operations; line and column numbers are useful for
+// display.
 type Span struct {
 	StartByte uint32 `protobuf:"varint,1,opt,name=start_byte,proto3" json:"start_byte,omitempty"`
 	ByteLen   uint32 `protobuf:"varint,2,opt,name=byte_len,proto3" json:"byte_len,omitempty"`
@@ -91,140 +147,222 @@ func (m *Span) String() string            { return proto.CompactTextString(m) }
 func (*Span) ProtoMessage()               {}
 func (*Span) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{3} }
 
-type IndexOp struct {
+type DefsOp struct {
 	Sources map[string][]byte `protobuf:"bytes,1,rep,name=sources" json:"sources,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Targets []string          `protobuf:"bytes,2,rep,name=targets" json:"targets,omitempty"`
+	Origins []string          `protobuf:"bytes,2,rep,name=origins" json:"origins,omitempty"`
+	// id specifies an identifier filter, so that only defs whose id
+	// matches this value is returned.
+	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
+	// constraints narrow the set of defs to return.
+	Constraints map[string]string `protobuf:"bytes,4,rep,name=constraints" json:"constraints,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (m *IndexOp) Reset()                    { *m = IndexOp{} }
-func (m *IndexOp) String() string            { return proto.CompactTextString(m) }
-func (*IndexOp) ProtoMessage()               {}
-func (*IndexOp) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{4} }
+func (m *DefsOp) Reset()                    { *m = DefsOp{} }
+func (m *DefsOp) String() string            { return proto.CompactTextString(m) }
+func (*DefsOp) ProtoMessage()               {}
+func (*DefsOp) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{4} }
 
-type IndexResult struct {
-	Files    map[string]*IndexResult_IndexData `protobuf:"bytes,1,rep,name=files" json:"files,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
-	Messages []string                          `protobuf:"bytes,2,rep,name=messages" json:"messages,omitempty"`
-	Complete bool                              `protobuf:"varint,3,opt,name=complete,proto3" json:"complete,omitempty"`
+type DefsResult struct {
+	Defs     []*Def   `protobuf:"bytes,1,rep,name=defs" json:"defs,omitempty"`
+	Messages []string `protobuf:"bytes,2,rep,name=messages" json:"messages,omitempty"`
+	Complete bool     `protobuf:"varint,3,opt,name=complete,proto3" json:"complete,omitempty"`
 }
 
-func (m *IndexResult) Reset()                    { *m = IndexResult{} }
-func (m *IndexResult) String() string            { return proto.CompactTextString(m) }
-func (*IndexResult) ProtoMessage()               {}
-func (*IndexResult) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{5} }
+func (m *DefsResult) Reset()                    { *m = DefsResult{} }
+func (m *DefsResult) String() string            { return proto.CompactTextString(m) }
+func (*DefsResult) ProtoMessage()               {}
+func (*DefsResult) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{5} }
 
-type IndexResult_IndexData struct {
-	Defs []*Def `protobuf:"bytes,1,rep,name=defs" json:"defs,omitempty"`
-	Refs []*Ref `protobuf:"bytes,2,rep,name=refs" json:"refs,omitempty"`
+type RefsOp struct {
+	Sources map[string][]byte  `protobuf:"bytes,1,rep,name=sources" json:"sources,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Origins []*RefsOp_FileSpan `protobuf:"bytes,2,rep,name=origins" json:"origins,omitempty"`
 }
 
-func (m *IndexResult_IndexData) Reset()                    { *m = IndexResult_IndexData{} }
-func (m *IndexResult_IndexData) String() string            { return proto.CompactTextString(m) }
-func (*IndexResult_IndexData) ProtoMessage()               {}
-func (*IndexResult_IndexData) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{5, 0} }
+func (m *RefsOp) Reset()                    { *m = RefsOp{} }
+func (m *RefsOp) String() string            { return proto.CompactTextString(m) }
+func (*RefsOp) ProtoMessage()               {}
+func (*RefsOp) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{6} }
+
+type RefsOp_FileSpan struct {
+	File string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
+	Span *Span  `protobuf:"bytes,2,opt,name=span" json:"span,omitempty"`
+}
+
+func (m *RefsOp_FileSpan) Reset()                    { *m = RefsOp_FileSpan{} }
+func (m *RefsOp_FileSpan) String() string            { return proto.CompactTextString(m) }
+func (*RefsOp_FileSpan) ProtoMessage()               {}
+func (*RefsOp_FileSpan) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{6, 1} }
+
+type Refs struct {
+	Refs []*Ref `protobuf:"bytes,1,rep,name=refs" json:"refs,omitempty"`
+}
+
+func (m *Refs) Reset()                    { *m = Refs{} }
+func (m *Refs) String() string            { return proto.CompactTextString(m) }
+func (*Refs) ProtoMessage()               {}
+func (*Refs) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{7} }
+
+type RefsResult struct {
+	// Supports overlapping refs (e.g., Go embedded structs where the
+	// field name and type name are overlapping refs).
+	Files    map[string]*Refs `protobuf:"bytes,1,rep,name=files" json:"files,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	Messages []string         `protobuf:"bytes,2,rep,name=messages" json:"messages,omitempty"`
+	Complete bool             `protobuf:"varint,3,opt,name=complete,proto3" json:"complete,omitempty"`
+}
+
+func (m *RefsResult) Reset()                    { *m = RefsResult{} }
+func (m *RefsResult) String() string            { return proto.CompactTextString(m) }
+func (*RefsResult) ProtoMessage()               {}
+func (*RefsResult) Descriptor() ([]byte, []int) { return fileDescriptorLang, []int{8} }
 
 func init() {
 	proto.RegisterType((*Def)(nil), "lang.Def")
 	proto.RegisterType((*Ref)(nil), "lang.Ref")
 	proto.RegisterType((*Target)(nil), "lang.Target")
 	proto.RegisterType((*Span)(nil), "lang.Span")
-	proto.RegisterType((*IndexOp)(nil), "lang.IndexOp")
-	proto.RegisterType((*IndexResult)(nil), "lang.IndexResult")
-	proto.RegisterType((*IndexResult_IndexData)(nil), "lang.IndexResult.IndexData")
+	proto.RegisterType((*DefsOp)(nil), "lang.DefsOp")
+	proto.RegisterType((*DefsResult)(nil), "lang.DefsResult")
+	proto.RegisterType((*RefsOp)(nil), "lang.RefsOp")
+	proto.RegisterType((*RefsOp_FileSpan)(nil), "lang.RefsOp.FileSpan")
+	proto.RegisterType((*Refs)(nil), "lang.Refs")
+	proto.RegisterType((*RefsResult)(nil), "lang.RefsResult")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
 
-// Client API for Indexer service
+// Client API for Lang service
 
-type IndexerClient interface {
-	Index(ctx context.Context, in *IndexOp, opts ...grpc.CallOption) (*IndexResult, error)
+type LangClient interface {
+	// Defs performs source code analysis and returns a list of
+	// definitions found.
+	Defs(ctx context.Context, in *DefsOp, opts ...grpc.CallOption) (*DefsResult, error)
+	// Refs performs source code analysis and returns a list of refs
+	// found at the given location.
+	Refs(ctx context.Context, in *RefsOp, opts ...grpc.CallOption) (*RefsResult, error)
 }
 
-type indexerClient struct {
+type langClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewIndexerClient(cc *grpc.ClientConn) IndexerClient {
-	return &indexerClient{cc}
+func NewLangClient(cc *grpc.ClientConn) LangClient {
+	return &langClient{cc}
 }
 
-func (c *indexerClient) Index(ctx context.Context, in *IndexOp, opts ...grpc.CallOption) (*IndexResult, error) {
-	out := new(IndexResult)
-	err := grpc.Invoke(ctx, "/lang.Indexer/Index", in, out, c.cc, opts...)
+func (c *langClient) Defs(ctx context.Context, in *DefsOp, opts ...grpc.CallOption) (*DefsResult, error) {
+	out := new(DefsResult)
+	err := grpc.Invoke(ctx, "/lang.Lang/Defs", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Indexer service
-
-type IndexerServer interface {
-	Index(context.Context, *IndexOp) (*IndexResult, error)
+func (c *langClient) Refs(ctx context.Context, in *RefsOp, opts ...grpc.CallOption) (*RefsResult, error) {
+	out := new(RefsResult)
+	err := grpc.Invoke(ctx, "/lang.Lang/Refs", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-func RegisterIndexerServer(s *grpc.Server, srv IndexerServer) {
-	s.RegisterService(&_Indexer_serviceDesc, srv)
+// Server API for Lang service
+
+type LangServer interface {
+	// Defs performs source code analysis and returns a list of
+	// definitions found.
+	Defs(context.Context, *DefsOp) (*DefsResult, error)
+	// Refs performs source code analysis and returns a list of refs
+	// found at the given location.
+	Refs(context.Context, *RefsOp) (*RefsResult, error)
 }
 
-func _Indexer_Index_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(IndexOp)
+func RegisterLangServer(s *grpc.Server, srv LangServer) {
+	s.RegisterService(&_Lang_serviceDesc, srv)
+}
+
+func _Lang_Defs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(DefsOp)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(IndexerServer).Index(ctx, in)
+	out, err := srv.(LangServer).Defs(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-var _Indexer_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "lang.Indexer",
-	HandlerType: (*IndexerServer)(nil),
+func _Lang_Refs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(RefsOp)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(LangServer).Refs(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+var _Lang_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "lang.Lang",
+	HandlerType: (*LangServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Index",
-			Handler:    _Indexer_Index_Handler,
+			MethodName: "Defs",
+			Handler:    _Lang_Defs_Handler,
+		},
+		{
+			MethodName: "Refs",
+			Handler:    _Lang_Refs_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
 }
 
 var fileDescriptorLang = []byte{
-	// 500 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x64, 0x53, 0x4d, 0x6f, 0xd3, 0x40,
-	0x10, 0xc5, 0xb5, 0xf3, 0xe1, 0x49, 0x0c, 0x74, 0x85, 0x84, 0x65, 0x0a, 0x42, 0x3e, 0x15, 0x10,
-	0xae, 0x14, 0x38, 0x20, 0xa4, 0x5e, 0x50, 0x41, 0xea, 0x09, 0xa9, 0xe5, 0x6e, 0xad, 0xed, 0x89,
-	0x6b, 0x75, 0xb3, 0xb6, 0xec, 0x75, 0x49, 0xfe, 0x05, 0x3f, 0x8b, 0xbf, 0xc1, 0x8d, 0x9f, 0xc1,
-	0xee, 0xac, 0x53, 0x92, 0xe6, 0xb6, 0xf3, 0xde, 0xcc, 0xbc, 0xf7, 0x46, 0x36, 0x80, 0xe0, 0xb2,
-	0x4c, 0x9a, 0xb6, 0x56, 0x35, 0xf3, 0xcc, 0x3b, 0x7a, 0x5f, 0x56, 0xea, 0xa6, 0xcf, 0x92, 0xbc,
-	0x5e, 0x9d, 0x95, 0x75, 0x59, 0x9f, 0x11, 0x99, 0xf5, 0x4b, 0xaa, 0xa8, 0xa0, 0x97, 0x1d, 0x8a,
-	0x7f, 0x39, 0xe0, 0x5e, 0xe0, 0x92, 0x05, 0x30, 0xaa, 0x0a, 0x94, 0x2a, 0x74, 0x5e, 0x3b, 0xa7,
-	0x3e, 0x7b, 0x06, 0xf3, 0x86, 0xb7, 0xba, 0x4e, 0x2d, 0x7a, 0x44, 0xa8, 0x6e, 0x52, 0x95, 0x12,
-	0x18, 0xba, 0x54, 0xce, 0xc1, 0xbb, 0xad, 0x64, 0x11, 0x7a, 0x54, 0x3d, 0x86, 0x71, 0x29, 0xea,
-	0x8c, 0x8b, 0x70, 0xa4, 0xeb, 0x29, 0x0b, 0xc1, 0xeb, 0x1a, 0x2e, 0xc3, 0xb1, 0xae, 0x66, 0x0b,
-	0x48, 0xc8, 0xe9, 0xb5, 0x46, 0xd8, 0x4b, 0xf0, 0x25, 0x5f, 0x61, 0x4a, 0xf4, 0xe4, 0x21, 0x1d,
-	0x9f, 0x83, 0x7b, 0xa5, 0x1d, 0x6d, 0xe7, 0x9d, 0x83, 0xf9, 0x13, 0x18, 0x2b, 0xde, 0x96, 0x68,
-	0x6d, 0xcd, 0x16, 0x73, 0xcb, 0xfd, 0x20, 0x2c, 0x4e, 0x61, 0x6c, 0x5f, 0x0f, 0x33, 0x3d, 0x81,
-	0x49, 0x5e, 0x4b, 0x85, 0xeb, 0x6d, 0x9c, 0xad, 0x82, 0x7b, 0xa0, 0xa0, 0x93, 0x35, 0x5c, 0xdd,
-	0x0c, 0xc9, 0xf4, 0x1e, 0x5c, 0xf3, 0x5c, 0xd9, 0x60, 0xf1, 0x1d, 0x78, 0xd4, 0xc4, 0x00, 0x3a,
-	0xed, 0x43, 0xa5, 0xd9, 0x46, 0x21, 0x69, 0x04, 0xec, 0x29, 0x4c, 0x4d, 0x95, 0x0a, 0x94, 0x24,
-	0x12, 0xfc, 0xef, 0x12, 0x95, 0xb4, 0x87, 0x0b, 0xd8, 0x31, 0xf8, 0x16, 0xcb, 0x6b, 0x41, 0x1a,
-	0x34, 0x88, 0xb2, 0xb0, 0x4d, 0x23, 0x42, 0xb4, 0x5d, 0x83, 0x98, 0x16, 0x73, 0xc2, 0x20, 0xfe,
-	0x09, 0x93, 0x4b, 0x59, 0xe0, 0xfa, 0x7b, 0xc3, 0xde, 0xc1, 0xa4, 0xab, 0xfb, 0x36, 0xc7, 0x4e,
-	0xeb, 0xba, 0xda, 0x7c, 0x64, 0xcd, 0x0f, 0x7c, 0x72, 0x6d, 0xc9, 0xaf, 0x52, 0xb5, 0x1b, 0xb3,
-	0xc8, 0x9e, 0xab, 0xd3, 0x96, 0xdc, 0x53, 0x3f, 0x4a, 0x60, 0xbe, 0xd7, 0x30, 0x03, 0xf7, 0x16,
-	0x37, 0xc3, 0x95, 0x74, 0xd8, 0x3b, 0x2e, 0x7a, 0x24, 0xfb, 0xf3, 0xcf, 0x47, 0x9f, 0x9c, 0xf8,
-	0xaf, 0x03, 0x33, 0xda, 0x7c, 0x85, 0x5d, 0x2f, 0x94, 0x56, 0x1f, 0x2d, 0x2b, 0x71, 0xaf, 0x7d,
-	0xb2, 0xa3, 0x6d, 0x3b, 0x92, 0x6f, 0x86, 0xb6, 0xcb, 0x75, 0xb0, 0x15, 0x76, 0x1d, 0x2f, 0x71,
-	0x90, 0x37, 0x88, 0xfe, 0x38, 0x1b, 0x81, 0xca, 0xde, 0x63, 0x1a, 0x9d, 0x83, 0x4f, 0xd3, 0x17,
-	0x5c, 0x71, 0xf6, 0x1c, 0xbc, 0x02, 0x97, 0xdb, 0xe5, 0xbe, 0x5d, 0x6e, 0x3e, 0x51, 0x4d, 0xb4,
-	0x86, 0x38, 0xda, 0x25, 0xf4, 0x97, 0x12, 0x5d, 0x02, 0xec, 0x08, 0xee, 0xa5, 0x79, 0xbb, 0x9b,
-	0x66, 0xb6, 0x78, 0x71, 0x68, 0xf5, 0x5e, 0xd8, 0x44, 0x5d, 0x7c, 0x1c, 0x6e, 0x8c, 0x2d, 0x7b,
-	0x03, 0x23, 0x7a, 0xb2, 0x60, 0xef, 0xb6, 0xd1, 0xf1, 0xc1, 0x8e, 0x2f, 0xde, 0xef, 0x3f, 0xaf,
-	0x1e, 0x65, 0x63, 0xfa, 0xa3, 0x3e, 0xfc, 0x0b, 0x00, 0x00, 0xff, 0xff, 0x2c, 0x05, 0xb0, 0x66,
-	0x94, 0x03, 0x00, 0x00,
+	// 617 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x94, 0xcd, 0x6e, 0xd4, 0x30,
+	0x10, 0xc7, 0xf1, 0xc6, 0xfb, 0x35, 0x49, 0xd4, 0xc5, 0x08, 0x91, 0x2e, 0x14, 0x4a, 0x0e, 0x55,
+	0x55, 0x44, 0x2a, 0x85, 0x4b, 0x85, 0xc4, 0x05, 0x0a, 0x12, 0x12, 0xa8, 0xd2, 0x16, 0x71, 0xad,
+	0xbc, 0xd9, 0x49, 0x1a, 0x91, 0x75, 0xa2, 0xc4, 0x5b, 0xd1, 0x17, 0xe1, 0x45, 0x78, 0x01, 0x0e,
+	0x1c, 0x78, 0x0d, 0x8e, 0xbc, 0x05, 0xb2, 0x9d, 0xdd, 0x6c, 0xba, 0xe5, 0xf3, 0xe6, 0xf1, 0xcc,
+	0x78, 0xfe, 0xff, 0x9f, 0x9d, 0x00, 0x64, 0x5c, 0x24, 0x41, 0x51, 0xe6, 0x32, 0x67, 0x54, 0xad,
+	0xc7, 0x8f, 0x93, 0x54, 0x9e, 0x2f, 0xa6, 0x41, 0x94, 0xcf, 0x0f, 0x93, 0x3c, 0xc9, 0x0f, 0x75,
+	0x72, 0xba, 0x88, 0x75, 0xa4, 0x03, 0xbd, 0x32, 0x4d, 0xfe, 0x57, 0x02, 0xd6, 0x31, 0xc6, 0x0c,
+	0xa0, 0x93, 0xce, 0x3c, 0xb2, 0x4b, 0xf6, 0x87, 0xec, 0x21, 0xd0, 0x39, 0x4a, 0xee, 0x75, 0x76,
+	0xad, 0x7d, 0x3b, 0xbc, 0x15, 0xe8, 0x19, 0xc7, 0x18, 0x07, 0x6f, 0x51, 0xf2, 0x97, 0x42, 0x96,
+	0x97, 0xcc, 0x85, 0xae, 0x4c, 0x65, 0x86, 0x9e, 0xa5, 0x3b, 0x6c, 0xb0, 0x66, 0x79, 0xe4, 0x51,
+	0x1d, 0x38, 0x40, 0x0b, 0x2e, 0xcf, 0xbd, 0xae, 0x8e, 0x3c, 0xa0, 0x55, 0xc1, 0x85, 0xd7, 0xdb,
+	0x25, 0xfb, 0x76, 0x08, 0xe6, 0xb0, 0xd3, 0x82, 0x0b, 0xb6, 0x03, 0x43, 0xc1, 0xe7, 0x78, 0xa6,
+	0xd3, 0xfd, 0xab, 0xe9, 0xf1, 0x23, 0x18, 0x36, 0xf3, 0x6c, 0xb0, 0x3e, 0xe0, 0x65, 0xad, 0xcf,
+	0x85, 0xee, 0x05, 0xcf, 0x16, 0xe8, 0x75, 0x54, 0xf8, 0xb4, 0x73, 0x44, 0xfc, 0x67, 0x60, 0x4d,
+	0x30, 0x5e, 0x0d, 0x23, 0x1b, 0xc3, 0xee, 0x41, 0x4f, 0xf2, 0x32, 0x41, 0xa9, 0x9b, 0xec, 0xd0,
+	0x31, 0xb9, 0x77, 0x7a, 0xcf, 0xff, 0x4c, 0xa0, 0x67, 0x96, 0x2d, 0x10, 0x21, 0xd8, 0x51, 0x2e,
+	0x2a, 0x59, 0xf2, 0x54, 0xc8, 0xaa, 0xe6, 0xb1, 0xb3, 0xde, 0x19, 0xbc, 0x68, 0xf2, 0x46, 0xe9,
+	0x52, 0x82, 0xb5, 0x21, 0xc1, 0x01, 0x1a, 0xa7, 0x19, 0xd6, 0x94, 0x5c, 0xe8, 0xe2, 0x47, 0x1e,
+	0x49, 0x8d, 0x69, 0x30, 0x0e, 0x61, 0xb4, 0x71, 0xd4, 0x9f, 0x4c, 0x5f, 0x00, 0xd5, 0x07, 0x33,
+	0x80, 0x4a, 0xf2, 0x52, 0x9e, 0x4d, 0x2f, 0x25, 0xea, 0x72, 0x97, 0x8d, 0x60, 0xa0, 0xa2, 0xb3,
+	0x0c, 0x85, 0xee, 0x70, 0x9b, 0xaa, 0x2c, 0x15, 0xe6, 0xde, 0x5c, 0x76, 0x13, 0x86, 0x66, 0x2f,
+	0xca, 0x33, 0xad, 0x4b, 0x37, 0xa2, 0x98, 0x99, 0xa2, 0xae, 0xde, 0xd9, 0x82, 0xbe, 0xda, 0x51,
+	0x25, 0xea, 0x12, 0x5d, 0xff, 0x07, 0x81, 0xde, 0x31, 0xc6, 0xd5, 0x49, 0xc1, 0x0e, 0xa0, 0x5f,
+	0xe5, 0x8b, 0x32, 0xc2, 0xca, 0x23, 0x9a, 0xce, 0xf6, 0xea, 0xb5, 0x54, 0x27, 0x45, 0x70, 0x6a,
+	0x72, 0xc6, 0xce, 0x16, 0xf4, 0xf3, 0x32, 0x4d, 0x52, 0x61, 0x48, 0x0e, 0x6b, 0xd4, 0xd6, 0x75,
+	0xa8, 0xe9, 0x3a, 0xea, 0xfa, 0xb0, 0xab, 0x7c, 0xc6, 0x01, 0x38, 0xad, 0x01, 0xbf, 0xe6, 0xe5,
+	0x28, 0x5e, 0xff, 0xc5, 0xf8, 0x35, 0x80, 0x1a, 0x3f, 0xc1, 0x6a, 0x91, 0x49, 0x76, 0x07, 0xe8,
+	0x0c, 0xe3, 0xa5, 0xd7, 0xe1, 0x4a, 0x9e, 0xa2, 0x36, 0xc7, 0xaa, 0xe2, 0x09, 0x2e, 0xcd, 0x8d,
+	0x60, 0x10, 0xe5, 0xf3, 0x22, 0x43, 0x69, 0x60, 0x0f, 0xfc, 0x2f, 0x04, 0x7a, 0x93, 0xdf, 0x63,
+	0x9b, 0x5c, 0x83, 0x6d, 0xaf, 0x8d, 0xcd, 0x0e, 0x6f, 0xb7, 0x6a, 0x5f, 0xa5, 0x19, 0xea, 0xef,
+	0xe5, 0xdf, 0x69, 0x0c, 0x96, 0xbd, 0xab, 0xa7, 0x49, 0x5a, 0x9f, 0x6c, 0xe7, 0xea, 0x13, 0xf6,
+	0x1f, 0x00, 0x55, 0x63, 0x15, 0x87, 0x72, 0x83, 0xc3, 0x04, 0x63, 0xff, 0x13, 0x01, 0x98, 0x34,
+	0xbc, 0x0e, 0xa0, 0xab, 0xce, 0x5d, 0x16, 0xde, 0x6d, 0x94, 0x9b, 0x02, 0xad, 0xbe, 0xd6, 0xfb,
+	0x17, 0x08, 0xc7, 0x47, 0x00, 0x6b, 0x1d, 0x2d, 0x87, 0xdb, 0xeb, 0x0e, 0x57, 0xaa, 0xd5, 0x28,
+	0xe5, 0x36, 0x7c, 0x0f, 0xf4, 0x0d, 0x17, 0x09, 0xdb, 0x03, 0xaa, 0xee, 0x93, 0x39, 0xeb, 0x4f,
+	0x6b, 0x3c, 0x6a, 0xa2, 0x5a, 0xf9, 0x5e, 0xed, 0xd4, 0x59, 0x87, 0xbd, 0xac, 0x6b, 0x0c, 0x3c,
+	0xa7, 0xdf, 0xbe, 0xdf, 0xbf, 0x31, 0xed, 0xe9, 0x9f, 0xe9, 0x93, 0x9f, 0x01, 0x00, 0x00, 0xff,
+	0xff, 0xbd, 0xaf, 0x30, 0xe7, 0x8f, 0x05, 0x00, 0x00,
 }

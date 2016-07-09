@@ -9,8 +9,8 @@ import (
 
 func TestIndexer(t *testing.T) {
 	tests := []struct {
-		op   *lang.IndexOp
-		want *lang.IndexResult
+		op   *lang.DefsOp
+		want *lang.DefsResult
 	}{}
 	for _, test := range tests {
 		res, err := index(test.op)

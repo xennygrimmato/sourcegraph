@@ -32,6 +32,8 @@
     "fuzzysearch": "^1.0.3",
     "ignore-styles": "^1.2.0",
     "imports-loader": "^0.6.5",
+    "jsdoc": "^3.4.0",
+    "jsdoc-babel": "^0.2.1",
     "json-loader": "0.5.3",
     "lintspaces": "0.3.3",
     "lintspaces-cli": "0.1.1",

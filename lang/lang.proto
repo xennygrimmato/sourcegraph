@@ -6,14 +6,60 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 option (gogoproto.goproto_getters_all) = false;
 
 message Def {
-	string ident = 1; // identifier (e.g., "x" for `var x = 7`)
-	string parent_ident = 2; // parent identifier (e.g., "R" for `func (x *R) Foo() {}`)
-	string title = 3; // full human-readable declaration title (e.g., "var x int" for `var x = 7`)
-	string kind = 4;
-	bool global = 5; // visible to other packages/repos
+	// ident is an opaque identifier for the def. It is not required to
+	// be unique. External code that refers to this def should be able
+	// to reconstruct this id.
+	//
+	// Examples:
+	//
+	//   "x" for `var x = 7`
+	//
+	//   "X.prototype.y" for y in `class X { y() {} }`
+	string id = 1;
 
-	Span span = 6; // span containing the entire def and decl
-	Span name_span = 7; // span containing only the def's name (e.g., just `foo` in `var foo = 3`)
+	// meta is a collection of key-value pairs that contain
+	// information that can be used to resolve or narrow references to
+	// this def.
+	//
+	// Examples:
+	//
+	//   {"go_package_import_path": "example.com/pkg"} to indicate
+	//   that this def is defined in a Go package whose import path is
+	//   "example.com/pkg".
+	//
+	//   {"javascript_module": "mod"} to indicate that this def is
+	//   defined in a JavaScript (CommonJS-style) package named "mod".
+	//
+	// TODO(sqs): How to deal with re-exporting in JavaScript? E.g.,
+	// react-router Link is exported by the react-router lib/index.js
+	// file as well as by lib/Link.js. We want both to be the same
+	// def.
+	map<string, string> meta = 2;
+
+	 // title is the full human-readable declaration title (e.g., "var
+	 // x int" for `var x = 7`)
+	string title = 3;
+
+	// doc is the plain-text documentation.
+	//
+	// TODO(sqs): support multiple formats, HTML, etc.
+	string doc = 4;
+
+	// path is the path to the file or directory in which this def is
+	// defined.
+	//
+	// TODO(sqs): How to handle C-style decls and defns? How to handle
+	// Ruby-style class reopening (defining a class across multiple
+	// files)?
+	string path = 5;
+	
+	// span is the range containing the entire def and decl. (e.g.,
+	// the entire statement `var foo = 3`).
+	Span span = 6;
+
+	// name_span is the range containing only the def's name (e.g.,
+	// just `foo` in `var foo = 3`)
+	Span name_span = 7;
 }
 
 message Ref {
@@ -24,15 +70,28 @@ message Ref {
 // Target contains information that can be used to determine which def
 // a ref points to.
 message Target {
-	string ident = 1; // ident of def (blank means same as the ref span's text)
-	string context = 2; // additional search terms/filters if resolution falls back to search
+	// id is the identifier of the def that this ref points to.
+	string id = 1;
 
-	Span span = 3; // span containing the def that this ref points to
-	string path = 4; // file/dir (non-recursive) containing the def that this ref points to (blank means same file as ref)
+	// constraints to narrow or resolve the target def. Each entry in
+	// this map further constrains the match to only those defs
+	// containing an identical meta entry.
+	map<string, string> constraints = 2;
+
+	// For local/internal targets:
+	Span span = 3; // span of range that contains the def that this ref points to
+	string file = 4; // file containing the def that this ref points to (if span is set, blank means same file as ref)
 
 	bool exact = 5; // whether this target refers exactly to a specific def (if not, it's best-effort)
 }
 
+// A Span describes a range in a file. Byte offsets start counting at
+// 0. Line and column numbers start counting at 1. Column numbers
+// refer to a character position (not a byte offset) in the line.
+//
+// It is useful to have both. Byte offsets are most useful for
+// programmatic operations; line and column numbers are useful for
+// display.
 message Span {
 	uint32 start_byte = 1;
 	uint32 byte_len = 2;
@@ -43,22 +102,53 @@ message Span {
 	uint32 end_col = 6;
 }
 
-service Indexer {
-	rpc Index(IndexOp) returns (IndexResult);
+service Lang {
+	// Defs performs source code analysis and returns a list of
+	// definitions found.
+	rpc Defs(DefsOp) returns (DefsResult);
+
+	// Refs performs source code analysis and returns a list of refs
+	// found at the given location.
+	rpc Refs(RefsOp) returns (RefsResult);
 }
 
-message IndexOp {
-	map<string, bytes> sources = 1; // source files used as input for the index operation
-	repeated string targets = 2; // file paths (which must be present as map keys) to produce output for
+message DefsOp {
+	map<string, bytes> sources = 1; // source files used as input for the operation
+	repeated string origins = 2; // only return defs from these files (file contents must also be present in sources map)
+
+	// id specifies an identifier filter, so that only defs whose id
+	// matches this value is returned.
+	string id = 3;
+
+	// constraints narrow the set of defs to return.
+	map<string, string> constraints = 4;
 }
 
-message IndexResult {
-	message IndexData {
-		repeated Def defs = 1;
-		repeated Ref refs = 2;
+message DefsResult {
+	repeated Def defs = 1;
+	repeated string messages = 2; // log messages
+	bool complete = 3; // whether the build/parsing/compilation was complete (if not, messages explain why; e.g., syntax errors)
+}
+
+message RefsOp {
+	map<string, bytes> sources = 1; // source files used as input for the operation
+
+	message FileSpan {
+		string file = 1; // the file in which the span is located
+		Span span = 2; // the point (0-length span) or range in the file
 	}
-	map<string, IndexData> files = 1; // index data for each file listed in IndexOp.targets.
+	repeated FileSpan origins = 2; // only return refs from these files
+}
+
+message Refs {
+	repeated Ref refs = 1;
+}
+
+message RefsResult {
+	// Supports overlapping refs (e.g., Go embedded structs where the
+	// field name and type name are overlapping refs).
+	map<string, Refs> files = 1;
 
 	repeated string messages = 2; // log messages
-	bool complete = 3; // whether the indexing was complete (if not, messages explain why; e.g., syntax errors)
+	bool complete = 3; // whether the build/parsing/compilation was complete (if not, messages explain why; e.g., syntax errors)
 }

@@ -221,16 +221,23 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 	}
 
 	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, vcs.CommitID(opt.Entry.RepoRev.CommitID)), filepath.Join)
-	opsByIndexer, err := lang.IndexOps(ctx, vfs, func(filename string) bool { return filename == opt.Entry.Path })
+	filesByLang, err := lang.Files(ctx, vfs, func(filename string) bool { return filename == opt.Entry.Path })
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO(sqs): parallelize
-	var results []*lang.IndexResult
-	for indexer, ops := range opsByIndexer {
-		for _, op := range ops {
-			res, err := indexer.Index(ctx, op)
+	var results []*lang.RefsResult
+	for langName, fis := range filesByLang {
+		for _, fi := range fis {
+			cl, err := lang.ClientForLang(langName)
+			if err != nil {
+				return nil, err
+			}
+			res, err := cl.Refs(ctx, &lang.RefsOp{
+				Sources: fi.Sources,
+				Origins: []*lang.RefsOp_FileSpan{{File: fi.Origins[0]}},
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -241,8 +248,8 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 	makeURL := func(t *lang.Target) string {
 		var u *url.URL
 		if t != nil && t.Exact {
-			if t.Path != "" {
-				u = approuter.Rel.URLToBlob(repoPath, opt.Entry.RepoRev.CommitID, opt.Entry.Path)
+			if t.File != "" {
+				u = approuter.Rel.URLToBlob(repoPath, opt.Entry.RepoRev.CommitID, t.File)
 				// TODO(sqs): include name in fragment (or something) to specially highlight the name
 			}
 			if t.Span != nil {
@@ -257,15 +264,13 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 			}
 		} else {
 			var query string
-			if t != nil && t.Context != "" {
-				query += t.Context + " "
-			}
-			if t != nil && t.Ident != "" {
-				query += t.Ident
+			// TODO(sqs): apply the target constraints
+			if t != nil && t.Id != "" {
+				query += t.Id
 			} else {
 				query += "%s" // frontend will replace with text of ref
 			}
-			if t != nil && t.Path != "" {
+			if t != nil && t.File != "" {
 				// TODO(sqs): support searching within a file or dir (not just repo)
 				query += " r:" + repoPath
 			}
@@ -277,37 +282,17 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 		return u.String()
 	}
 
-	return expUniverseResultsToAnnotations(lang.MergeResults(results), opt.Entry.Path, makeURL), nil
+	return expUniverseResultsToAnnotations(lang.MergeRefsResults(results), opt.Entry.Path, makeURL), nil
 }
 
-func expUniverseResultsToAnnotations(res *lang.IndexResult, targetFilename string, makeURL func(*lang.Target) string) []*sourcegraph.Annotation {
-	data := res.Files[targetFilename]
-	if data == nil {
-		return nil
-	}
-	anns := make([]*sourcegraph.Annotation, 0, len(data.Refs)+len(data.Defs))
-	for _, ref := range data.Refs {
-		anns = append(anns, &sourcegraph.Annotation{
+func expUniverseResultsToAnnotations(res *lang.RefsResult, origin string, makeURL func(*lang.Target) string) []*sourcegraph.Annotation {
+	anns := make([]*sourcegraph.Annotation, len(res.Files[origin].Refs))
+	for i, ref := range res.Files[origin].Refs {
+		anns[i] = &sourcegraph.Annotation{
 			URL:       makeURL(ref.Target),
 			StartByte: ref.Span.StartByte,
 			EndByte:   ref.Span.StartByte + ref.Span.ByteLen,
-		})
-	}
-	for _, def := range data.Defs {
-		span := def.NameSpan
-		if span == nil {
-			span = def.Span
 		}
-		anns = append(anns, &sourcegraph.Annotation{
-			URL: makeURL(&lang.Target{
-				Span:  def.Span,
-				Path:  targetFilename,
-				Exact: true,
-			}),
-			StartByte: span.StartByte,
-			EndByte:   span.StartByte + span.ByteLen,
-			Def:       true,
-		})
 	}
 	return anns
 }

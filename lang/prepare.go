@@ -11,17 +11,19 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vfsutil"
 )
 
-// IndexOps determines the indexing operations that should be invoked
-// for the given filesystem, based on the files' extensions and the
-// available indexers.
+type FileInput struct {
+	Sources map[string][]byte
+	Origins []string
+}
+
+// FileInputs walks the filesystem and collects all files into the sources
+// map and origins list, grouped by their language.
 //
-// If isTarget is set, only source files whose filename passes
-// isTarget are used as the target files. (All source files are still
-// included in the IndexOp.Sources maps).
-//
-// TODO(sqs): Only draws from InProcessIndexer.
-func IndexOps(ctx context.Context, vfs vfsutil.WalkableFileSystem, isTarget func(filename string) bool) (map[InProcessIndexer][]*IndexOp, error) {
-	ops := map[InProcessIndexer][]*IndexOp{}
+// If isOrigin is set, only source files whose filename passes
+// isOrigin are used as the origin files. (All source files are still
+// included sources map).
+func Files(ctx context.Context, vfs vfsutil.WalkableFileSystem, isOrigin func(filename string) bool) (map[string][]*FileInput, error) {
+	byLang := map[string][]*FileInput{}
 
 	// Respect deadline.
 	//
@@ -51,15 +53,15 @@ func IndexOps(ctx context.Context, vfs vfsutil.WalkableFileSystem, isTarget func
 		if fi.Mode().IsRegular() {
 			matchedLangs := filelang.Langs.ByFilename(fi.Name())
 			for _, lang := range matchedLangs {
-				if indexer, present := InProcessIndexersByLang[lang.Name]; present {
+				if _, present := Langs[lang.Name]; present {
 					// TODO(sqs): don't put all files in the same
-					// IndexOp; break up by language for now?
-					if len(ops[indexer]) == 0 {
-						ops[indexer] = []*IndexOp{
+					// DefsOp; break up by language for now?
+					if len(byLang[lang.Name]) == 0 {
+						byLang[lang.Name] = []*FileInput{
 							{Sources: map[string][]byte{}},
 						}
 					}
-					op := ops[indexer][0]
+					op := byLang[lang.Name][0]
 
 					f, err := vfs.Open(w.Path())
 					if err != nil {
@@ -72,33 +74,43 @@ func IndexOps(ctx context.Context, vfs vfsutil.WalkableFileSystem, isTarget func
 					}
 
 					op.Sources[w.Path()] = data
-					if isTarget == nil || isTarget(w.Path()) {
-						op.Targets = append(op.Targets, w.Path())
+					if isOrigin == nil || isOrigin(w.Path()) {
+						op.Origins = append(op.Origins, w.Path())
 					}
 				}
 			}
 		}
 	}
 
-	return ops, nil
+	return byLang, nil
 }
 
-// MergeResults merges all of results into a single IndexResult. It
+// MergeDefsResults merges all of results into a single DefsResult. It
 // modifies the provided results; they should not be used after
-// calling MergeResults on them.
-func MergeResults(results []*IndexResult) *IndexResult {
-	merged := &IndexResult{}
+// calling MergeDefsResults on them.
+func MergeDefsResults(results []*DefsResult) *DefsResult {
+	merged := &DefsResult{}
+	for _, res := range results {
+		merged.Defs = append(merged.Defs, res.Defs...)
+		merged.Messages = append(merged.Messages, res.Messages...)
+		if !res.Complete {
+			merged.Complete = false
+		}
+	}
+	return merged
+}
+
+// MergeRefsResults merges all of results into a single RefsResult. It
+// modifies the provided results; they should not be used after
+// calling MergeRefsResults on them.
+func MergeRefsResults(results []*RefsResult) *RefsResult {
+	merged := &RefsResult{}
 	for _, res := range results {
 		if merged.Files == nil {
 			merged.Files = res.Files
 		} else {
-			for f, d := range res.Files {
-				if x := merged.Files[f]; x == nil {
-					merged.Files[f] = d
-				} else {
-					merged.Files[f].Defs = append(merged.Files[f].Defs, d.Defs...)
-					merged.Files[f].Refs = append(merged.Files[f].Refs, d.Refs...)
-				}
+			for filename, refs := range res.Files {
+				merged.Files[filename].Refs = append(merged.Files[filename].Refs, refs.Refs...)
 			}
 		}
 		merged.Messages = append(merged.Messages, res.Messages...)

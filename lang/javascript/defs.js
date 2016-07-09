@@ -2,41 +2,35 @@ const jsctags = require("jsctags");
 const srclibanalysis = require("srclib-javascript/lib/analysis");
 const path = require("path");
 
-function index(op, callback) {
+module.exports = function defs(op, callback) {
 	const t0 = Date.now();
 	
-	const target = op.targets[0];
-
+	const origin = op.origins[0];
+	if (false) {
 	const resp = srclibanalysis.initTernServer({
-		targets: op.targets,
+		origins: op.origins,
 		dir: ".",
 		sources: op.sources,
 	});
 	const res = resp.out;
 	const srv = resp.tern;
-	// console.log("TERN", JSON.stringify(res, null, 2));
-	const fileData = {};
+	console.log("TERN", JSON.stringify(res, null, 2));
+	const defs = [];
 	res.Defs.forEach(def => {
-		if (!fileData[def.File]) fileData[def.File] = {defs: []};
 		const def2 = oldToNewDef(srv, def);
-		if (def2) fileData[def.File].defs.push(def2);
+		if (def2) defs.push(def2);
 	});
-	res.Refs.forEach(ref => {
-		if (!fileData[ref.File]) fileData[ref.File] = {refs: []};
-		if (!fileData[ref.File].refs) fileData[ref.File].refs = [];
-		const ref2 = old2ToNewRef(srv, ref);
-		if (ref2) fileData[ref.File].refs.push(ref2);
-	});
-	callback(null, {
-		files: fileData,
+	if (false) callback(null, {
+		defs: defs,
 		messages: [`took ${Date.now() - t0} msec`],
 	});
+	}
 
 	
-	if (false) jsctags({
-		file: target,
-		dir: path.dirname(target),
-		content: op.sources[target].toString(),
+	if (true) jsctags({
+		file: origin,
+		dir: path.dirname(origin),
+		content: op.sources[origin].toString(),
 	}, (err, tags) => {
 		if (err) {
 			callback(err);
@@ -44,11 +38,7 @@ function index(op, callback) {
 		}
 		console.log("TAGS", JSON.stringify(tags, null, 2));
 		callback(null, {
-			files: {
-				[target]: {
-					defs: tagsToDefs(tags),
-				},
-			},
+			defs: tagsToDefs(tags),
 			messages: [`took ${Date.now() - t0} msec`],
 		});
 	});
@@ -56,16 +46,14 @@ function index(op, callback) {
 
 function oldToNewDef(tern, old) {
 	if (!old.DefStart) return null;
+	if (old.Path.includes("✖")) return null; // unexported
 
 	const f = tern.findFile(old.File);
 	if (!f) return null;
 	const start = f.asLineChar(old.DefStart);
 	const end = f.asLineChar(old.DefEnd);
 	return {
-		ident: old.Name,
-		parent_ident: parentDefPath(old.Path),
-		kind: old.Kind,
-		global: !old.Path.includes("✖"),
+		id: old.Path.replace(/\//g, "."),
 		span: {
 			start_byte: old.DefStart,
 			byte_len: old.DefEnd - old.DefStart,
@@ -84,61 +72,12 @@ function parentDefPath(defPath) {
 	return undefined;
 }
 
-function oldToNewRef(tern, old) {
-	if (!old.Start) return null;
-	const f = tern.findFile(old.file);
-	const start = f.asLineChar(old.start);
-	const end = f.asLineChar(old.end);
-	return {
-		target: {
-			context: parentDefPath(old.DefPath),
-		},
-		span: {
-			start_byte: old.Start,
-			byte_len: old.End - old.Start,
-			start_line: start.line + 1,
-			start_col: start.ch,
-			end_line: end.line + 1,
-			end_col: end.ch,
-		},
-	};
-}
-
-function old2ToNewRef(tern, old) {
-	console.log("EEEEEE", old);
-	if (!old.Start) return null;
-	const f = tern.findFile(old.File);
-	if (!f) return null;
-	const start = f.asLineChar(old.Start);
-	const end = f.asLineChar(old.End);
-	return {
-		target: {
-			context: parentDefPath(old.DefPath),
-		},
-		span: {
-			start_byte: old.Start,
-			byte_len: old.End - old.Start,
-			start_line: start.line + 1,
-			start_col: start.ch,
-			end_line: end.line + 1,
-			end_col: end.ch,
-		},
-	};
-}
-
 function tagsToDefs(tags) {
-	return tags.map(tag => ({
-		ident: tag.name,
+	return tags.map(tag => tag.name.includes("prototype") ? null : ({
+		id: tag.name,
 		title: makeTitle(tag.name, tag.origin["!type"]),
-		global: !tag.origin["!data"].scoped,
-		// TODO(sqs): add kind field
-
-		// TODO(sqs): this is not working
-		//
-		// parent_ident: tag.namespace ? lastNamespaceName(tag.namespace) : undefined,
-
 		span: makeSpan(tag.origin["!span"]),
-	}));
+	})).filter(Boolean);
 }
 
 // Given "a.b.c", returns "c". For some reason, namespaces include function names above
@@ -166,4 +105,3 @@ function makeSpan(spanStr) {
 	};
 }
 
-module.exports = {index: index};

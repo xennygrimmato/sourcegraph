@@ -1,16 +1,15 @@
 package golang
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"go/types"
 	"path"
-	"sort"
 	"sync"
+
+	"golang.org/x/net/context"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/lang"
 )
@@ -21,19 +20,19 @@ import (
 // TODO(sqs): parallelize
 //
 // TODO(sqs): support go/ast.Importer for better cross-package
-// results; IndexOp probably needs to have a "Go import path"
+// results; DefsOp probably needs to have a "Go import path"
 // parameter.
 //
 // TODO(sqs): use godefinfo to get better results
-func index(op *lang.IndexOp) (*lang.IndexResult, error) {
+func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResult, error) {
 	populateUniverse()
 
 	hasErrors := false
-	res := &lang.IndexResult{Files: make(map[string]*lang.IndexResult_IndexData, len(op.Targets))}
+	res := &lang.RefsResult{Files: make(map[string]*lang.Refs, len(op.Origins))}
 
-	isTarget := func(name string) bool {
-		for _, target := range op.Targets {
-			if target == name {
+	isOrigin := func(name string) bool {
+		for _, origin := range op.Origins {
+			if origin.File == name {
 				return true
 			}
 		}
@@ -44,7 +43,7 @@ func index(op *lang.IndexOp) (*lang.IndexResult, error) {
 		dir, name string
 	}
 	pkgFiles := map[pkgKey][]*ast.File{}
-	targets := make(map[string]*ast.File, len(op.Targets))
+	origins := make(map[string]*ast.File, len(op.Origins))
 	fset := token.NewFileSet()
 	for _, filename := range sortSources(op.Sources) {
 		file, err := parser.ParseFile(fset, filename, op.Sources[filename], parser.ParseComments)
@@ -55,8 +54,8 @@ func index(op *lang.IndexOp) (*lang.IndexResult, error) {
 		if file != nil {
 			key := pkgKey{dir: path.Dir(filename), name: file.Name.Name}
 			pkgFiles[key] = append(pkgFiles[key], file)
-			if isTarget(filename) {
-				targets[filename] = file
+			if isOrigin(filename) {
+				origins[filename] = file
 			}
 		}
 	}
@@ -76,90 +75,58 @@ func index(op *lang.IndexOp) (*lang.IndexResult, error) {
 		}
 	}
 
-	for _, target := range op.Targets {
-		file := targets[target]
+	for _, origin := range op.Origins {
+		file := origins[origin.File]
 		if file == nil {
 			hasErrors = true
-			res.Messages = append(res.Messages, fmt.Sprintf("target file not parsed (check for parse error and file existence): %s", target))
+			res.Messages = append(res.Messages, fmt.Sprintf("origin file not parsed (check for parse error and file existence): %s", origin))
 			continue
 		}
-		fres, err := indexFile(fset, file)
+		refs, err := indexFileRefs(fset, file)
 		if err != nil {
 			hasErrors = true
 			res.Messages = append(res.Messages, err.Error())
 			continue
 		}
-		if fres != nil {
-			res.Files[target] = fres
-		}
+		res.Files[origin.File] = &lang.Refs{Refs: refs}
 	}
 
 	res.Complete = !hasErrors
 	return res, nil
 }
 
-func indexFile(fset *token.FileSet, file *ast.File) (*lang.IndexResult_IndexData, error) {
-	v := visitor{
-		fset: fset,
-		skip: map[ast.Node]struct{}{},
+func indexFileRefs(fset *token.FileSet, file *ast.File) ([]*lang.Ref, error) {
+	v := refVisitor{
+		fset:    fset,
+		pkgName: file.Name.Name,
+		skip:    map[ast.Node]struct{}{},
 	}
 	ast.Walk(&v, file)
-	return &lang.IndexResult_IndexData{
-		Defs: v.defs,
-		Refs: v.refs,
-	}, nil
+	return v.refs, nil
 }
 
-// sortSources sorts IndexOp.Sources files (the map keys) for
-// determinism.
-func sortSources(sources map[string][]byte) []string {
-	names := make([]string, 0, len(sources))
-	for name := range sources {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-type visitor struct {
-	fset *token.FileSet
-	defs []*lang.Def
-	refs []*lang.Ref
+type refVisitor struct {
+	fset    *token.FileSet
+	pkgName string
+	defs    []*lang.Def
+	refs    []*lang.Ref
 
 	skip map[ast.Node]struct{}
 }
 
 // Visit implements the ast.Visitor interface.
-func (v *visitor) Visit(node ast.Node) ast.Visitor {
+func (v *refVisitor) Visit(node ast.Node) ast.Visitor {
 	if _, skip := v.skip[node]; skip {
 		return nil
 	}
 
 	switch n := node.(type) {
-	case *ast.FuncDecl:
-		v.defs = append(v.defs, &lang.Def{
-			Ident: n.Name.Name,
-			Title: astString(v.fset, &ast.FuncDecl{
-				// avoid including full docs and body in def Title
-				Recv: n.Recv,
-				Name: n.Name,
-				Type: n.Type,
-			}),
-			Kind:     "func",
-			Global:   n.Name.IsExported(),
-			Span:     makeSpan(v.fset, n),
-			NameSpan: makeSpan(v.fset, n.Name),
-		})
-
-		// Don't emit a ref for the def name (it would be redundant).
-		v.skip[n.Name] = struct{}{}
-
 	case *ast.SelectorExpr:
 		// Use both parts of the SelectorExpr as search context if we need to
 		// fall back to fuzzy search.
 		ref := &lang.Ref{
 			Span:   makeSpan(v.fset, n.Sel),
-			Target: resolveIdent(v.fset, n.Sel),
+			Target: resolveIdent(v.fset, n.Sel, v.pkgName),
 		}
 		if x, ok := n.X.(*ast.Ident); ok {
 			// If x.Obj.Decl is set, then x likely refers to a local
@@ -172,7 +139,10 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 				if ref.Target == nil {
 					ref.Target = &lang.Target{}
 				}
-				ref.Target.Context = x.Name
+				if ref.Target.Constraints == nil {
+					ref.Target.Constraints = map[string]string{}
+				}
+				addGoPackageNameMeta(ref.Target.Constraints, x.Name)
 			}
 		}
 
@@ -189,7 +159,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 
 		ref := &lang.Ref{
 			Span:   makeSpan(v.fset, n),
-			Target: resolveIdent(v.fset, n),
+			Target: resolveIdent(v.fset, n, v.pkgName),
 		}
 
 		v.refs = append(v.refs, ref)
@@ -197,55 +167,36 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func resolveIdent(fset *token.FileSet, n *ast.Ident) (t *lang.Target) {
+func resolveIdent(fset *token.FileSet, n *ast.Ident, pkgName string) (t *lang.Target) {
+	t = &lang.Target{Id: n.Name}
+
+	// TODO(sqs): handle imported package names, like "http" for
+	// "net/http".
+
 	if n.Obj != nil && n.Obj.Decl != nil {
 		if decl, ok := n.Obj.Decl.(ast.Node); ok {
-			if t == nil {
-				t = &lang.Target{}
-			}
 			t.Exact = true
 			t.Span = makeSpan(fset, decl)
-			t.Path = fset.Position(decl.Pos()).Filename
+			t.File = fset.Position(decl.Pos()).Filename
 		}
 	}
-	if !n.IsExported() && (t == nil || t.Path == "") {
-		if t == nil {
-			t = &lang.Target{}
+	if !n.IsExported() && t.Span == nil && t.File == "" {
+		// Unexported def must be in this package.
+
+		if t.Constraints == nil {
+			t.Constraints = map[string]string{}
 		}
-		// Unexported def must be in this dir.
-		t.Path = path.Dir(fset.Position(n.Pos()).Filename)
+
+		// TODO(sqs): need a way to get the import path here to apply
+		// this constraint.
+		//
+		// addGoPackageImportPathMeta(meta map[string]string, pkgImportPath string)
+
+		// Also apply package name constraint for dirs with multiple
+		// packages in them (e.g., package main, xyz, xyz_test, etc.).
+		addGoPackageNameMeta(t.Constraints, pkgName)
 	}
 	return t
-}
-
-func makeSpan(fset *token.FileSet, n ast.Node) *lang.Span {
-	start := fset.Position(n.Pos())
-	end := fset.Position(n.End())
-
-	startLine := start.Line
-	endLine := end.Line
-	if startLine == endLine {
-		endLine = 0
-	}
-
-	return &lang.Span{
-		StartByte: uint32(start.Offset),
-		ByteLen:   uint32(end.Offset - start.Offset),
-		StartLine: uint32(startLine),
-		StartCol:  uint32(start.Column),
-		EndLine:   uint32(endLine),
-		EndCol:    uint32(end.Column),
-	}
-}
-
-var astPrinter = &printer.Config{Mode: printer.RawFormat}
-
-func astString(fset *token.FileSet, n ast.Node) string {
-	var buf bytes.Buffer
-	if err := astPrinter.Fprint(&buf, fset, n); err != nil {
-		panic(err)
-	}
-	return buf.String()
 }
 
 var (
