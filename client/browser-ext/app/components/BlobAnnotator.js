@@ -265,15 +265,19 @@ export default class BlobAnnotator extends Component {
 
 	_indicatorText(repoURI, rev) {
 		let build = this._getBuild(repoURI, rev);
-		let webToken = this.props.accessToken;
 		let data = this._getSrclibDataVersion(repoURI, rev);
-		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
-		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (data) return "Indexed";
 		if(this._buildStatus(build) === "Indexing...") return "Indexing";
+
+		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
-		if (!build || build.Failure) return "Report build failure";
+
+		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
+		if (!scopeAuth) return "Enable Sourcegraph";
+		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (name === "") return "Enable Sourcegraph";
+
+		if (!build || build.Failure) return "Report build failure";
 		return "";
 	}
 
