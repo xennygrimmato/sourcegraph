@@ -42,6 +42,8 @@ func (s *langServer) Toks(ctx context.Context, op *lang.ToksOp) (*lang.ToksResul
 				typ = lang.Tok_NAME_CONSTANT
 			} else if ast.IsExported(lit) {
 				typ = lang.Tok_NAME_CLASS // hack to differentiate
+			} else if lit == "_" {
+				typ = lang.Tok_PUNCTUATION // hack to not require refs for "_"
 			} else {
 				typ = lang.Tok_NAME
 			}

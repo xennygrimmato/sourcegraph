@@ -1,6 +1,7 @@
 package refinfo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -9,14 +10,31 @@ import (
 	"go/types"
 	"log"
 	"os"
+	"path"
 	"sort"
 	"strconv"
+	"strings"
+	"time"
 
+	"golang.org/x/tools/go/ast/astutil"
+	"golang.org/x/tools/go/buildutil"
 	"golang.org/x/tools/go/loader"
 )
 
 type Config struct {
 	Build *build.Context
+	Fset  *token.FileSet
+}
+
+// TODO(sqs): dummy methods, to be replaced by injectable fields
+
+const _TMP_dir = "/go/src/github.com/gorilla/mux/"
+
+func (c *Config) ParseFile(dir, filename string) (*ast.File, error) {
+	displayPath := func(path string) string {
+		return strings.TrimPrefix(path, _TMP_dir)
+	}
+	return buildutil.ParseFile(c.Fset, c.Build, displayPath, _TMP_dir, filename, 0)
 }
 
 var dlog = log.New(os.Stderr, "DEBUG: ", 0)
@@ -25,20 +43,184 @@ const debug = true
 
 // Adapted from godefinfo.
 
-type refInfo struct {
-	pkgPath string
-	def1    string
-	def2    string
+type RefInfo struct {
+	Node    ast.Node
+	PkgPath string
+	Def1    string
+	Def2    string
 }
 
-func (v refInfo) defName() string {
-	if v.def2 == "" {
-		return v.def1
+func (v RefInfo) DefName() string {
+	if v.Def2 == "" {
+		return v.Def1
 	}
-	return v.def1 + "." + v.def2
+	return v.Def1 + "." + v.Def2
 }
 
-func Get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*refInfo, error) {
+func (c *Config) Get(ctx context.Context, filename string, offset uint32) (*RefInfo, []string, error) {
+	t0 := time.Now()
+	defer func() {
+		//log.Println("TOOK", time.Since(t0))
+		_ = t0
+	}()
+
+	var msgs []string
+
+	dir := path.Dir(filename)
+	dir = _TMP_dir
+	filename = path.Base(filename)
+
+	// Shared across all attempts.
+	var (
+		astFile        *ast.File
+		enclosingNodes []ast.Node
+		pos            token.Pos
+	)
+
+	{
+		// First, see if we can determine it from just the AST of this
+		// single file.
+		var err error
+		astFile, err = c.ParseFile(dir, filename)
+		if err != nil {
+			// This is actually fatal.
+			return nil, msgs, err
+		}
+		pos = c.Fset.File(astFile.Pos()).Pos(int(offset))
+		enclosingNodes, _ = astutil.PathEnclosingInterval(astFile, pos, pos)
+		ri, err := getFromAST(enclosingNodes)
+		if err != nil {
+			msgs = append(msgs, err.Error())
+		}
+		if ri != nil {
+			return ri, msgs, nil
+		}
+	}
+
+	var (
+		importPath string
+		astFiles   map[string]*ast.File
+	)
+	{
+		// Next, see if we can determine it from just this file's
+		// package's AST.
+		//
+		// TODO(sqs): only parse files in the same package
+		bPkg, err := buildutil.ContainingPackage(c.Build, dir, filename)
+		if err != nil {
+			return nil, nil, err
+		}
+		importPath = bPkg.ImportPath
+		bPkg, err = c.Build.ImportDir(bPkg.Dir, 0) // again, without build.FindOnly
+		if err != nil {
+			return nil, nil, err
+		}
+
+		var files []string
+		if strings.HasSuffix(astFile.Name.Name, "_test") {
+			files = bPkg.XTestGoFiles
+		} else {
+			files = bPkg.GoFiles
+			if strings.HasSuffix(filename, "_test.go") {
+				// TODO(sqs): avoid appending to bPkg.GoFiles directly
+				// (create a copy instead) if bPkg is ever reused.
+				files = append(files, bPkg.TestGoFiles...)
+			}
+		}
+
+		astFiles = make(map[string]*ast.File, len(files))
+		for _, file := range files {
+			var f *ast.File
+			if file == filename {
+				f = astFile // reuse
+			} else {
+				f, err = c.ParseFile(dir, file)
+				if err != nil {
+					return nil, nil, err
+				}
+			}
+			astFiles[file] = f
+		}
+		// Creating the package mutates the files' ASTs to link up
+		// more info. Call ast.NewPackage for these side effects.
+		//
+		// TODO(sqs): ast.NewPackage modifies the *ast.Files...can
+		// introduce a race condition if the *ast.Files are cached.
+		//
+		// TODO(sqs): provide an importer here to possibly resolve
+		// simple dep refs like "http.NewRequest"?
+		if _, err := ast.NewPackage(c.Fset, astFiles, nil, nil); err != nil {
+			if !strings.Contains(err.Error(), "undeclared name:") {
+				msgs = append(msgs, "ast.NewPackage: "+err.Error())
+			}
+		}
+
+		ri, err := getFromAST(enclosingNodes)
+		if err != nil {
+			msgs = append(msgs, err.Error())
+		}
+		if ri != nil {
+			return ri, msgs, nil
+		}
+	}
+
+	{
+		// If we're here, then the pure AST-based approach was
+		// unsuccessful. Perform a full type analysis of the program.
+		conf := loader.Config{
+			Fset: c.Fset,
+			TypeChecker: types.Config{
+				Importer:                 newImporter(c.Fset, c.Build), // TODO(sqs)
+				FakeImportC:              true,
+				DisableUnusedImportCheck: true,
+				Error: func(err error) {
+					msgs = append(msgs, "typecheck: "+err.Error())
+				},
+			},
+			TypeCheckFuncBodies: func(path string) bool { return path == importPath },
+			Build:               c.Build,
+			Cwd:                 dir,
+			AllowErrors:         true,
+		}
+		conf.CreateFromFiles(importPath, astFileSlice(astFiles)...)
+		prog, err := conf.Load()
+		if err != nil {
+			msgs = append(msgs, "conf.Load: "+err.Error())
+		}
+		if prog != nil {
+			for _, pkg := range prog.Created {
+				if pkg.Pkg.Path() == importPath {
+					ri, err := get(pkg, astFile, pos)
+					return ri, msgs, err
+				}
+			}
+		}
+	}
+
+	return nil, nil, nil
+}
+
+func astFileSlice(m map[string]*ast.File) []*ast.File {
+	files := make([]*ast.File, 0, len(m))
+	for _, f := range m {
+		files = append(files, f)
+	}
+	return files
+}
+
+func getFromAST(nodes []ast.Node) (*RefInfo, error) {
+	n := nodes[0]
+	if n, ok := n.(*ast.Ident); ok {
+		if n.Obj != nil && n.Obj.Decl != nil {
+			if decl, ok := n.Obj.Decl.(ast.Node); ok {
+				return &RefInfo{Node: decl}, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*RefInfo, error) {
 	nodes, _ := pathEnclosingInterval(file, pos, pos)
 
 	// Handle import statements.
@@ -48,7 +230,7 @@ func Get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*refInfo, erro
 			if err != nil {
 				return nil, err
 			}
-			return &refInfo{pkgPath: pkgPath}, nil
+			return &RefInfo{PkgPath: pkgPath}, nil
 		}
 	}
 
@@ -75,10 +257,10 @@ func Get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*refInfo, erro
 				return objRefInfo(obj, ""), nil
 			}
 			// Method or interface method.
-			return &refInfo{
-				pkgPath: obj.Pkg().Path(),
-				def1:    dereferenceType(t.Recv().Type()).(*types.Named).Obj().Name(),
-				def2:    identX.Name,
+			return &RefInfo{
+				PkgPath: obj.Pkg().Path(),
+				Def1:    dereferenceType(t.Recv().Type()).(*types.Named).Obj().Name(),
+				Def2:    identX.Name,
 			}, nil
 		}
 
@@ -90,16 +272,16 @@ func Get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*refInfo, erro
 		// Struct field.
 		if _, ok := nodes[1].(*ast.Field); ok {
 			if typ, ok := nodes[4].(*ast.TypeSpec); ok {
-				return &refInfo{
-					pkgPath: obj.Pkg().Path(),
-					def1:    typ.Name.Name,
-					def2:    obj.Name(),
+				return &RefInfo{
+					PkgPath: obj.Pkg().Path(),
+					Def1:    typ.Name.Name,
+					Def2:    obj.Name(),
 				}, nil
 			}
 		}
 
 		if pkg, name, ok := typeName(dereferenceType(obj.Type())); ok {
-			return &refInfo{pkgPath: pkg, def1: name}, nil
+			return &RefInfo{PkgPath: pkg, Def1: name}, nil
 		}
 
 		return nil, fmt.Errorf("unable to identify def (ident: %v, object: %v)", identX, obj)
@@ -111,18 +293,22 @@ func Get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*refInfo, erro
 		return nil, fmt.Errorf("no type information for identifier %q at %d", identX.Name, pos)
 	}
 	if pkgName, ok := obj.(*types.PkgName); ok {
-		fmt.Println(pkgName.Imported().Path())
+		return &RefInfo{PkgPath: pkgName.Imported().Path()}, nil
 	} else if selX == nil {
 		if pkg.Pkg.Scope().Lookup(identX.Name) == obj {
 			return objRefInfo(obj, ""), nil
 		} else if types.Universe.Lookup(identX.Name) == obj {
-			return &refInfo{pkgPath: "builtin", def1: obj.Name()}, nil
+			return &RefInfo{PkgPath: "builtin", Def1: obj.Name()}, nil
 		} else {
-			t := dereferenceType(obj.Type())
-			if pkg, name, ok := typeName(t); ok {
-				return &refInfo{pkgPath: pkg, def1: name}, nil
-			}
-			return nil, fmt.Errorf("not a package-level definition (ident: %v, object: %v) and unable to follow type (type: %v)", identX, obj, t)
+			// NOTE(sqs): this old godefinfo code linked to a local
+			// var's TYPE not def, which makes sense (kinda) for
+			// godefinfo but not for this.
+			//
+			//t := dereferenceType(obj.Type())
+			//if pkg, name, ok := typeName(t); ok {
+			//	return &RefInfo{PkgPath: pkg, Def1: name}, nil
+			//}
+			return nil, fmt.Errorf("not a package-level definition (ident: %v, object: %v) and unable to construct id for local var", identX, obj)
 		}
 	} else if sel, ok := pkg.Info.Selections[selX]; ok {
 		recv, ok := dereferenceType(deepRecvType(sel)).(*types.Named)
@@ -136,7 +322,7 @@ func Get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*refInfo, erro
 		}
 
 		ri := objRefInfo(recv.Obj(), "")
-		ri.def2 = identX.Name
+		ri.Def2 = identX.Name
 		return ri, nil
 	} else {
 		// Qualified reference (to another package's top-level
@@ -224,11 +410,11 @@ func getMethod(typ types.Type, idx int, final bool, method bool) (obj types.Obje
 	return nil
 }
 
-func objRefInfo(obj types.Object, def2 string) *refInfo {
+func objRefInfo(obj types.Object, Def2 string) *RefInfo {
 	if obj.Pkg() != nil {
-		return &refInfo{pkgPath: obj.Pkg().Path(), def1: obj.Name(), def2: def2}
+		return &RefInfo{PkgPath: obj.Pkg().Path(), Def1: obj.Name(), Def2: Def2}
 	}
-	return &refInfo{pkgPath: obj.Name()}
+	return &RefInfo{PkgPath: obj.Name()}
 }
 
 // var systemImp = importer.Default()
