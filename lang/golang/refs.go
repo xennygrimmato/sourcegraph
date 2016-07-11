@@ -3,16 +3,28 @@ package golang
 import (
 	"fmt"
 	"go/ast"
+	"go/build"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
 	"path"
-	"sync"
+	"runtime"
+	"strings"
+	"time"
 
 	"golang.org/x/net/context"
+	"golang.org/x/tools/go/loader"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/lang"
+	"sourcegraph.com/sourcegraph/sourcegraph/lang/golang/refinfo"
 )
+
+const _TMP_pkgPath = "github.com/gorilla/mux" // TODO(sqs): unhardcode
 
 // TODO(sqs): use golang.org/x/tools/go/buildutil OverlayContext? Says
 // only Context.OpenFile respects it right now, so maybe hold off.
@@ -25,7 +37,68 @@ import (
 //
 // TODO(sqs): use godefinfo to get better results
 func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResult, error) {
-	populateUniverse()
+	t0 := time.Now()
+
+	bctx := build.Context{
+		GOARCH:     runtime.GOARCH,
+		GOOS:       runtime.GOOS,
+		GOROOT:     "/usr/local/go",
+		GOPATH:     os.Getenv("GOPATH"),
+		CgoEnabled: false,
+		// UseAllFiles: true,
+		Compiler: "gc",
+
+		// TODO(sqs): make these use OS-independent separators
+		JoinPath: path.Join,
+		SplitPathList: func(list string) []string {
+			if list == "" {
+				return []string{}
+			}
+			return strings.Split(list, ":")
+		},
+		IsAbsPath: path.IsAbs,
+		IsDir: func(path string) bool {
+			// log.Printf("BCTX: IsDir(%q)", path)
+			fi, _ := os.Stat(path)
+			return fi != nil && fi.IsDir()
+		},
+		HasSubdir: func(root, dir string) (rel string, ok bool) {
+			// log.Printf("BCTX: HasSubdir(%q, %q)", root, dir)
+			root = path.Clean(root)
+			dir = path.Clean(dir)
+			if !strings.HasSuffix(root, "/") {
+				root += "/"
+			}
+			if !strings.HasPrefix(dir, root) {
+				return "", false
+			}
+			return dir[len(root):], true
+		},
+		ReadDir: func(dir string) ([]os.FileInfo, error) {
+			// log.Printf("BCTX: ReadDir(%q)", dir)
+			return ioutil.ReadDir(dir)
+		},
+		OpenFile: func(path string) (io.ReadCloser, error) {
+			// log.Printf("BCTX: OpenFile(%q)", path)
+			return os.Open(path)
+		},
+	}
+
+	fset := token.NewFileSet()
+
+	conf := loader.Config{
+		Fset:       fset,
+		ParserMode: parser.ParseComments,
+		TypeChecker: types.Config{
+			Importer:                 importer.Default(),
+			FakeImportC:              true,
+			DisableUnusedImportCheck: true,
+		},
+		TypeCheckFuncBodies: func(path string) bool { return path == _TMP_pkgPath },
+		Build:               &bctx,
+		Cwd:                 "/dev/null", // TODO(sqs): is this right?
+		AllowErrors:         true,
+	}
 
 	hasErrors := false
 	res := &lang.RefsResult{Files: make(map[string]*lang.Refs, len(op.Origins))}
@@ -44,7 +117,7 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 	}
 	pkgFiles := map[pkgKey][]*ast.File{}
 	origins := make(map[string]*ast.File, len(op.Origins))
-	fset := token.NewFileSet()
+	pkgsWithOrigin := map[pkgKey]struct{}{}
 	for _, filename := range sortSources(op.Sources) {
 		file, err := parser.ParseFile(fset, filename, op.Sources[filename], parser.ParseComments)
 		if err != nil {
@@ -56,24 +129,22 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 			pkgFiles[key] = append(pkgFiles[key], file)
 			if isOrigin(filename) {
 				origins[filename] = file
+				pkgsWithOrigin[key] = struct{}{}
 			}
 		}
 	}
 
-	for _, files := range pkgFiles {
-		fileMap := make(map[string]*ast.File, len(files))
-		for _, f := range files {
-			fileMap[fset.Position(f.Package).Filename] = f
-		}
-
-		// Call ast.NewPackage for side effects of resolving
-		// identifiers across files and packages.
-		_, err := ast.NewPackage(fset, fileMap, nil, universe)
-		if err != nil {
-			hasErrors = true
-			res.Messages = append(res.Messages, err.Error())
-		}
+	for key := range pkgsWithOrigin {
+		conf.CreateFromFiles(_TMP_pkgPath /* TODO(sqs): use import path not name */, pkgFiles[key]...)
 	}
+	log.Println("## Parsing took", time.Since(t0))
+	t0 = time.Now()
+
+	prog, err := conf.Load()
+	if err != nil {
+		return nil, err
+	}
+	log.Println("## Typechecking took", time.Since(t0))
 
 	for _, origin := range op.Origins {
 		file := origins[origin.File]
@@ -82,7 +153,13 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 			res.Messages = append(res.Messages, fmt.Sprintf("origin file not parsed (check for parse error and file existence): %s", origin))
 			continue
 		}
-		refs, err := indexFileRefs(fset, file)
+
+		pkg, _, _ := prog.PathEnclosingInterval(file.Pos(), file.End())
+		if pkg == nil {
+			return nil, fmt.Errorf("no pkg found for file %s", origin.File)
+		}
+
+		refs, err := indexFileRefs(fset, pkg, file)
 		if err != nil {
 			hasErrors = true
 			res.Messages = append(res.Messages, err.Error())
@@ -95,11 +172,12 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 	return res, nil
 }
 
-func indexFileRefs(fset *token.FileSet, file *ast.File) ([]*lang.Ref, error) {
+func indexFileRefs(fset *token.FileSet, pkg *loader.PackageInfo, file *ast.File) ([]*lang.Ref, error) {
 	v := refVisitor{
 		fset:    fset,
+		pkg:     pkg,
 		pkgName: file.Name.Name,
-		skip:    map[ast.Node]struct{}{},
+		file:    file,
 	}
 	ast.Walk(&v, file)
 	return v.refs, nil
@@ -107,59 +185,26 @@ func indexFileRefs(fset *token.FileSet, file *ast.File) ([]*lang.Ref, error) {
 
 type refVisitor struct {
 	fset    *token.FileSet
+	pkg     *loader.PackageInfo
 	pkgName string
+	file    *ast.File
 	defs    []*lang.Def
 	refs    []*lang.Ref
-
-	skip map[ast.Node]struct{}
 }
 
 // Visit implements the ast.Visitor interface.
 func (v *refVisitor) Visit(node ast.Node) ast.Visitor {
-	if _, skip := v.skip[node]; skip {
-		return nil
-	}
-
 	switch n := node.(type) {
-	case *ast.SelectorExpr:
-		// Use both parts of the SelectorExpr as search context if we need to
-		// fall back to fuzzy search.
-		ref := &lang.Ref{
-			Span:   makeSpan(v.fset, n.Sel),
-			Target: resolveIdent(v.fset, n.Sel, v.pkgName),
-		}
-		if x, ok := n.X.(*ast.Ident); ok {
-			// If x.Obj.Decl is set, then x likely refers to a local
-			// variable; adding the local var's name to the search
-			// context won't help.
-			if o := x.Obj; o == nil || o.Decl == nil {
-				// TODO(sqs): can do a better job here, such as knowing that
-				// "http.NewRequest" http is net/http, getting local var
-				// types, etc.
-				if ref.Target == nil {
-					ref.Target = &lang.Target{}
-				}
-				if ref.Target.Constraints == nil {
-					ref.Target.Constraints = map[string]string{}
-				}
-				addGoPackageNameMeta(ref.Target.Constraints, x.Name)
-			}
-		}
-
-		v.refs = append(v.refs, ref)
-
-		// Don't double-walk the SelectorExpr's Ident.
-		v.skip[n.Sel] = struct{}{}
-
 	case *ast.Ident:
-		// TODO(sqs): walk *ast.SelectorExprs so we can know
-		// additional context about exprs like "http.NewRequest"
-		// (here, we can only see "NewRequest", which gives us less
-		// context for fuzzy ref lookups).
+		ri, err := refinfo.Get(v.pkg, v.file, n.Pos())
+		if err != nil {
+			log.Println("WALK: ", err)
+			return nil
+		}
 
 		ref := &lang.Ref{
 			Span:   makeSpan(v.fset, n),
-			Target: resolveIdent(v.fset, n, v.pkgName),
+			Target: resolveIdent(v.fset, n, v.pkgName, ri),
 		}
 
 		v.refs = append(v.refs, ref)
@@ -167,20 +212,21 @@ func (v *refVisitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func resolveIdent(fset *token.FileSet, n *ast.Ident, pkgName string) (t *lang.Target) {
-	t = &lang.Target{Id: n.Name}
+func resolveIdent(fset *token.FileSet, n *ast.Ident, pkgName string, ri *refInfo) (t *lang.Target) {
+	t = &lang.Target{Id: ri.defName()}
 
 	// TODO(sqs): handle imported package names, like "http" for
 	// "net/http".
 
 	if n.Obj != nil && n.Obj.Decl != nil {
 		if decl, ok := n.Obj.Decl.(ast.Node); ok {
-			t.Exact = true
 			t.Span = makeSpan(fset, decl)
 			t.File = fset.Position(decl.Pos()).Filename
 		}
 	}
 	if !n.IsExported() && t.Span == nil && t.File == "" {
+		t.Fuzzy = true
+
 		// Unexported def must be in this package.
 
 		if t.Constraints == nil {
@@ -190,47 +236,11 @@ func resolveIdent(fset *token.FileSet, n *ast.Ident, pkgName string) (t *lang.Ta
 		// TODO(sqs): need a way to get the import path here to apply
 		// this constraint.
 		//
-		// addGoPackageImportPathMeta(meta map[string]string, pkgImportPath string)
+		addGoPackageImportPathMeta(t.Constraints, ri.pkgPath)
 
 		// Also apply package name constraint for dirs with multiple
 		// packages in them (e.g., package main, xyz, xyz_test, etc.).
 		addGoPackageNameMeta(t.Constraints, pkgName)
 	}
 	return t
-}
-
-var (
-	universeMu sync.Mutex
-	universe   *ast.Scope
-)
-
-func populateUniverse() {
-	// Can't do this in a `func init()` because types.Universe itself
-	// is populated in a `func init()`, and we can't guarantee it runs
-	// beforehand.
-	//
-	// TODO(sqs): This doesn't seem to be working. The ast.NewPackage
-	// call still returns errors like "20:16: undeclared name: string
-	// (and 46 more errors)".
-
-	universeMu.Lock()
-	if universe != nil {
-		universeMu.Unlock()
-		return
-	}
-
-	universe = ast.NewScope(nil)
-	for _, name := range types.Universe.Names() {
-		astObj := &ast.Object{Name: name}
-
-		typObj := types.Universe.Lookup(name)
-		switch o := typObj.(type) {
-		case *types.TypeName:
-			astObj.Kind = ast.Typ
-			astObj.Decl = &ast.TypeSpec{Name: &ast.Ident{Name: name, NamePos: o.Pos()}}
-		}
-		universe.Insert(astObj)
-	}
-
-	universeMu.Unlock()
 }

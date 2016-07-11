@@ -247,7 +247,7 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 
 	makeURL := func(t *lang.Target) string {
 		var u *url.URL
-		if t != nil && t.Exact {
+		if t != nil && !t.Fuzzy {
 			if t.File != "" {
 				u = approuter.Rel.URLToBlob(repoPath, opt.Entry.RepoRev.CommitID, t.File)
 				// TODO(sqs): include name in fragment (or something) to specially highlight the name
@@ -263,6 +263,7 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 				u.Fragment = fmt.Sprintf("L%d:%d-%d:%d", t.Span.StartLine, t.Span.StartCol, endLine, t.Span.EndCol)
 			}
 		} else {
+
 			var query string
 			// TODO(sqs): apply the target constraints
 			if t != nil && t.Id != "" {

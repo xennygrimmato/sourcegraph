@@ -61,7 +61,6 @@ module.exports = function refs(op, callback) {
 					target: {
 						file: data.file,
 						span: makeSpan(s, data.file, data.start, data.end),
-						exact: true,
 					},
 				});
 				i += data.end - data.start;

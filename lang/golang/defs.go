@@ -63,7 +63,7 @@ func (s *langServer) Defs(ctx context.Context, op *lang.DefsOp) (*lang.DefsResul
 
 		// Call ast.NewPackage for side effects of resolving
 		// identifiers across files and packages.
-		_, err := ast.NewPackage(fset, fileMap, nil, universe)
+		_, err := ast.NewPackage(fset, fileMap, nil, nil)
 		if err != nil {
 			hasErrors = true
 			res.Messages = append(res.Messages, err.Error())

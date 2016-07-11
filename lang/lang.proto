@@ -48,13 +48,21 @@ message Def {
 	// path is the path to the file or directory in which this def is
 	// defined.
 	//
+	// It is unset when it can't be determined or when there is no
+	// single path that includes all relevant files/directories that
+	// define it, such as for a Ruby class that is defined (and
+	// reopened) across many files in many directories.
+	//
 	// TODO(sqs): How to handle C-style decls and defns? How to handle
 	// Ruby-style class reopening (defining a class across multiple
 	// files)?
 	string path = 5;
 	
 	// span is the range containing the entire def and decl. (e.g.,
-	// the entire statement `var foo = 3`).
+	// the entire statement `var foo = 3`). It is unset when it can't
+	// be determined or when there is none, such as when the
+	// definition is defined across multiple files (as in the case of
+	// Go packages, for example).
 	Span span = 6;
 
 	// name_span is the range containing only the def's name (e.g.,
@@ -82,7 +90,22 @@ message Target {
 	Span span = 3; // span of range that contains the def that this ref points to
 	string file = 4; // file containing the def that this ref points to (if span is set, blank means same file as ref)
 
-	bool exact = 5; // whether this target refers exactly to a specific def (if not, it's best-effort)
+	// fuzzy is whether this target is a best-effort, inexact
+	// references to a def. Applications may resolve fuzzy targets
+	// different from exact targets, by presenting the user with a
+	// disambiguation UI, for example.
+	//
+	// A target that refers to a specific file and span is not fuzzy.
+	//
+	// A target that uniquely identifies a definition is not fuzzy,
+	// even if its file/span is not set. For example, {"id":
+	// "NewRequest", "constraints": {"go_package_import_path":
+	// "net/http"}} uniquely identifies Go's http.NewRequest even
+	// though it does not specify a file and span.
+	//
+	// A target that merely refers to an id, or an id among the
+	// current project's dependencies, is fuzzy.
+	bool fuzzy = 5;
 }
 
 // A Span describes a range in a file. Byte offsets start counting at
@@ -110,6 +133,10 @@ service Lang {
 	// Refs performs source code analysis and returns a list of refs
 	// found at the given location.
 	rpc Refs(RefsOp) returns (RefsResult);
+
+	// Toks tokenizes the specified source code and returns a list of
+	// tokens.
+	rpc Toks(ToksOp) returns (ToksResult);
 }
 
 message DefsOp {
@@ -151,4 +178,103 @@ message RefsResult {
 
 	repeated string messages = 2; // log messages
 	bool complete = 3; // whether the build/parsing/compilation was complete (if not, messages explain why; e.g., syntax errors)
+}
+
+message ToksOp {
+	// source is the input text to be tokenized.
+	bytes source = 1;
+}
+
+// Tok represents a token in source code (i.e., the result of
+// tokenization).
+message Tok {
+	uint32 start_byte = 1;
+	uint32 byte_len = 2;
+	enum TokType {
+		// Token types are taken from http://pygments.org/docs/tokens.
+		//
+		// TODO(sqs): reorder these to make the most commonly used
+		// ones earlier, so they require less varint storage.
+
+		KEYWORD = 0;
+		KEYWORD_CONSTANT = 1;
+		KEYWORD_DECLARATION = 2;
+		KEYWORD_NAMESPACE = 3;
+		KEYWORD_PSEUDO = 4;
+		KEYWORD_RESERVED = 5;
+		KEYWORD_TYPE = 6;
+
+		NAME = 7;
+		NAME_ATTRIBUTE = 8;
+		NAME_BUILTIN = 9;
+		NAME_BUILTIN_PSEUDO = 10;
+		NAME_CLASS = 11;
+		NAME_CONSTANT = 12;
+		NAME_DECORATOR = 13;
+		NAME_ENTITY = 14;
+		NAME_EXCEPTION = 15;
+		NAME_FUNCTION = 16;
+		NAME_LABEL = 17;
+		NAME_NAMESPACE = 18;
+		NAME_OTHER = 19;
+		NAME_TAG = 20;
+		NAME_VARIABLE = 21;
+		NAME_VARIABLE_CLASS = 22;
+		NAME_VARIABLE_GLOBAL = 23;
+		NAME_VARIABLE_INSTANCE = 24;
+
+		LITERAL = 25;
+		LITERAL_DATE = 26;
+		STRING = 27;
+		STRING_BACKTICK = 28;
+		STRING_CHAR = 29;
+		STRING_DOC = 30;
+		STRING_DOUBLE = 31;
+		STRING_ESCAPE = 32;
+		STRING_HEREDOC = 33;
+		STRING_INTERPOL = 34;
+		STRING_OTHER = 35;
+		STRING_REGEX = 36;
+		STRING_SINGLE = 37;
+		STRING_SYMBOL = 38;
+		NUMBER = 39;
+		NUMBER_BIN = 40;
+		NUMBER_FLOAT = 41;
+		NUMBER_HEX = 42;
+		NUMBER_INTEGER = 43;
+		NUMBER_INTEGER_LONG = 44;
+		NUMBER_OCT = 45;
+
+		OPERATOR = 46;
+		OPERATOR_WORD = 47;
+
+		PUNCTUATION = 48;
+
+		COMMENT = 49;
+		COMMENT_HASHBANG = 50;
+		COMMENT_MULTILINE = 51;
+		COMMENT_PREPROC = 52;
+		COMMENT_SINGLE = 53;
+		COMMENT_SPECIAL = 54;
+
+		GENERIC = 55;
+		GENERIC_DELETED = 56;
+		GENERIC_EMPH = 57;
+		GENERIC_ERROR = 58;
+		GENERIC_HEADING = 59;
+		GENERIC_INSERTED = 60;
+		GENERIC_OUTPUT = 61;
+		GENERIC_PROMPT = 62;
+		GENERIC_STRONG = 63;
+		GENERIC_SUBHEADING = 64;
+		GENERIC_TRACEBACK = 65;
+	}
+	TokType type = 3;
+}
+
+message ToksResult {
+	repeated Tok toks = 1;
+
+	repeated string messages = 2; // log messages
+	bool complete = 3; // whether the tokenization was complete (if not, messages explain why; e.g., syntax errors)
 }

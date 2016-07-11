@@ -15,6 +15,7 @@ import (
 
 	// Lang
 	_ "sourcegraph.com/sourcegraph/sourcegraph/lang/all"
+	_ "sourcegraph.com/sourcegraph/sourcegraph/lang/cli"
 
 	// Events
 	_ "sourcegraph.com/sourcegraph/sourcegraph/services/events"
