@@ -278,7 +278,7 @@ export default class BlobAnnotator extends Component {
 	}
 
 	onClick(ev) {
-		let userCreds = this.props.authentication
+		let userCreds = this.props.authentication;
 		if (userCreds) {
 			EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text, userLogin: userCreds.Login, userEmails: userCreds["IncludedEmails"], userID: userCreds.UID});
 		} else {
@@ -287,17 +287,18 @@ export default class BlobAnnotator extends Component {
 	}
 
 	getRender(indicatorText,pr) {
+		let url = "https://sourcegraph.com";
 		switch (indicatorText) {
 			case "Indexed":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
 			case "Indexing":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
 			case "Sign in to Sourcegraph":
-				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#signin">{pr}{indicatorText}</a>);
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}>{pr}{indicatorText}</a>);
 			case "Enable Sourcegraph":
-				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#enable">{pr}{indicatorText}</a>);
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}>{pr}{indicatorText}</a>);
 			case "Report build failure":
-				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{pr}{indicatorText}</a>);
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}>{pr}{indicatorText}</a>);
 			case "Unsupported language":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
 			default:
