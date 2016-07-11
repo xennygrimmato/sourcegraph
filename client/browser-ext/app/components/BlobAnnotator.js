@@ -317,10 +317,8 @@ export default class BlobAnnotator extends Component {
 		} else {
 			let baseText = this._indicatorText(this.state.baseRepoURI, this.state.baseCommitID);
 			let headText = this._indicatorText(this.state.headRepoURI, this.state.headCommitID);
-			//indicatorText = baseText + " " + headText;
 			let baseRender = this.getRender(baseText);
 			let headRender = this.getRender(headText);
-			//return baseRender;
 			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getRender(baseText,"base: ")} {this.getRender(headText,"head: ")} </span>);
 		}
 	}
