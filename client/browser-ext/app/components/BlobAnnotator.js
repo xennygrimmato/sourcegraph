@@ -129,8 +129,6 @@ export default class BlobAnnotator extends Component {
 		// re-annotate the blob (which is smart enough to only annoate
 		// lines which haven't already been annotated).
 		this.props.actions.getAuthentication(this.state);
-		let userCreds = this.props.authentication;
-		if (userCreds && userCreds.Login) this.EventLogger.setUserLogin(userCreds.Login);
 		document.addEventListener("click", this._clickRefresh);
 	}
 

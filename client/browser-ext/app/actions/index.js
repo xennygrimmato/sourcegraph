@@ -2,11 +2,13 @@ import * as types from "../constants/ActionTypes";
 import {keyFor} from "../reducers/helpers";
 import fetch, {useAccessToken} from "./xhr";
 import {defCache} from "../utils/annotations";
+import EventLogger from "../analytics/EventLogger";
 
 export function getAuthentication(state) {
     return function (dispatch) {
     	return fetch(`https://sourcegraph.com/.api/auth-info`)
     	.then((json) => dispatch({type: types.STORED_AUTHENTICATION, json}))
+    	.then((json) => EventLogger.setUserLogin(json.json.Login))
     	.catch((err) => dispatch({type: types.STORED_AUTHENTICATION, err}));
     }
 }
