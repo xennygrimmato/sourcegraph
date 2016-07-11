@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -227,8 +226,8 @@ func prepGitCommand(cmd *exec.Cmd) *exec.Cmd {
 }
 
 func logCmdOutut(t *testing.T, cmd *exec.Cmd, out []byte) {
-	t.Logf(">>> START - %s", strings.Join(cmd.Args, " "))
-	t.Logf("=== ENV - %v", cmd.Env)
-	t.Log(string(out))
-	t.Logf(">>> END - %s", strings.Join(cmd.Args, " "))
+	// t.Logf(">>> START - %s", strings.Join(cmd.Args, " "))
+	// t.Logf("=== ENV - %v", cmd.Env)
+	// t.Log(string(out))
+	// t.Logf(">>> END - %s", strings.Join(cmd.Args, " "))
 }
