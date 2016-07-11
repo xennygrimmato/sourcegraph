@@ -91,7 +91,7 @@ export class EventLogger {
 				}
 			}
 
-			this._telligent("newTracker", "sg", "sourcegraph.logging.telligentdata.com", {
+			this._telligent("newTracker", "sg", "sourcegraph-logging.telligentdata.com", {
 				appId: "SourcegraphWeb",
 				platform: this._currentPlatform,
 				encodeBase64: false,
