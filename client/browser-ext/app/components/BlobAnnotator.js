@@ -286,21 +286,42 @@ export default class BlobAnnotator extends Component {
 		}
 	}
 
+	getRender(indicatorText,pr) {
+		switch (indicatorText) {
+			case "Indexed":
+				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
+			case "Indexing":
+				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
+			case "Sign in to Sourcegraph":
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#signin">{pr}{indicatorText}</a>);
+			case "Enable Sourcegraph":
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#enable">{pr}{indicatorText}</a>);
+			case "Report build failure":
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{pr}{indicatorText}</a>);
+			case "Unsupported language":
+				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
+			default:
+				return (<span/>);
+		}
+	}
+
 	render() {
 		let indicatorText = "";
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
-		} else if (this.state.isDelta) {
-			indicatorText = `base:${this._indicatorText(this.state.baseRepoURI, this.state.baseCommitID)} head:${this._indicatorText(this.state.headRepoURI, this.state.headCommitID)}`
 		} else {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
 		}
-		return (<span>
-			{indicatorText && <SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} />}
-			{(indicatorText === "Indexed" || indicatorText === "") && <span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>}
-			{indicatorText === "Sign in to Sourcegraph"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#signin">{indicatorText}</a>}
-			{indicatorText === "Enable Sourcegraph"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="https://sourcegraph.com/chrome-faqs#enable">{indicatorText}</a>}
-			{indicatorText === "Report build failure"  && <a className="btn btn-sm" onClick={this.onClick.bind(this)} href="hhttps://sourcegraph.com/chrome-faqs#buildfailure">{indicatorText}</a>}
-		</span>);
+		if (!this.state.isDelta) {
+			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getRender(indicatorText,null)} </span>);
+		} else {
+			let baseText = this._indicatorText(this.state.baseRepoURI, this.state.baseCommitID);
+			let headText = this._indicatorText(this.state.headRepoURI, this.state.headCommitID);
+			//indicatorText = baseText + " " + headText;
+			let baseRender = this.getRender(baseText);
+			let headRender = this.getRender(headText);
+			//return baseRender;
+			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getRender(baseText,"base: ")} {this.getRender(headText,"head: ")} </span>);
+		}
 	}
 }
