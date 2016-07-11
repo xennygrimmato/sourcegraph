@@ -277,7 +277,8 @@ export default class BlobAnnotator extends Component {
 		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (name === "") return "Enable Sourcegraph";
 
-		if (!build || build.Failure) return "Report build failure";
+		if(!build) return "";
+		if (build.Failure) return "Cannot annotate file";
 		return "";
 	}
 
@@ -296,7 +297,7 @@ export default class BlobAnnotator extends Component {
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}>{pr}{indicatorText}</a>);
 			case "Enable Sourcegraph":
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}>{pr}{indicatorText}</a>);
-			case "Report build failure":
+			case "Cannot annotate file":
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}>{pr}{indicatorText}</a>);
 			case "Unsupported language":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
