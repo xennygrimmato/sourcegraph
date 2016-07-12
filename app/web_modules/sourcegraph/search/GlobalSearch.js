@@ -424,10 +424,10 @@ class GlobalSearch extends Container {
 			return [<div key="_nosymbol" className={`${base.ph4} ${base.pt4}`} styleName="result result-error">Select repositories to include.</div>];
 		}
 
-		if (!this.state.query) return <div className={`${base.pt4} ${base.ph4}`} styleName="result">Type a query&hellip;</div>;
+		if (!this.state.query) return <div className={`${base.pt4} ${base.ph4}`} styleName="result"></div>;
 
 		if (!this.state.matchingResults ||
-			((!this.state.matchingResults.Defs || this.state.matchingResults.Defs.length === 0) && this.state.matchingResults.outstandingFetches !== 0)) {
+			((!this.state.matchingResults.Defs || this.state.matchingResults.Defs.length === 0) && this.state.matchingResults.outstandingFetches !== 0) && this.state.query) {
 			return [<div key="_nosymbol" className={`${base.ph4} ${base.pt4}`}styleName="result">Loading results...</div>];
 		}
 
