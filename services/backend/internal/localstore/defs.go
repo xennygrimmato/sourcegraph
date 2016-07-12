@@ -281,18 +281,18 @@ func (s *defs) Search(ctx context.Context, op store.DefSearchOp) (*sourcegraph.S
 			end()
 		}
 
-		// Language filtering.
-		if len(op.Opt.Languages) > 0 {
-			var l []string
-			for _, language := range op.Opt.Languages {
-				id, err := toDBLang(language)
-				if err != nil {
-					continue
-				}
-				l = append(l, arg(id))
-			}
-			wheres = append(wheres, `language IN (`+strings.Join(l, ", ")+`)`)
-		}
+		// // Language filtering.
+		// if len(op.Opt.Languages) > 0 {
+		// 	var l []string
+		// 	for _, language := range op.Opt.Languages {
+		// 		id, err := toDBLang(language)
+		// 		if err != nil {
+		// 			continue
+		// 		}
+		// 		l = append(l, arg(id))
+		// 	}
+		// 	wheres = append(wheres, `language IN (`+strings.Join(l, ", ")+`)`)
+		// }
 		if len(op.Opt.NotLanguages) > 0 {
 			var l []string
 			for _, language := range op.Opt.NotLanguages {
