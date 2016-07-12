@@ -287,7 +287,7 @@ export default class BlobAnnotator extends Component {
 	}
 
 	getRender(indicatorText,pr) {
-		let url = "https://sourcegraph.com";
+		let url = "https://staging.sourcegraph.com";
 		switch (indicatorText) {
 			case "Indexed":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
