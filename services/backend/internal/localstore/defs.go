@@ -425,7 +425,7 @@ func (s *defs) searchExpUniverse(ctx context.Context, op store.DefSearchOp) (*so
 	}
 
 	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, commitID), filepath.Join)
-	filesByLang, err := lang.Files(ctx, vfs, nil)
+	filesByLang, err := lang.SourceFilesByLang(ctx, vfs)
 	if err != nil {
 		return nil, err
 	}
@@ -436,21 +436,24 @@ func (s *defs) searchExpUniverse(ctx context.Context, op store.DefSearchOp) (*so
 
 	// TODO(sqs): parallelize
 	var results []*lang.DefsResult
-	for langName, fis := range filesByLang {
-		for _, fi := range fis {
-			cl, err := lang.ClientForLang(langName)
-			if err != nil {
-				return nil, err
-			}
-			res, err := cl.Defs(ctx, &lang.DefsOp{
-				Sources: fi.Sources,
-				Origins: fi.Origins,
-			})
-			if err != nil {
-				return nil, err
-			}
-			results = append(results, res)
+	for langName, sources := range filesByLang {
+		origins := make([]string, 0, len(sources))
+		for filename := range sources {
+			origins = append(origins, filename)
 		}
+
+		cl, err := lang.ClientForLang(langName)
+		if err != nil {
+			return nil, err
+		}
+		res, err := cl.Defs(ctx, &lang.DefsOp{
+			Sources: sources,
+			Origins: origins,
+		})
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, res)
 	}
 
 	q = strings.TrimSpace(q)

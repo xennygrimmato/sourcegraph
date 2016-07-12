@@ -130,7 +130,7 @@ func (v *refVisitor) Visit(node ast.Node) ast.Visitor {
 		// Use both parts of the SelectorExpr as search context if we need to
 		// fall back to fuzzy search.
 		ref := &lang.Ref{
-			Span:   makeSpan(v.fset, n.Sel),
+			Span:   makeNodeSpan(v.fset, n.Sel),
 			Target: resolveIdent(v.fset, n.Sel, v.pkgName),
 		}
 		if x, ok := n.X.(*ast.Ident); ok {
@@ -163,7 +163,7 @@ func (v *refVisitor) Visit(node ast.Node) ast.Visitor {
 		// context for fuzzy ref lookups).
 
 		ref := &lang.Ref{
-			Span:   makeSpan(v.fset, n),
+			Span:   makeNodeSpan(v.fset, n),
 			Target: resolveIdent(v.fset, n, v.pkgName),
 		}
 
@@ -180,7 +180,7 @@ func resolveIdent(fset *token.FileSet, n *ast.Ident, pkgName string) (t *lang.Ta
 
 	if n.Obj != nil && n.Obj.Decl != nil {
 		if decl, ok := n.Obj.Decl.(ast.Node); ok {
-			t.Span = makeSpan(fset, decl)
+			t.Span = makeNodeSpan(fset, decl)
 			t.File = fset.Position(decl.Pos()).Filename
 		}
 	}

@@ -82,7 +82,7 @@ func (s *defs) getExpUniverse(ctx context.Context, op *sourcegraph.DefsGetOp) (*
 		return nil, err
 	}
 	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, vcs.CommitID(op.Def.CommitID)), filepath.Join)
-	filesByLang, err := lang.Files(ctx, vfs, nil)
+	filesByLang, err := lang.SourceFilesByLang(ctx, vfs)
 	if err != nil {
 		return nil, err
 	}
@@ -93,25 +93,28 @@ func (s *defs) getExpUniverse(ctx context.Context, op *sourcegraph.DefsGetOp) (*
 	}
 
 	// TODO(sqs): parallelize
-	for langName, fis := range filesByLang {
-		for _, fi := range fis {
-			cl, err := lang.ClientForLang(langName)
-			if err != nil {
-				return nil, err
-			}
-			res, err := cl.Defs(ctx, &lang.DefsOp{
-				Sources: fi.Sources,
-				Origins: fi.Origins,
-				Id:      op.Def.Path,
-			})
-			if err != nil {
-				return nil, err
-			}
-			for _, def := range res.Defs {
-				if def.Id == op.Def.Path {
-					if d := expuniversemigrate.ToOldDef(def, repoObj.URI, op.Def.CommitID); d != nil {
-						return d, nil
-					}
+	for langName, sources := range filesByLang {
+		origins := make([]string, 0, len(sources))
+		for filename := range sources {
+			origins = append(origins, filename)
+		}
+
+		cl, err := lang.ClientForLang(langName)
+		if err != nil {
+			return nil, err
+		}
+		res, err := cl.Defs(ctx, &lang.DefsOp{
+			Sources: sources,
+			Origins: origins,
+			Id:      op.Def.Path,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, def := range res.Defs {
+			if def.Id == op.Def.Path {
+				if d := expuniversemigrate.ToOldDef(def, repoObj.URI, op.Def.CommitID); d != nil {
+					return d, nil
 				}
 			}
 		}

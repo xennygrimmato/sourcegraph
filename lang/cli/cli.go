@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -61,6 +61,15 @@ func init() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		_, err = g.AddCommand("sel",
+			"print selection information",
+			"The sel subcommand reports type/target/etc. information about a position in a file.",
+			&langSelCmd{},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
 	})
 }
 
@@ -91,64 +100,68 @@ func (c *langCmdCommon) configMap() (map[string]string, error) {
 	return m, nil
 }
 
-type fileInputArgs struct {
-	Origin string `long:"origin" description:"origin file pattern (default: all sources)"`
-	Args   struct {
+type sourcesArgs struct {
+	Args struct {
 		SourceDir string `positional-arg-name:"SOURCE-DIR"`
 	} `positional-args:"yes" required:"1"`
 }
 
-func (a fileInputArgs) listFilesByLang(ctx context.Context) (map[string][]*lang.FileInput, error) {
-	var isOrigin func(string) bool
-	if a.Origin != "" {
-		if _, err := path.Match(a.Origin, "test pattern"); err != nil {
-			return nil, fmt.Errorf("bad origin pattern %q: %s", a.Origin, err)
-		}
-		isOrigin = func(filename string) bool {
-			matched, _ := path.Match(a.Origin, filename)
-			return matched
-		}
-	}
-
+func (a sourcesArgs) listFilesByLang(ctx context.Context) (map[string]map[string][]byte, error) {
 	if fi, err := os.Stat(a.Args.SourceDir); err != nil {
 		return nil, fmt.Errorf("stat %s: %s", a.Args.SourceDir, err)
 	} else if !fi.Mode().IsDir() {
 		return nil, fmt.Errorf("not a directory: %s", a.Args.SourceDir)
 	}
 
-	byLang, err := lang.Files(ctx, vfsutil.Walkable(vfs.OS(a.Args.SourceDir), filepath.Join), isOrigin)
+	byLang, err := lang.SourceFilesByLang(ctx, vfsutil.Walkable(vfs.OS(a.Args.SourceDir), filepath.Join))
 	if err != nil {
-		return nil, fmt.Errorf("finding file inputs for %s: %s", a.Args.SourceDir, err)
+		return nil, fmt.Errorf("finding source files for %s: %s", a.Args.SourceDir, err)
 	}
 	return byLang, nil
 }
 
-func (a fileInputArgs) forEachLangWithFileInput(ctx context.Context, f func(ctx context.Context, langName string, cl lang.LangClient, fi *lang.FileInput) error) error {
+func (a sourcesArgs) forEachLangWithSources(ctx context.Context, f func(ctx context.Context, langName string, cl lang.LangClient, sources map[string][]byte) error) error {
 	byLang, err := a.listFilesByLang(ctx)
 	if err != nil {
 		return err
 	}
 
-	for langName, fis := range byLang {
+	for langName, sources := range byLang {
 		cl, err := lang.ClientForLang(langName)
 		if err != nil {
 			return err
 		}
-
-		for _, fi := range fis {
-			if err := f(ctx, langName, cl, fi); err != nil {
-				return err
-			}
+		if err := f(ctx, langName, cl, sources); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
+func filesInSources(sources map[string][]byte, filenames ...string) ([]string, error) {
+	if len(filenames) == 0 {
+		filenames = make([]string, 0, len(sources))
+		for filename := range sources {
+			filenames = append(filenames, filename)
+		}
+		return filenames, nil
+	}
+
+	for _, filename := range filenames {
+		if _, present := sources[filename]; !present {
+			return nil, fmt.Errorf("origin %q not present in sources", filename)
+		}
+	}
+
+	return filenames, nil
+}
+
 type langDefsCmd struct {
 	langCmdCommon
-	fileInputArgs
-	Stats bool   `long:"stats" description:"print statistics" default:"true"`
-	Match string `short:"m" long:"match" description:"only show defs containing this substring"`
+	sourcesArgs
+	Origins []string `short:"o" long:"origin" description:"return defs defined in these files (default: all sources)"`
+	Stats   bool     `long:"stats" description:"print statistics" default:"true"`
+	Match   string   `short:"m" long:"match" description:"only show defs containing this substring"`
 }
 
 func (c *langDefsCmd) Execute(args []string) error {
@@ -157,11 +170,16 @@ func (c *langDefsCmd) Execute(args []string) error {
 		return err
 	}
 
-	return c.forEachLangWithFileInput(context.Background(),
-		func(ctx context.Context, langName string, cl lang.LangClient, fi *lang.FileInput) error {
+	return c.forEachLangWithSources(context.Background(),
+		func(ctx context.Context, langName string, cl lang.LangClient, sources map[string][]byte) error {
+			origins, err := filesInSources(sources, c.Origins...)
+			if err != nil {
+				return err
+			}
+
 			defs, err := cl.Defs(ctx, &lang.DefsOp{
-				Sources: fi.Sources,
-				Origins: fi.Origins,
+				Sources: sources,
+				Origins: origins,
 				Config:  config,
 			})
 			if err != nil {
@@ -267,9 +285,10 @@ func filterDefs(defs *lang.DefsResult, match string) *lang.DefsResult {
 
 type langRefsCmd struct {
 	langCmdCommon
-	fileInputArgs
-	Coverage bool   `long:"coverage" description:"compute coverage statistics" default:"true"`
-	Match    string `short:"m" long:"match" description:"only show refs whose def id contains this substring"`
+	sourcesArgs
+	Origins  []string `short:"o" long:"origin" description:"return defs defined in these files (default: all sources)"`
+	Coverage bool     `long:"coverage" description:"compute coverage statistics" default:"true"`
+	Match    string   `short:"m" long:"match" description:"only show refs whose def id contains this substring"`
 }
 
 func (c *langRefsCmd) Execute(args []string) error {
@@ -282,10 +301,15 @@ func (c *langRefsCmd) Execute(args []string) error {
 		return errors.New("at most one of -m/--match and --coverage may be used")
 	}
 
-	return c.forEachLangWithFileInput(context.Background(),
-		func(ctx context.Context, langName string, cl lang.LangClient, fi *lang.FileInput) error {
-			fileSpans := make([]*lang.RefsOp_FileSpan, len(fi.Origins))
-			for i, origin := range fi.Origins {
+	return c.forEachLangWithSources(context.Background(),
+		func(ctx context.Context, langName string, cl lang.LangClient, sources map[string][]byte) error {
+			origins, err := filesInSources(sources, c.Origins...)
+			if err != nil {
+				return err
+			}
+
+			fileSpans := make([]*lang.RefsOp_FileSpan, len(origins))
+			for i, origin := range origins {
 				// Span entire file (nil span).
 				//
 				// TODO(sqs): allow calling refs on a subset of the
@@ -294,7 +318,7 @@ func (c *langRefsCmd) Execute(args []string) error {
 			}
 
 			refs, err := cl.Refs(ctx, &lang.RefsOp{
-				Sources: fi.Sources,
+				Sources: sources,
 				Origins: fileSpans,
 				Config:  config,
 			})
@@ -310,37 +334,7 @@ func (c *langRefsCmd) Execute(args []string) error {
 				for filename, refs := range refs.Files {
 					for _, ref := range refs.Refs {
 						fmt.Fprintf(w, "%s:%d:%d\t", filename, ref.Span.StartLine, ref.Span.StartCol)
-
-						if t := ref.Target; t != nil {
-							fmt.Fprint(w, t.Id, "\t")
-
-							if t.Fuzzy {
-								fmt.Fprint(w, "?") // fuzzy
-							} else {
-								fmt.Fprint(w, "=") // exact
-							}
-							fmt.Fprint(w, "\t")
-
-							if t.File != "" {
-								fmt.Fprint(w, t.File)
-							}
-							if t.Span != nil {
-								fmt.Fprintf(w, ":%d:%d", t.Span.StartLine, t.Span.StartCol)
-							}
-							if t.File != "" || t.Span != nil {
-								fmt.Fprint(w, " ")
-							}
-
-							if len(t.Constraints) != 0 {
-								for i, kv := range sortMeta(t.Constraints) {
-									if i != 0 {
-										fmt.Fprint(w, " ")
-									}
-									fmt.Fprintf(w, "%s=%s", quoteIfNeeded(kv[0]), quoteIfNeeded(kv[1]))
-								}
-							}
-							fmt.Fprint(w, "\n")
-						}
+						printTarget(w, ref.Target)
 					}
 				}
 				if err := w.Flush(); err != nil {
@@ -385,7 +379,7 @@ func (c *langRefsCmd) Execute(args []string) error {
 				for filename, data := range refs.Files {
 					// List all tokens and filter to only those that
 					// *should* be refs.
-					allToks, err := cl.Toks(ctx, &lang.ToksOp{Source: fi.Sources[filename]})
+					allToks, err := cl.Toks(ctx, &lang.ToksOp{Source: sources[filename]})
 					if err != nil {
 						return fmt.Errorf("while computing ref stats, tokenizing %s: %s", filename, err)
 					}
@@ -430,14 +424,14 @@ func (c *langRefsCmd) Execute(args []string) error {
 
 					// Print detailed information about coverage issues.
 					for _, tok := range toksWithNoRefs {
-						d, err := safeGetRange(fi.Sources[filename], tok.StartByte, tok.ByteLen)
+						d, err := safeGetRange(sources[filename], tok.StartByte, tok.ByteLen)
 						if err != nil {
 							return err
 						}
 						fmt.Fprintf(w, "# %s:@%d: no ref for token %s: %s\n", filename, tok.StartByte, tok.Type.String(), formatSource(d, 30))
 					}
 					for _, ref := range invalidRefs {
-						d, err := safeGetRange(fi.Sources[filename], ref.Span.StartByte, ref.Span.ByteLen)
+						d, err := safeGetRange(sources[filename], ref.Span.StartByte, ref.Span.ByteLen)
 						if err != nil {
 							return err
 						}
@@ -582,6 +576,118 @@ func (c *langToksCmd) Execute(args []string) error {
 	}
 
 	return nil
+}
+
+type langSelCmd struct {
+	langCmdCommon
+	sourcesArgs
+	Args struct {
+		Origin    string `required:"yes" positional-arg-name:"FILE"`
+		StartByte uint32 `required:"yes" positional-arg-name:"OFFSET"`
+	} `positional-args:"yes" required:"yes"`
+}
+
+func (c *langSelCmd) Execute(args []string) error {
+	config, err := c.configMap()
+	if err != nil {
+		return err
+	}
+
+	return c.forEachLangWithSources(context.Background(),
+		func(ctx context.Context, langName string, cl lang.LangClient, sources map[string][]byte) error {
+			origins, err := filesInSources(sources, c.Args.Origin)
+			if err != nil {
+				return err
+			}
+
+			sel, err := cl.Sel(ctx, &lang.SelOp{
+				Sources: sources,
+				Origin:  origins[0],
+				Span:    &lang.Span{StartByte: c.Args.StartByte, ByteLen: 0},
+				Config:  config,
+			})
+			if err != nil {
+				return fmt.Errorf("invoking sel for lang %s: %s", langName, err)
+			}
+
+			switch c.Format {
+			case "text":
+				fmt.Fprintln(os.Stdout, "TARGETS")
+				if len(sel.Defs) > 0 {
+					w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+					for _, t := range sel.Defs {
+						printTarget(w, t)
+					}
+					if err := w.Flush(); err != nil {
+						return err
+					}
+				} else {
+					fmt.Fprintln(os.Stdout, "(no target defs returned)")
+				}
+
+				fmt.Fprintln(os.Stdout)
+				fmt.Fprintln(os.Stdout, "TYPE")
+				if sel.TypeString != "" {
+					fmt.Fprintln(os.Stdout, sel.TypeString)
+				} else {
+					fmt.Fprintln(os.Stdout, "(no type string provided)")
+				}
+			case "json":
+				data, err := json.MarshalIndent(sel, "", "  ")
+				if err != nil {
+					return err
+				}
+				fmt.Println(string(data))
+			}
+
+			if !sel.Complete {
+				fmt.Fprintln(os.Stderr, "# INCOMPLETE")
+			}
+			if len(sel.Messages) > 0 {
+				fmt.Fprintln(os.Stderr, "# Log messages from server:")
+				for _, msg := range sel.Messages {
+					fmt.Fprintln(os.Stderr, "#   ", msg)
+				}
+			}
+
+			return nil
+		},
+	)
+}
+
+func printTarget(w io.Writer, t *lang.Target) {
+	if t == nil {
+		fmt.Fprintln(w, "(no target)")
+	} else {
+		fmt.Fprint(w, t.Id, "\t")
+
+		if t.Fuzzy {
+			fmt.Fprint(w, "?") // fuzzy
+		} else {
+			fmt.Fprint(w, "=") // exact
+		}
+		fmt.Fprint(w, "\t")
+
+		if t.File != "" {
+			fmt.Fprint(w, t.File)
+		}
+		if t.Span != nil {
+			fmt.Fprintf(w, ":%d:%d", t.Span.StartLine, t.Span.StartCol)
+		}
+		if t.File != "" || t.Span != nil {
+			fmt.Fprint(w, " ")
+		}
+
+		if len(t.Constraints) != 0 {
+			for i, kv := range sortMeta(t.Constraints) {
+				if i != 0 {
+					fmt.Fprint(w, " ")
+				}
+				fmt.Fprintf(w, "%s=%s", quoteIfNeeded(kv[0]), quoteIfNeeded(kv[1]))
+			}
+		}
+		fmt.Fprint(w, "\n")
+	}
 }
 
 func safeGetRange(data []byte, startByte, byteLen uint32) ([]byte, error) {

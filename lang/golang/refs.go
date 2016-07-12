@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -9,7 +10,11 @@ import (
 	"path"
 	"strings"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"golang.org/x/net/context"
+	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/buildutil"
 	"golang.org/x/tools/go/loader"
 
@@ -135,12 +140,36 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 			continue
 		}
 
-		idents := indexFileRefs(&cfg, file)
+		type span struct{ pos, end token.Pos }
+		var spans []span
+		if origin.Span != nil {
+			fpos := cfg.Fset.File(file.Pos())
+			var pos token.Pos
+			switch {
+			case origin.Span.StartByte != 0:
+				pos = fpos.Pos(int(origin.Span.StartByte))
+			case origin.Span.StartLine != 0:
+				offset, err := byteOffsetForLineCol(op.Sources[origin.File], int(origin.Span.StartLine), int(origin.Span.StartCol))
+				if err != nil {
+					return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
+				}
+				pos = fpos.Pos(offset)
+			default:
+				return nil, grpc.Errorf(codes.InvalidArgument, "either Span.StartByte or Span.StartLine must be provided")
+			}
+			spans = append(spans, span{pos, pos})
+		} else {
+			// Return refs for all idents.
+			idents := indexFileRefs(&cfg, file)
+			for _, ident := range idents {
+				spans = append(spans, span{ident.Pos(), ident.End()})
+			}
+		}
 
 		var refs []*lang.Ref
-		for _, ident := range idents {
-			pos := cfg.Fset.Position(ident.Pos())
-			ri, msgs, err := cfg.Get(context.TODO(), pos.Filename, uint32(pos.Offset))
+		for _, span := range spans {
+			p := cfg.Fset.Position(span.pos)
+			ri, msgs, err := cfg.Get(context.TODO(), p.Filename, uint32(p.Offset))
 			if err != nil {
 				// TODO(sqs): collect these
 				ignore := strings.Contains(err.Error(), "no type information") || strings.Contains(err.Error(), "not a package-level")
@@ -165,14 +194,22 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 			_ = msgs
 
 			ref := &lang.Ref{
-				Span: makeSpan(cfg.Fset, ident),
+				Span: makeSpan(cfg.Fset, span.pos, span.end),
 			}
 			if n2 := ri.Node; n2 != nil {
+				var identName string
+				enclosingNodes, _ := astutil.PathEnclosingInterval(file, span.pos, span.end)
+				if len(enclosingNodes) > 0 {
+					if ident, ok := enclosingNodes[0].(*ast.Ident); ok {
+						identName = ident.Name
+					}
+				}
+
 				pos := cfg.Fset.Position(ri.Node.Pos())
 				ref.Target = &lang.Target{
-					Id:   ident.Name,
+					Id:   identName,
 					File: pos.Filename,
-					Span: makeSpan(cfg.Fset, n2),
+					Span: makeNodeSpan(cfg.Fset, n2),
 				}
 			} else {
 				ref.Target = &lang.Target{
@@ -211,4 +248,22 @@ func (v *refVisitor) Visit(node ast.Node) ast.Visitor {
 		}
 	}
 	return v
+}
+
+func byteOffsetForLineCol(src []byte, line, col int) (offset int, err error) {
+	lines := bytes.SplitAfter(src, []byte("\n"))
+	for i, lineContent := range lines {
+		lineNum := i + 1
+		if lineNum < line {
+			offset += len(lineContent)
+			continue
+		}
+
+		// lineNum == line
+		if len(lineContent) < col {
+			return 0, fmt.Errorf("line %d col %d exceeds line's bounds (%d cols)", line, col, len(lineContent))
+		}
+		return offset + col, nil
+	}
+	return 0, fmt.Errorf("line %d col %d is out of file's bounds", line, col)
 }

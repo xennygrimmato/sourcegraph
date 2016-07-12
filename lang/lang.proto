@@ -137,6 +137,10 @@ service Lang {
 	// Toks tokenizes the specified source code and returns a list of
 	// tokens.
 	rpc Toks(ToksOp) returns (ToksResult);
+
+	// Sel returns information suitable for a tooltip for the given
+	// position in a file (i.e., that the user has "Sel"ected).
+	rpc Sel(SelOp) returns (SelResult);
 }
 
 message DefsOp {
@@ -290,3 +294,30 @@ message ToksResult {
 	repeated string messages = 2; // log messages
 	bool complete = 3; // whether the tokenization was complete (if not, messages explain why; e.g., syntax errors)
 }
+
+message SelOp {
+	map<string, bytes> sources = 1; // source files used as input for the operation
+
+	string origin = 2; // the file in which the span is located
+	Span span = 3; // the point (0-length span) or range in the file
+
+	// config is (for now) free-form config key-value pairs that are
+	// interpreted separately by each lang server.
+	map<string, string> config = 4;	
+}
+
+message SelResult {
+	// defs refer to the definition of the selected item. There can be
+	// multiple defs for a given position (e.g., Go embedded struct
+	// fields refer to both the field and the type name).
+	repeated Target defs = 1;
+
+	// type_string is a human-readable string describing the type of
+	// the selection (e.g., variable). For example, in `var x = 7`,
+	// x's type string might be "int".
+	string type_string = 2;
+
+	repeated string messages = 3; // log messages
+	bool complete = 4; // whether the operation was complete (if not, messages explain why; e.g., syntax errors)
+}
+

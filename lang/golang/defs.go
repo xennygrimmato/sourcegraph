@@ -129,8 +129,8 @@ func (v *defVisitor) Visit(node ast.Node) ast.Visitor {
 				Type: n.Type,
 			}),
 			Path:     v.fset.Position(n.Pos()).Filename,
-			Span:     makeSpan(v.fset, n),
-			NameSpan: makeSpan(v.fset, n.Name),
+			Span:     makeNodeSpan(v.fset, n),
+			NameSpan: makeNodeSpan(v.fset, n.Name),
 		})
 
 		// Don't emit a ref for the def name (it would be redundant).

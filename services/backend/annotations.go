@@ -222,28 +222,26 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 	}
 
 	vfs := vfsutil.Walkable(vcs.FileSystem(vcsrepo, vcs.CommitID(opt.Entry.RepoRev.CommitID)), filepath.Join)
-	filesByLang, err := lang.Files(ctx, vfs, func(filename string) bool { return filename == opt.Entry.Path })
+	filesByLang, err := lang.SourceFilesByLang(ctx, vfs)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO(sqs): parallelize
 	var results []*lang.RefsResult
-	for langName, fis := range filesByLang {
-		for _, fi := range fis {
-			cl, err := lang.ClientForLang(langName)
-			if err != nil {
-				return nil, err
-			}
-			res, err := cl.Refs(ctx, &lang.RefsOp{
-				Sources: fi.Sources,
-				Origins: []*lang.RefsOp_FileSpan{{File: fi.Origins[0]}},
-			})
-			if err != nil {
-				return nil, err
-			}
-			results = append(results, res)
+	for langName, sources := range filesByLang {
+		cl, err := lang.ClientForLang(langName)
+		if err != nil {
+			return nil, err
 		}
+		res, err := cl.Refs(ctx, &lang.RefsOp{
+			Sources: sources,
+			Origins: []*lang.RefsOp_FileSpan{{File: opt.Entry.Path}},
+		})
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, res)
 	}
 
 	makeURL := func(t *lang.Target) string {

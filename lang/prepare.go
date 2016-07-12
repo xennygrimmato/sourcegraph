@@ -11,19 +11,10 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vfsutil"
 )
 
-type FileInput struct {
-	Sources map[string][]byte
-	Origins []string
-}
-
-// FileInputs walks the filesystem and collects all files into the sources
-// map and origins list, grouped by their language.
-//
-// If isOrigin is set, only source files whose filename passes
-// isOrigin are used as the origin files. (All source files are still
-// included sources map).
-func Files(ctx context.Context, vfs vfsutil.WalkableFileSystem, isOrigin func(filename string) bool) (map[string][]*FileInput, error) {
-	byLang := map[string][]*FileInput{}
+// SourceFilesByLang walks the filesystem and collects all files into
+// the sources map, grouped by their language.
+func SourceFilesByLang(ctx context.Context, vfs vfsutil.WalkableFileSystem) (map[string]map[string][]byte, error) {
+	byLang := map[string]map[string][]byte{}
 
 	// Respect deadline.
 	//
@@ -56,12 +47,10 @@ func Files(ctx context.Context, vfs vfsutil.WalkableFileSystem, isOrigin func(fi
 				if _, present := Langs[lang.Name]; present {
 					// TODO(sqs): don't put all files in the same
 					// DefsOp; break up by language for now?
-					if len(byLang[lang.Name]) == 0 {
-						byLang[lang.Name] = []*FileInput{
-							{Sources: map[string][]byte{}},
-						}
+					if byLang[lang.Name] == nil {
+						byLang[lang.Name] = map[string][]byte{}
 					}
-					op := byLang[lang.Name][0]
+					sources := byLang[lang.Name]
 
 					f, err := vfs.Open(w.Path())
 					if err != nil {
@@ -73,10 +62,7 @@ func Files(ctx context.Context, vfs vfsutil.WalkableFileSystem, isOrigin func(fi
 						return nil, err
 					}
 
-					op.Sources[w.Path()] = data
-					if isOrigin == nil || isOrigin(w.Path()) {
-						op.Origins = append(op.Origins, w.Path())
-					}
+					sources[w.Path()] = data
 				}
 			}
 		}

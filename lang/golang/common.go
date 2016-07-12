@@ -19,9 +19,9 @@ func sortSources(sources map[string][]byte) []string {
 	return names
 }
 
-func makeSpan(fset *token.FileSet, n ast.Node) *lang.Span {
-	start := fset.Position(n.Pos())
-	end := fset.Position(n.End())
+func makeSpan(fset *token.FileSet, tpos, tend token.Pos) *lang.Span {
+	start := fset.Position(tpos)
+	end := fset.Position(tend)
 
 	startLine := start.Line
 	endLine := end.Line
@@ -37,4 +37,8 @@ func makeSpan(fset *token.FileSet, n ast.Node) *lang.Span {
 		EndLine:   uint32(endLine),
 		EndCol:    uint32(end.Column),
 	}
+}
+
+func makeNodeSpan(fset *token.FileSet, n ast.Node) *lang.Span {
+	return makeSpan(fset, n.Pos(), n.End())
 }
