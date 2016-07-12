@@ -828,7 +828,7 @@ func shouldIndex(d *graph.Def) bool {
 		return false
 	}
 	// Ignore local defs (KLUDGE)
-	if d.Local || strings.Contains(d.Path, "$") {
+	if d.UnitType == "GoPackage" && (d.Local || strings.Contains(d.Path, "$")) {
 		return false
 	}
 	// Ignore vendored defs
