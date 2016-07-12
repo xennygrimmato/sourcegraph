@@ -32,6 +32,10 @@ export const RESULTS_LIMIT = 20;
 
 const resultIconSize = "24px";
 
+const DOCSTRING_BASE_NUM_CHARS = 80;
+
+const SNIPPET_PADDING_NUM_CHARS = 10;
+
 function chunk(arr: Array<any>): Array<Array<any>> {
 	const len = 10;
 	const chunks = [];
@@ -69,7 +73,7 @@ class GlobalSearch extends Container {
 			matchingResults: {Repos: [], Defs: [], Options: [], Tokens: [], outstandingFetches: 0},
 			className: null,
 			resultClassName: null,
-			matchTerms: null,
+			matchTerms: "",
 			selectionIndex: -1,
 			githubToken: null,
 			searchSettings: null,
@@ -83,6 +87,7 @@ class GlobalSearch extends Container {
 		this._setSelectedItem = this._setSelectedItem.bind(this);
 		this._onSelection = debounce(this._onSelection.bind(this), 200, {leading: false, trailing: true});
 		this._highlightTerms = this._highlightTerms.bind(this);
+		this._getSnippets = this._getSnippets.bind(this);
 	}
 
 	state: {
@@ -90,7 +95,7 @@ class GlobalSearch extends Container {
 		query: string;
 		className: ?string;
 		resultClassName: ?string;
-		matchTerms: ?string;
+		matchTerms: string;
 		matchingResults: {
 			Repos: Array<Repo>,
 			Defs: Array<Def>,
@@ -239,11 +244,11 @@ class GlobalSearch extends Container {
 				state.matchingResults = null;
 			}
 		}
-
+		// This creates a regex that looks like (token0 | token1 | token2 | ...).
 		if (state.matchingResults && state.matchingResults.Tokens) {
 			state.matchTerms = `(${state.matchingResults.Tokens.map((str, i, arr) => escapeRegExp(str)).join("|")})`;
 		} else {
-			state.matchTerms = null;
+			state.matchTerms = "";
 		}
 	}
 
@@ -267,12 +272,37 @@ class GlobalSearch extends Container {
 	}
 
 	_highlightTerms(txt) {
-		if (!this.state.matchTerms || !txt) {
+		if (!(this.state.matchTerms && txt)) {
 			return txt;
 		}
 		let out: Array<any> = txt.split(new RegExp(this.state.matchTerms, "i"));
 		for (let j = 1; j < out.length; j+=2) {
 			out[j] = <span styleName="highlight" key={j}>{out[j]}</span>;
+		}
+		return out;
+	}
+
+	_getSnippets(txt, init, padSize) {
+		if (!(this.state.matchTerms && txt)) {
+			return txt;
+		}
+		let nextWordIndex = txt.indexOf(" ", init);
+		let pivot = (nextWordIndex === -1)? txt.length: nextWordIndex;
+		let [out, rest] = [txt.substring(0, pivot), txt.substring(pivot)];
+		let lastEndIndex = 0;
+		let matcher = new RegExp(this.state.matchTerms, "ig");
+		let result = matcher.exec(rest);
+		while (result) {
+			let leftPadIndex = Math.max(lastEndIndex, rest.indexOf(" ", result.index - padSize));
+			let rightPadIndex = Math.max(rest.indexOf(" ", matcher.lastIndex + padSize));
+			if (rightPadIndex === -1) {
+				rightPadIndex = rest.length;
+			}
+			let [leftPad, rightPad] = [rest.slice(leftPadIndex, result.index), rest.slice(matcher.lastIndex, rightPadIndex)];
+			let separator = "...";
+			out += `${(leftPad && !out.endsWith(separator))? separator: ""}${leftPad}${result[1]}${rightPad}${rightPad? separator: ""}`;
+			lastEndIndex = rightPadIndex;
+			result = matcher.exec(rest);
 		}
 		return out;
 	}
@@ -529,9 +559,13 @@ class GlobalSearch extends Container {
 					<div styleName="cool-gray flex-container" className={base.pt3}>
 						<div styleName="flex w100">
 					<div styleName="cool-mid-gray block-s" className={`${base.ma0} ${base.pl4} ${base.pr2} ${base.fr}`}>{trimRepo(def.Repo)}</div>
+					{/* eslint-disable */}
 					<code styleName="block f5" className={base.pb3}> {qualifiedNameAndType(def, {nameQual: "DepQualified",
 						highlighter: (x, j) => <span key={j}>{this._highlightTerms(x)}</span>})}</code>
-					{firstLineDocString && <div styleName="docstring" className={base.mt0}>{this._highlightTerms(firstLineDocString)}</div>}
+					{/* eslint-enable */}
+					{firstLineDocString &&
+						<div styleName="docstring" className={base.mt0}>
+						{this._highlightTerms(this._getSnippets(firstLineDocString, DOCSTRING_BASE_NUM_CHARS, SNIPPET_PADDING_NUM_CHARS))}</div>}
 						</div>
 					</div>
 				</Link>
