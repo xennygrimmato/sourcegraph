@@ -7,9 +7,9 @@ import EventLogger from "../analytics/EventLogger";
 export function getAuthentication(state) {
     return function (dispatch) {
     	return fetch(`https://sourcegraph.com/.api/auth-info`)
-    	.then((json) => dispatch({type: types.STORED_AUTHENTICATION, json}))
-    	.then((json) => EventLogger.setUserLogin(json.json.Login))
-    	.catch((err) => dispatch({type: types.STORED_AUTHENTICATION, err}));
+    	.then((json) => dispatch({type: types.FETCH_AUTH_INFO, json}))
+    	.then((action) => EventLogger.setUserLogin(action.json.Login))
+    	.catch((err) => dispatch({type: types.FETCH_AUTH_INFO, err}));
     }
 }
 

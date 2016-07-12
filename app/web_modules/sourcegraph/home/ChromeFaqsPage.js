@@ -1,6 +1,8 @@
 // @flow
 
 import React from "react";
+import {Link} from "react-router";
+
 import {Hero, Heading} from "sourcegraph/components";
 import styles from "sourcegraph/page/Page.css";
 import base from "sourcegraph/components/styles/_base.css";
@@ -54,12 +56,12 @@ class ChromeFaqsPage extends React.Component {
 					<a id="enable"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Enable your private repository on Sourcegraph to use the Chrome extension</Heading>
 					<p styleName="p"> Sourcegraph must be enabled for each private repository. When signed in, only you have access to examples
-					and definitions that are in your private repositories. Authorize your repositories at <a href={"https://sourcegraph.com/settings/repos"}>
-					sourcegraph.com/settings/repos </a>. </p>
+					and definitions that are in your private repositories. Authorize your repositories at <Link to="settings/repos">
+					sourcegraph.com/settings/repos </Link>. </p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Where else is Sourcegraph?</Heading>
 					<p styleName="p"> Liked the Sourcegraph Chrome extension? Sourcegraph can also help you out on your desktop, in your editor. Try global semantic search on our homepage
-					at <a href="https://sourcegraph.com"> sourcegraph.com</a> and check out more tools at <a href="https://sourcegraph.com/tools"> sourcegraph.com/tools</a>.</p>
+					at <a href="https://sourcegraph.com"> sourcegraph.com</a> and check out more tools at <Link to="/tools"> sourcegraph.com/tools</Link>.</p>
 
 					<a id="buildfailure"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Troubleshooting</Heading>

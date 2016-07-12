@@ -258,26 +258,23 @@ export default class BlobAnnotator extends Component {
 		}
 	}
 
-	_buildStatus(build) {
-		if (!build || build.Failure || build.Killed) return "n/a";
-		return "Indexing...";
-	}
-
 	_indicatorText(repoURI, rev) {
 		let build = this._getBuild(repoURI, rev);
 		let data = this._getSrclibDataVersion(repoURI, rev);
 		if (data) return "Indexed";
-		if(this._buildStatus(build) === "Indexing...") return "Indexing";
+		console.log(this.state);
+		if (build && !build.Failure && !build.Killed) return "Indexing";
 
+
+		// issue: there's a conflict between not being signed in and something being indexed
 		let webToken = this.props.accessToken;
-		//if (!webToken || webToken === "") return "Sign in to Sourcegraph";
-
-		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
-		if (!scopeAuth) return "Enable Sourcegraph";
+		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+		let scopeAuth = "";
+		if (this.props.authentication && this.props.authentication.GitHubToken && this.props.authentication.GitHubToken.scope) scopeAuth = this.props.authentication.GitHubToken.scope;
 		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (name === "") return "Enable Sourcegraph";
 
-		if(!build) return "";
+		if (!build) return "";
 		if (build.Failure) return "No annotations found";
 		return "";
 	}
@@ -286,21 +283,19 @@ export default class BlobAnnotator extends Component {
 		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text});
 	}
 
-	getRender(indicatorText, pr) {
+	getBuildIndicator(indicatorText, prefix) {
 		let url = "https://staging.sourcegraph.com";
 		switch (indicatorText) {
 			case "Indexed":
-				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
 			case "Indexing":
-				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
-			case "Sign in to Sourcegraph":
-				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}>{pr}{indicatorText}</a>);
-			case "Enable Sourcegraph":
-				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}>{pr}{indicatorText}</a>);
-			case "No annotations found":
-				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}>{pr}{indicatorText}</a>);
 			case "Unsupported language":
-				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
+				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
+			case "Sign in to Sourcegraph":
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}>{prefix}{indicatorText}</a>);
+			case "Enable Sourcegraph":
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}>{prefix}{indicatorText}</a>);
+			case "No annotations found":
+				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}>{prefix}{indicatorText}</a>);
 			default:
 				return (<span/>);
 		}
@@ -314,12 +309,12 @@ export default class BlobAnnotator extends Component {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
 		}
 		if (!this.state.isDelta) {
-			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getRender(indicatorText,null)} </span>);
+			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getBuildIndicator(indicatorText,null)} </span>);
 		} else {
 			let baseText = this._indicatorText(this.state.baseRepoURI, this.state.baseCommitID);
 			let headText = this._indicatorText(this.state.headRepoURI, this.state.headCommitID);
-			let baseRender = this.getRender(baseText);
-			let headRender = this.getRender(headText);
+			let baseRender = this.getBuildIndicator(baseText);
+			let headRender = this.getBuildIndicator(headText);
 			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getRender(baseText,"base: ")} {this.getRender(headText,"head: ")} </span>);
 		}
 	}

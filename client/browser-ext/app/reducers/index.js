@@ -4,7 +4,7 @@ import * as ActionTypes from "../constants/ActionTypes";
 
 const authentication = function(state = null, action) {
   	switch (action.type) {
-  	case ActionTypes.STORED_AUTHENTICATION:
+  	case ActionTypes.FETCH_AUTH_INFO:
   		return action.json ? action.json : state;
   	default:
   		return state;
