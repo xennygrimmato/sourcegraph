@@ -37,7 +37,7 @@ class ChromeFaqsPage extends React.Component {
 					<Heading level="3" underline="blue" className={styles.h5}>How it works</Heading>
 					<p styleName="p"> Sourcegraph is how developers discover and understand code. It is a fast, global, semantic code search and cross-reference engine.
 					You can search for any function, type, or package, and see how other developers use it, globally. It's cross-repository and massively scalable, with
-					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
+					2,000,000,000+ nodes in the public code ind.......ex (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Using the extension anonymously</Heading>
 					<p styleName="p">Sourcegraph indexes popular public repositories written in supported languages. Don't see a public repository you'd like indexed? Sign in @ Sourcegraph.com,
@@ -45,14 +45,15 @@ class ChromeFaqsPage extends React.Component {
 
 					<a id="signin"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Sign up or sign in to access private repositories</Heading>
-					<p styleName="p"> You must be signed in on Sourcegraph.com to access your private repositories. Sign in or sign up below with GitHub OAuth.</p>
+					<p styleName="p"> You must be signed in on Sourcegraph.com to access your indexed private repositories, or enable Sourcegraph to index your private repositories. Sign in or
+					sign up below with GitHub OAuth.</p>
 					<div styleName="tc">
 					<GitHubAuthButton returnTo="/chrome-faqs#signin"> Enable for private repositories</GitHubAuthButton>
 					</div>
 
 					<a id="enable"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Enable your private repository on Sourcegraph to use the Chrome extension</Heading>
-					<p styleName="p"> Sourcegraph must be enabled for each private repository. Only you have access to examples
+					<p styleName="p"> Sourcegraph must be enabled for each private repository. When signed in, only you have access to examples
 					and definitions that are in your private repositories. Authorize your repositories at <a href={"https://sourcegraph.com/settings/repos"}>
 					sourcegraph.com/settings/repos </a>. </p>
 

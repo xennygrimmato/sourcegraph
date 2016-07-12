@@ -270,7 +270,7 @@ export default class BlobAnnotator extends Component {
 		if(this._buildStatus(build) === "Indexing...") return "Indexing";
 
 		let webToken = this.props.accessToken;
-		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+		//if (!webToken || webToken === "") return "Sign in to Sourcegraph";
 
 		let scopeAuth = this.props.authentication ? this.props.authentication.GitHubToken.scope : "";
 		if (!scopeAuth) return "Enable Sourcegraph";
@@ -278,7 +278,7 @@ export default class BlobAnnotator extends Component {
 		if (name === "") return "Enable Sourcegraph";
 
 		if(!build) return "";
-		if (build.Failure) return "Cannot annotate file";
+		if (build.Failure) return "No annotations found";
 		return "";
 	}
 
@@ -286,7 +286,7 @@ export default class BlobAnnotator extends Component {
 		EventLogger.logEvent("ChromeExtensionFaqsClicked", {type: ev.target.text});
 	}
 
-	getRender(indicatorText,pr) {
+	getRender(indicatorText, pr) {
 		let url = "https://staging.sourcegraph.com";
 		switch (indicatorText) {
 			case "Indexed":
@@ -297,7 +297,7 @@ export default class BlobAnnotator extends Component {
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}>{pr}{indicatorText}</a>);
 			case "Enable Sourcegraph":
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}>{pr}{indicatorText}</a>);
-			case "Cannot annotate file":
+			case "No annotations found":
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}>{pr}{indicatorText}</a>);
 			case "Unsupported language":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{pr}{indicatorText}</span>);
