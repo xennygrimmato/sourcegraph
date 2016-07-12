@@ -149,6 +149,10 @@ message DefsOp {
 
 	// constraints narrow the set of defs to return.
 	map<string, string> constraints = 4;
+
+	// config is (for now) free-form config key-value pairs that are
+	// interpreted separately by each lang server.
+	map<string, string> config = 5;
 }
 
 message DefsResult {
@@ -165,6 +169,10 @@ message RefsOp {
 		Span span = 2; // the point (0-length span) or range in the file
 	}
 	repeated FileSpan origins = 2; // only return refs from these files
+
+	// config is (for now) free-form config key-value pairs that are
+	// interpreted separately by each lang server.
+	map<string, string> config = 3;
 }
 
 message Refs {
@@ -183,6 +191,10 @@ message RefsResult {
 message ToksOp {
 	// source is the input text to be tokenized.
 	bytes source = 1;
+
+	// config is (for now) free-form config key-value pairs that are
+	// interpreted separately by each lang server.
+	map<string, string> config = 2;
 }
 
 // Tok represents a token in source code (i.e., the result of

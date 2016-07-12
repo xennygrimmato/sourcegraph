@@ -1,9 +1,10 @@
-package refinfo
+package golang
 
 import (
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -14,16 +15,37 @@ import (
 )
 
 func newImporter(fset *token.FileSet, build *build.Context) types.Importer {
+	// TODO(sqs): For being able to save/store our own .a files
+	// separate from the FS. This is not yet implemented in package
+	// gcimporter.
+	//
+	// lookup := func(path string) (io.ReadCloser, error) {
+	// 	return buildutil.OpenFile(build, path)
+	// }
+	//
+	// imp, ok := importer.For("gc", lookup).(types.ImporterFrom)
+	// if !ok {
+	// 	panic("importer does not support ImporterFrom (necessary to support vendor/ dir)")
+	// }
+
+	imp, ok := importer.Default().(types.ImporterFrom)
+	if !ok {
+		panic("default importer does not support ImporterFrom (necessary to support vendor/ dir)")
+	}
+
 	return &sourceImporterFrom{
-		fset:   fset,
-		build:  build,
-		cached: map[importerPkgKey]*types.Package{},
+		ImporterFrom: imp,
+		fset:         fset,
+		build:        build,
+		cached:       map[importerPkgKey]*types.Package{},
 	}
 }
 
 type importerPkgKey struct{ path, srcDir string }
 
 type sourceImporterFrom struct {
+	types.ImporterFrom
+
 	fset   *token.FileSet
 	build  *build.Context
 	cached map[importerPkgKey]*types.Package
@@ -38,6 +60,11 @@ var _ (types.ImporterFrom) = (*sourceImporterFrom)(nil)
 func (s *sourceImporterFrom) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
 	log.Println("XXXXXXXXX IMPORT", path+"QQQQ")
 
+	pkg, err := s.ImporterFrom.ImportFrom(path, srcDir, mode)
+	if pkg != nil {
+		return pkg, err
+	}
+
 	key := importerPkgKey{path, srcDir}
 	if pkg := s.cached[key]; pkg != nil {
 		if pkg.Complete() {
@@ -49,7 +76,7 @@ func (s *sourceImporterFrom) ImportFrom(path, srcDir string, mode types.ImportMo
 	if true {
 		t0 := time.Now()
 		defer func() {
-			dlog.Printf("source import of %s took %s", path, time.Since(t0))
+			log.Printf("source import of %s took %s", path, time.Since(t0))
 		}()
 	}
 
@@ -83,7 +110,7 @@ func (s *sourceImporterFrom) ImportFrom(path, srcDir string, mode types.ImportMo
 		DisableUnusedImportCheck: true,
 		Error: func(error) {},
 	}
-	pkg, err := conf.Check(path, s.fset, pkgFiles, nil)
+	pkg, err = conf.Check(path, s.fset, pkgFiles, nil)
 	if pkg != nil {
 		s.cached[key] = pkg
 	}

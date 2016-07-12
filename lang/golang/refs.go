@@ -5,15 +5,19 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"path"
 	"strings"
 
 	"golang.org/x/net/context"
 	"golang.org/x/tools/go/buildutil"
+	"golang.org/x/tools/go/loader"
 
 	"sourcegraph.com/sourcegraph/sourcegraph/lang"
 	"sourcegraph.com/sourcegraph/sourcegraph/lang/golang/refinfo"
 )
+
+const _TMP_dir = "/home/sqs/src/github.com/gorilla/mux/"
 
 // TODO(sqs): use golang.org/x/tools/go/buildutil OverlayContext? Says
 // only Context.OpenFile respects it right now, so maybe hold off.
@@ -33,12 +37,60 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 	}
 	m["net/http"] = map[string]string{"x.go": "package http; func NewRequest() {}"}
 	bctx := buildutil.FakeContext(m)
+	bctx = &dummyBuildContext
 
 	fset := token.NewFileSet()
 
 	cfg := refinfo.Config{
-		Build: bctx,
-		Fset:  fset,
+		Build:    bctx,
+		Fset:     fset,
+		Importer: newImporter(fset, bctx),
+	}
+	cacheForParseFile := map[string]*ast.File{}
+	cfg.ParseFile = func(dir, filename string) (*ast.File, error) {
+		key := path.Join(dir, filename)
+		if f, present := cacheForParseFile[key]; present {
+			return f, nil
+		}
+
+		displayPath := func(path string) string {
+			return strings.TrimPrefix(path, _TMP_dir)
+		}
+		f, err := buildutil.ParseFile(cfg.Fset, cfg.Build, displayPath, _TMP_dir, filename, 0)
+		if f != nil {
+			cacheForParseFile[key] = f
+		}
+		return f, err
+	}
+	cacheForCreateFromFilesAndLoad := map[string]*loader.Program{}
+	cfg.CreateFromFilesAndLoad = func(dir, importPath string, astFiles ...*ast.File) (prog *loader.Program, msgs []string, err error) {
+		if prog, present := cacheForCreateFromFilesAndLoad[importPath]; present {
+			return prog, nil, nil
+		}
+
+		// If we're here, then the pure AST-based approach was
+		// unsuccessful. Perform a full type analysis of the program.
+		conf := loader.Config{
+			Fset: cfg.Fset,
+			TypeChecker: types.Config{
+				Importer:                 cfg.Importer,
+				FakeImportC:              true,
+				DisableUnusedImportCheck: true,
+				Error: func(err error) {
+					msgs = append(msgs, "typecheck: "+err.Error())
+				},
+			},
+			TypeCheckFuncBodies: func(path string) bool { return path == importPath },
+			Build:               cfg.Build,
+			Cwd:                 dir,
+			AllowErrors:         true,
+		}
+		conf.CreateFromFiles(importPath, astFiles...)
+		prog, err = conf.Load()
+		if prog != nil {
+			cacheForCreateFromFilesAndLoad[importPath] = prog
+		}
+		return
 	}
 
 	hasErrors := false
@@ -102,6 +154,9 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 				} else {
 					res.Messages = append(res.Messages, err.Error())
 				}
+				continue
+			}
+			if ri == nil {
 				continue
 			}
 			// TODO(sqs): collect these

@@ -70,7 +70,25 @@ type LangConfig struct {
 }
 
 type langCmdCommon struct {
-	Format string `short:"f" long:"format" description:"output format" choice:"text" choice:"json" default:"text" required:"yes"`
+	Format string   `short:"f" long:"format" description:"output format" choice:"text" choice:"json" default:"text" required:"yes"`
+	Config []string `short:"O" long:"opt" description:"set lang server-specific config (can be used multiple times)" value-name:"KEY=VALUE"`
+}
+
+func (c *langCmdCommon) configMap() (map[string]string, error) {
+	m := make(map[string]string, len(c.Config))
+	for _, kv := range c.Config {
+		parts := strings.SplitN(kv, "=", 2)
+		key := parts[0]
+		var val string
+		if len(parts) == 2 {
+			val = parts[1]
+		}
+		if _, present := m[key]; present {
+			return nil, fmt.Errorf("--opt/-O config: key %q may be specified at most once", key)
+		}
+		m[key] = val
+	}
+	return m, nil
 }
 
 type fileInputArgs struct {
@@ -134,11 +152,17 @@ type langDefsCmd struct {
 }
 
 func (c *langDefsCmd) Execute(args []string) error {
+	config, err := c.configMap()
+	if err != nil {
+		return err
+	}
+
 	return c.forEachLangWithFileInput(context.Background(),
 		func(ctx context.Context, langName string, cl lang.LangClient, fi *lang.FileInput) error {
 			defs, err := cl.Defs(ctx, &lang.DefsOp{
 				Sources: fi.Sources,
 				Origins: fi.Origins,
+				Config:  config,
 			})
 			if err != nil {
 				return fmt.Errorf("invoking defs for lang %s: %s", langName, err)
@@ -249,6 +273,11 @@ type langRefsCmd struct {
 }
 
 func (c *langRefsCmd) Execute(args []string) error {
+	config, err := c.configMap()
+	if err != nil {
+		return err
+	}
+
 	if c.Match != "" && c.Coverage {
 		return errors.New("at most one of -m/--match and --coverage may be used")
 	}
@@ -267,6 +296,7 @@ func (c *langRefsCmd) Execute(args []string) error {
 			refs, err := cl.Refs(ctx, &lang.RefsOp{
 				Sources: fi.Sources,
 				Origins: fileSpans,
+				Config:  config,
 			})
 			if err != nil {
 				return fmt.Errorf("invoking refs for lang %s: %s", langName, err)
@@ -484,6 +514,11 @@ type langToksCmd struct {
 }
 
 func (c *langToksCmd) Execute(args []string) error {
+	config, err := c.configMap()
+	if err != nil {
+		return err
+	}
+
 	data, err := ioutil.ReadFile(c.Args.File)
 	if err != nil {
 		return err
@@ -497,7 +532,10 @@ func (c *langToksCmd) Execute(args []string) error {
 			return err
 		}
 
-		toks, err := cl.Toks(ctx, &lang.ToksOp{Source: data})
+		toks, err := cl.Toks(ctx, &lang.ToksOp{
+			Source: data,
+			Config: config,
+		})
 		if err != nil {
 			return err
 		}

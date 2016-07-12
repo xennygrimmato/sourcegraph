@@ -11,31 +11,28 @@ import (
 	"log"
 	"os"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/buildutil"
 	"golang.org/x/tools/go/loader"
 )
 
+const alwaysUseTypes = false // return what go/types says, not the faster ast codepaths
+
 type Config struct {
-	Build *build.Context
-	Fset  *token.FileSet
+	Build    *build.Context
+	Fset     *token.FileSet
+	Importer types.Importer
+
+	ParseFile              func(dir, filename string) (*ast.File, error)
+	CreateFromFilesAndLoad func(dir, importPath string, astFiles ...*ast.File) (prog *loader.Program, msgs []string, err error)
 }
 
 // TODO(sqs): dummy methods, to be replaced by injectable fields
 
-const _TMP_dir = "/go/src/github.com/gorilla/mux/"
-
-func (c *Config) ParseFile(dir, filename string) (*ast.File, error) {
-	displayPath := func(path string) string {
-		return strings.TrimPrefix(path, _TMP_dir)
-	}
-	return buildutil.ParseFile(c.Fset, c.Build, displayPath, _TMP_dir, filename, 0)
-}
+const _TMP_dir = "/home/sqs/src/github.com/gorilla/mux/"
 
 var dlog = log.New(os.Stderr, "DEBUG: ", 0)
 
@@ -58,12 +55,6 @@ func (v RefInfo) DefName() string {
 }
 
 func (c *Config) Get(ctx context.Context, filename string, offset uint32) (*RefInfo, []string, error) {
-	t0 := time.Now()
-	defer func() {
-		//log.Println("TOOK", time.Since(t0))
-		_ = t0
-	}()
-
 	var msgs []string
 
 	dir := path.Dir(filename)
@@ -92,7 +83,7 @@ func (c *Config) Get(ctx context.Context, filename string, offset uint32) (*RefI
 		if err != nil {
 			msgs = append(msgs, err.Error())
 		}
-		if ri != nil {
+		if ri != nil && !alwaysUseTypes {
 			return ri, msgs, nil
 		}
 	}
@@ -141,6 +132,7 @@ func (c *Config) Get(ctx context.Context, filename string, offset uint32) (*RefI
 			}
 			astFiles[file] = f
 		}
+
 		// Creating the package mutates the files' ASTs to link up
 		// more info. Call ast.NewPackage for these side effects.
 		//
@@ -159,38 +151,21 @@ func (c *Config) Get(ctx context.Context, filename string, offset uint32) (*RefI
 		if err != nil {
 			msgs = append(msgs, err.Error())
 		}
-		if ri != nil {
+		if ri != nil && !alwaysUseTypes {
 			return ri, msgs, nil
 		}
 	}
 
 	{
-		// If we're here, then the pure AST-based approach was
-		// unsuccessful. Perform a full type analysis of the program.
-		conf := loader.Config{
-			Fset: c.Fset,
-			TypeChecker: types.Config{
-				Importer:                 newImporter(c.Fset, c.Build), // TODO(sqs)
-				FakeImportC:              true,
-				DisableUnusedImportCheck: true,
-				Error: func(err error) {
-					msgs = append(msgs, "typecheck: "+err.Error())
-				},
-			},
-			TypeCheckFuncBodies: func(path string) bool { return path == importPath },
-			Build:               c.Build,
-			Cwd:                 dir,
-			AllowErrors:         true,
-		}
-		conf.CreateFromFiles(importPath, astFileSlice(astFiles)...)
-		prog, err := conf.Load()
+		prog, xmsgs, err := c.CreateFromFilesAndLoad(dir, importPath, astFileSlice(astFiles)...)
 		if err != nil {
 			msgs = append(msgs, "conf.Load: "+err.Error())
 		}
+		msgs = append(msgs, xmsgs...)
 		if prog != nil {
 			for _, pkg := range prog.Created {
 				if pkg.Pkg.Path() == importPath {
-					ri, err := get(pkg, astFile, pos)
+					ri, err := get(pkg, astFile, pos, enclosingNodes)
 					return ri, msgs, err
 				}
 			}
@@ -208,8 +183,8 @@ func astFileSlice(m map[string]*ast.File) []*ast.File {
 	return files
 }
 
-func getFromAST(nodes []ast.Node) (*RefInfo, error) {
-	n := nodes[0]
+func getFromAST(enclosingNodes []ast.Node) (*RefInfo, error) {
+	n := enclosingNodes[0]
 	if n, ok := n.(*ast.Ident); ok {
 		if n.Obj != nil && n.Obj.Decl != nil {
 			if decl, ok := n.Obj.Decl.(ast.Node); ok {
@@ -220,12 +195,15 @@ func getFromAST(nodes []ast.Node) (*RefInfo, error) {
 	return nil, nil
 }
 
-func get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*RefInfo, error) {
-	nodes, _ := pathEnclosingInterval(file, pos, pos)
+func get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos, enclosingNodes []ast.Node) (*RefInfo, error) {
+	// Package name after file's top `package` keyword.
+	if enclosingNodes[0] == file.Name {
+		return &RefInfo{Node: file.Name, PkgPath: pkg.Pkg.Path()}, nil
+	}
 
 	// Handle import statements.
-	if len(nodes) > 2 {
-		if im, ok := nodes[1].(*ast.ImportSpec); ok {
+	if len(enclosingNodes) > 2 {
+		if im, ok := enclosingNodes[1].(*ast.ImportSpec); ok {
 			pkgPath, err := strconv.Unquote(im.Path.Value)
 			if err != nil {
 				return nil, err
@@ -236,16 +214,16 @@ func get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*RefInfo, erro
 
 	var identX *ast.Ident
 	var selX *ast.SelectorExpr
-	selX, ok := nodes[0].(*ast.SelectorExpr)
+	selX, ok := enclosingNodes[0].(*ast.SelectorExpr)
 	if ok {
 		identX = selX.Sel
 	} else {
-		identX, ok = nodes[0].(*ast.Ident)
+		identX, ok = enclosingNodes[0].(*ast.Ident)
 		if !ok {
 			return nil, errors.New("no identifier found")
 		}
-		if len(nodes) > 1 {
-			selX, _ = nodes[1].(*ast.SelectorExpr)
+		if len(enclosingNodes) > 1 {
+			selX, _ = enclosingNodes[1].(*ast.SelectorExpr)
 		}
 	}
 
@@ -270,8 +248,8 @@ func get(pkg *loader.PackageInfo, file *ast.File, pos token.Pos) (*RefInfo, erro
 		}
 
 		// Struct field.
-		if _, ok := nodes[1].(*ast.Field); ok {
-			if typ, ok := nodes[4].(*ast.TypeSpec); ok {
+		if _, ok := enclosingNodes[1].(*ast.Field); ok {
+			if typ, ok := enclosingNodes[4].(*ast.TypeSpec); ok {
 				return &RefInfo{
 					PkgPath: obj.Pkg().Path(),
 					Def1:    typ.Name.Name,
@@ -505,417 +483,3 @@ func objRefInfo(obj types.Object, Def2 string) *RefInfo {
 // https://raw.githubusercontent.com/golang/tools/c86fe5956d4575f29850535871a97abbd403a145/go/ast/astutil/enclosing.go
 // to eliminate external (non-stdlib) dependencies.
 ////////////////////////////////////////////////////////////////////////////////////////
-
-func pathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Node, exact bool) {
-	// fmt.Printf("EnclosingInterval %d %d\n", start, end) // debugging
-
-	// Precondition: node.[Pos..End) and adjoining whitespace contain [start, end).
-	var visit func(node ast.Node) bool
-	visit = func(node ast.Node) bool {
-		path = append(path, node)
-
-		nodePos := node.Pos()
-		nodeEnd := node.End()
-
-		// fmt.Printf("visit(%T, %d, %d)\n", node, nodePos, nodeEnd) // debugging
-
-		// Intersect [start, end) with interval of node.
-		if start < nodePos {
-			start = nodePos
-		}
-		if end > nodeEnd {
-			end = nodeEnd
-		}
-
-		// Find sole child that contains [start, end).
-		children := childrenOf(node)
-		l := len(children)
-		for i, child := range children {
-			// [childPos, childEnd) is unaugmented interval of child.
-			childPos := child.Pos()
-			childEnd := child.End()
-
-			// [augPos, augEnd) is whitespace-augmented interval of child.
-			augPos := childPos
-			augEnd := childEnd
-			if i > 0 {
-				augPos = children[i-1].End() // start of preceding whitespace
-			}
-			if i < l-1 {
-				nextChildPos := children[i+1].Pos()
-				// Does [start, end) lie between child and next child?
-				if start >= augEnd && end <= nextChildPos {
-					return false // inexact match
-				}
-				augEnd = nextChildPos // end of following whitespace
-			}
-
-			// fmt.Printf("\tchild %d: [%d..%d)\tcontains interval [%d..%d)?\n",
-			// 	i, augPos, augEnd, start, end) // debugging
-
-			// Does augmented child strictly contain [start, end)?
-			if augPos <= start && end <= augEnd {
-				_, isToken := child.(tokenNode)
-				return isToken || visit(child)
-			}
-
-			// Does [start, end) overlap multiple children?
-			// i.e. left-augmented child contains start
-			// but LR-augmented child does not contain end.
-			if start < childEnd && end > augEnd {
-				break
-			}
-		}
-
-		// No single child contained [start, end),
-		// so node is the result.  Is it exact?
-
-		// (It's tempting to put this condition before the
-		// child loop, but it gives the wrong result in the
-		// case where a node (e.g. ExprStmt) and its sole
-		// child have equal intervals.)
-		if start == nodePos && end == nodeEnd {
-			return true // exact match
-		}
-
-		return false // inexact: overlaps multiple children
-	}
-
-	if start > end {
-		start, end = end, start
-	}
-
-	if start < root.End() && end > root.Pos() {
-		if start == end {
-			end = start + 1 // empty interval => interval of size 1
-		}
-		exact = visit(root)
-
-		// Reverse the path:
-		for i, l := 0, len(path); i < l/2; i++ {
-			path[i], path[l-1-i] = path[l-1-i], path[i]
-		}
-	} else {
-		// Selection lies within whitespace preceding the
-		// first (or following the last) declaration in the file.
-		// The result nonetheless always includes the ast.File.
-		path = append(path, root)
-	}
-
-	return
-}
-
-// tokenNode is a dummy implementation of ast.Node for a single token.
-// They are used transiently by PathEnclosingInterval but never escape
-// this package.
-//
-type tokenNode struct {
-	pos token.Pos
-	end token.Pos
-}
-
-func (n tokenNode) Pos() token.Pos {
-	return n.pos
-}
-
-func (n tokenNode) End() token.Pos {
-	return n.end
-}
-
-func tok(pos token.Pos, len int) ast.Node {
-	return tokenNode{pos, pos + token.Pos(len)}
-}
-
-// childrenOf returns the direct non-nil children of ast.Node n.
-// It may include fake ast.Node implementations for bare tokens.
-// it is not safe to call (e.g.) ast.Walk on such nodes.
-//
-func childrenOf(n ast.Node) []ast.Node {
-	var children []ast.Node
-
-	// First add nodes for all true subtrees.
-	ast.Inspect(n, func(node ast.Node) bool {
-		if node == n { // push n
-			return true // recur
-		}
-		if node != nil { // push child
-			children = append(children, node)
-		}
-		return false // no recursion
-	})
-
-	// Then add fake Nodes for bare tokens.
-	switch n := n.(type) {
-	case *ast.ArrayType:
-		children = append(children,
-			tok(n.Lbrack, len("[")),
-			tok(n.Elt.End(), len("]")))
-
-	case *ast.AssignStmt:
-		children = append(children,
-			tok(n.TokPos, len(n.Tok.String())))
-
-	case *ast.BasicLit:
-		children = append(children,
-			tok(n.ValuePos, len(n.Value)))
-
-	case *ast.BinaryExpr:
-		children = append(children, tok(n.OpPos, len(n.Op.String())))
-
-	case *ast.BlockStmt:
-		children = append(children,
-			tok(n.Lbrace, len("{")),
-			tok(n.Rbrace, len("}")))
-
-	case *ast.BranchStmt:
-		children = append(children,
-			tok(n.TokPos, len(n.Tok.String())))
-
-	case *ast.CallExpr:
-		children = append(children,
-			tok(n.Lparen, len("(")),
-			tok(n.Rparen, len(")")))
-		if n.Ellipsis != 0 {
-			children = append(children, tok(n.Ellipsis, len("...")))
-		}
-
-	case *ast.CaseClause:
-		if n.List == nil {
-			children = append(children,
-				tok(n.Case, len("default")))
-		} else {
-			children = append(children,
-				tok(n.Case, len("case")))
-		}
-		children = append(children, tok(n.Colon, len(":")))
-
-	case *ast.ChanType:
-		switch n.Dir {
-		case ast.RECV:
-			children = append(children, tok(n.Begin, len("<-chan")))
-		case ast.SEND:
-			children = append(children, tok(n.Begin, len("chan<-")))
-		case ast.RECV | ast.SEND:
-			children = append(children, tok(n.Begin, len("chan")))
-		}
-
-	case *ast.CommClause:
-		if n.Comm == nil {
-			children = append(children,
-				tok(n.Case, len("default")))
-		} else {
-			children = append(children,
-				tok(n.Case, len("case")))
-		}
-		children = append(children, tok(n.Colon, len(":")))
-
-	case *ast.Comment:
-		// nop
-
-	case *ast.CommentGroup:
-		// nop
-
-	case *ast.CompositeLit:
-		children = append(children,
-			tok(n.Lbrace, len("{")),
-			tok(n.Rbrace, len("{")))
-
-	case *ast.DeclStmt:
-		// nop
-
-	case *ast.DeferStmt:
-		children = append(children,
-			tok(n.Defer, len("defer")))
-
-	case *ast.Ellipsis:
-		children = append(children,
-			tok(n.Ellipsis, len("...")))
-
-	case *ast.EmptyStmt:
-		// nop
-
-	case *ast.ExprStmt:
-		// nop
-
-	case *ast.Field:
-		// TODO(adonovan): Field.{Doc,Comment,Tag}?
-
-	case *ast.FieldList:
-		children = append(children,
-			tok(n.Opening, len("(")),
-			tok(n.Closing, len(")")))
-
-	case *ast.File:
-		// TODO test: Doc
-		children = append(children,
-			tok(n.Package, len("package")))
-
-	case *ast.ForStmt:
-		children = append(children,
-			tok(n.For, len("for")))
-
-	case *ast.FuncDecl:
-		// TODO(adonovan): FuncDecl.Comment?
-
-		// Uniquely, FuncDecl breaks the invariant that
-		// preorder traversal yields tokens in lexical order:
-		// in fact, FuncDecl.Recv precedes FuncDecl.Type.Func.
-		//
-		// As a workaround, we inline the case for FuncType
-		// here and order things correctly.
-		//
-		children = nil // discard ast.Walk(FuncDecl) info subtrees
-		children = append(children, tok(n.Type.Func, len("func")))
-		if n.Recv != nil {
-			children = append(children, n.Recv)
-		}
-		children = append(children, n.Name)
-		if n.Type.Params != nil {
-			children = append(children, n.Type.Params)
-		}
-		if n.Type.Results != nil {
-			children = append(children, n.Type.Results)
-		}
-		if n.Body != nil {
-			children = append(children, n.Body)
-		}
-
-	case *ast.FuncLit:
-		// nop
-
-	case *ast.FuncType:
-		if n.Func != 0 {
-			children = append(children,
-				tok(n.Func, len("func")))
-		}
-
-	case *ast.GenDecl:
-		children = append(children,
-			tok(n.TokPos, len(n.Tok.String())))
-		if n.Lparen != 0 {
-			children = append(children,
-				tok(n.Lparen, len("(")),
-				tok(n.Rparen, len(")")))
-		}
-
-	case *ast.GoStmt:
-		children = append(children,
-			tok(n.Go, len("go")))
-
-	case *ast.Ident:
-		children = append(children,
-			tok(n.NamePos, len(n.Name)))
-
-	case *ast.IfStmt:
-		children = append(children,
-			tok(n.If, len("if")))
-
-	case *ast.ImportSpec:
-		// TODO(adonovan): ImportSpec.{Doc,EndPos}?
-
-	case *ast.IncDecStmt:
-		children = append(children,
-			tok(n.TokPos, len(n.Tok.String())))
-
-	case *ast.IndexExpr:
-		children = append(children,
-			tok(n.Lbrack, len("{")),
-			tok(n.Rbrack, len("}")))
-
-	case *ast.InterfaceType:
-		children = append(children,
-			tok(n.Interface, len("interface")))
-
-	case *ast.KeyValueExpr:
-		children = append(children,
-			tok(n.Colon, len(":")))
-
-	case *ast.LabeledStmt:
-		children = append(children,
-			tok(n.Colon, len(":")))
-
-	case *ast.MapType:
-		children = append(children,
-			tok(n.Map, len("map")))
-
-	case *ast.ParenExpr:
-		children = append(children,
-			tok(n.Lparen, len("(")),
-			tok(n.Rparen, len(")")))
-
-	case *ast.RangeStmt:
-		children = append(children,
-			tok(n.For, len("for")),
-			tok(n.TokPos, len(n.Tok.String())))
-
-	case *ast.ReturnStmt:
-		children = append(children,
-			tok(n.Return, len("return")))
-
-	case *ast.SelectStmt:
-		children = append(children,
-			tok(n.Select, len("select")))
-
-	case *ast.SelectorExpr:
-		// nop
-
-	case *ast.SendStmt:
-		children = append(children,
-			tok(n.Arrow, len("<-")))
-
-	case *ast.SliceExpr:
-		children = append(children,
-			tok(n.Lbrack, len("[")),
-			tok(n.Rbrack, len("]")))
-
-	case *ast.StarExpr:
-		children = append(children, tok(n.Star, len("*")))
-
-	case *ast.StructType:
-		children = append(children, tok(n.Struct, len("struct")))
-
-	case *ast.SwitchStmt:
-		children = append(children, tok(n.Switch, len("switch")))
-
-	case *ast.TypeAssertExpr:
-		children = append(children,
-			tok(n.Lparen-1, len(".")),
-			tok(n.Lparen, len("(")),
-			tok(n.Rparen, len(")")))
-
-	case *ast.TypeSpec:
-		// TODO(adonovan): TypeSpec.{Doc,Comment}?
-
-	case *ast.TypeSwitchStmt:
-		children = append(children, tok(n.Switch, len("switch")))
-
-	case *ast.UnaryExpr:
-		children = append(children, tok(n.OpPos, len(n.Op.String())))
-
-	case *ast.ValueSpec:
-		// TODO(adonovan): ValueSpec.{Doc,Comment}?
-
-	case *ast.BadDecl, *ast.BadExpr, *ast.BadStmt:
-		// nop
-	}
-
-	// TODO(adonovan): opt: merge the logic of ast.Inspect() into
-	// the switch above so we can make interleaved callbacks for
-	// both Nodes and Tokens in the right order and avoid the need
-	// to sort.
-	sort.Sort(byPos(children))
-
-	return children
-}
-
-type byPos []ast.Node
-
-func (sl byPos) Len() int {
-	return len(sl)
-}
-func (sl byPos) Less(i, j int) bool {
-	return sl[i].Pos() < sl[j].Pos()
-}
-func (sl byPos) Swap(i, j int) {
-	sl[i], sl[j] = sl[j], sl[i]
-}
