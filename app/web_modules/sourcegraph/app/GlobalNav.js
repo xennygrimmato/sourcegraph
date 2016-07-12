@@ -15,7 +15,7 @@ import {EllipsisHorizontal, CheckIcon} from "sourcegraph/components/Icons";
 import {FaChevronDown} from "sourcegraph/components/Icons";
 import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
 import GlobalSearchInput from "sourcegraph/search/GlobalSearchInput";
-import {locationForSearch, queryFromStateOrURL} from "sourcegraph/search/routes";
+import {locationForSearch, queryFromStateOrURL, langFromStateOrURL, scopeFromStateOrURL} from "sourcegraph/search/routes";
 import GlobalSearch from "sourcegraph/search/GlobalSearch";
 import SearchSettings from "sourcegraph/search/SearchSettings";
 import invariant from "invariant";
@@ -23,7 +23,6 @@ import {rel} from "sourcegraph/app/routePatterns";
 import {repoPath, repoParam} from "sourcegraph/repo";
 import {isPage} from "sourcegraph/page";
 import debounce from "lodash.debounce";
-import UserStore from "sourcegraph/user/UserStore";
 
 function GlobalNav({navContext, location, params, channelStatusCode}, {user, siteConfig, signedIn, router, eventLogger}) {
 	const isHomepage = location.pathname === "/";
@@ -151,6 +150,8 @@ class SearchForm extends React.Component {
 		super(props);
 
 		this.state.query = queryFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
+		this.state.lang = langFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
+		this.state.scope = scopeFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
 
 		this._handleGlobalHotkey = this._handleGlobalHotkey.bind(this);
 		this._handleGlobalClick = this._handleGlobalClick.bind(this);
@@ -166,10 +167,14 @@ class SearchForm extends React.Component {
 		open: bool;
 		focused: bool;
 		query: ?string;
+		lang: ?string[];
+		scope: ?Object;
 	} = {
 		open: false,
 		focused: false,
 		query: null,
+		lang: null,
+		scope: null,
 	};
 
 	componentDidMount() {
@@ -240,17 +245,14 @@ class SearchForm extends React.Component {
 
 	_handleSubmit(ev: Event) {
 		ev.preventDefault();
-		this.props.router.push(locationForSearch(this.props.location, this.state.query, false, true));
+		this.props.router.push(locationForSearch(this.props.location, this.state.query, this.state.lang, this.state.scope, false, true));
 	}
 
 	_handleReset(ev: Event) {
-		this.props.router.push(locationForSearch(this.props.location, null, false, true));
+		this.props.router.push(locationForSearch(this.props.location, null, null, null, false, true));
 		this.setState({focused: false, open: false});
 
-		const settings = UserStore.settings.get();
-		const langs = settings && settings.search ? settings.search.languages : null;
-		const scope = settings && settings.search ? settings.search.scope : null;
-		this.props.router.push(locationForSearch(this.props.location, this.state.query, langs, scope, true, true));
+		this.props.router.push(locationForSearch(this.props.location, this.state.query, this.state.lang, this.state.scope, true, true));
 	}
 
 	_handleKeyDown(ev: KeyboardEvent) {
@@ -269,11 +271,7 @@ class SearchForm extends React.Component {
 		const value = ev.currentTarget.value;
 		this.setState({query: value});
 		if (value) this.setState({open: true});
-		const settings = UserStore.settings.get();
-		const langs = settings && settings.search ? settings.search.languages : null;
-		const scope = settings && settings.search ? settings.search.scope : null;
-
-		this._goToDebounced(this.props.router.replace, locationForSearch(this.props.location, value, langs, scope, false, this.props.location.pathname.slice(1) === rel.search));
+		this._goToDebounced(this.props.router.replace, locationForSearch(this.props.location, value, this.state.lang, this.state.scope, false, this.props.location.pathname.slice(1) === rel.search));
 	}
 
 	_goToDebounced = debounce((routerFunc: any, loc: Location) => {

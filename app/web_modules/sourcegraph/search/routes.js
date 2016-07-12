@@ -30,8 +30,8 @@ export function urlToSearch(query?: ?string): string {
 // location and the updatePath/updateQuery parameters.
 //
 // This function modifies loc.
-// @NOTE loc cannot have immutable properties. lang and scope might be immutable.
-//		 Ensure that if you assign new properties to loc that the properties are mutable
+// @NOTE `loc` cannot have immutable properties. `lang` and `scope` might be immutable.
+// Ensure that if you assign new properties to loc that the properties are mutable.
 export function locationForSearch(loc: RouterLocation, query: ?string, lang: ?string[], scope: ?Object, updatePath: bool, updateQuery: bool): RouterLocation {
 	if (updatePath) {
 		loc.pathname = `/${rel.search}`;
@@ -57,7 +57,7 @@ export function locationForSearch(loc: RouterLocation, query: ?string, lang: ?st
 
 function updateScopeAndLanguage(oldState: any, scope, lang) {
 	let state = {...oldState};
-	SearchScopes.map((scopeName) => {
+	searchScopes.map((scopeName) => {
 		if (scope && scope[scopeName]) state[scopeName] = true;
 		else delete state[scopeName];
 	});
@@ -74,4 +74,20 @@ export function queryFromStateOrURL(loc: RouterLocation): ?string {
 	if (loc.state && loc.state.hasOwnProperty("q")) return loc.state.q;
 	else if (loc.query && loc.query.hasOwnProperty("q")) return firstQueryValue(loc.query.q);
 	return null;
+}
+
+
+export function langFromStateOrURL(loc: RouterLocation): ?string[] {
+	if (loc.state && loc.state.hasOwnProperty("lang")) return typeof loc.state.lang === "string" ? [loc.state.lang] :loc.state.lang;
+	else if (loc.query && loc.query.hasOwnProperty("lang")) return typeof loc.query.lang === "string" ? [loc.query.lang] : loc.query.lang;
+	return null;
+}
+
+export function scopeFromStateOrURL(loc: RouterLocation): ?Object {
+	let scope = {};
+	searchScopes.forEach((scopeName) => {
+		if (loc.state && loc.state.hasOwnProperty(scopeName)) scope[scopeName] = loc.state.scopeName;
+		else if (loc.query.hasOwnProperty(scopeName)) scope[scopeName] = loc.query.scopeName;
+	});
+	return scope;
 }

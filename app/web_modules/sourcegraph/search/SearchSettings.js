@@ -49,9 +49,7 @@ class SearchSettings extends Container {
 			const langs = typeof langFromQuery === "string" ? [langFromQuery] : langFromQuery;
 			const validLangParams = langs.filter(langIsSupported);
 			let scopeParams = {};
-			SearchScopes.map(function(scopeName) {
-				scopeParams[scopeName] = this.props.location.query[scopeName] === "true";
-			}.bind(this));
+			searchScopes.forEach((scopeName) => scopeParams[scopeName] = this.props.location.query[scopeName] === "true");
 
 			const newSettings = {
 				...this.state.settings,
@@ -61,7 +59,7 @@ class SearchSettings extends Container {
 					scope: scopeParams,
 				},
 			};
-			setTimeout(() => Dispatcher.Stores.dispatch(new UserActions.UpdateSettings(newSettings), 100));
+			setTimeout(() => Dispatcher.Stores.dispatch(new UserActions.UpdateSettings(newSettings)));
 		}
 	}
 
