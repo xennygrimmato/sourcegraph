@@ -21,7 +21,7 @@ let buildsCache = {};
 		srclibDataVersion: state.srclibDataVersion,
 		annotations: state.annotations,
 		accessToken: state.accessToken,
-		authentication: state.authentication,
+		authInfo: state.authInfo,
 	}),
 	(dispatch) => ({
 		actions: bindActionCreators(Actions, dispatch)
@@ -270,7 +270,7 @@ export default class BlobAnnotator extends Component {
 		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
 		let scopeAuth = "";
-		if (this.props.authentication && this.props.authentication.GitHubToken && this.props.authentication.GitHubToken.scope) scopeAuth = this.props.authentication.GitHubToken.scope;
+		if (this.props.authInfo && this.props.authInfo.GitHubToken && this.props.authInfo.GitHubToken.scope) scopeAuth = this.props.authInfo.GitHubToken.scope;
 		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (name === "") return "Enable Sourcegraph";
 

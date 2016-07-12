@@ -2,7 +2,7 @@ import {combineReducers} from "redux";
 import {keyFor} from "./helpers";
 import * as ActionTypes from "../constants/ActionTypes";
 
-const authentication = function(state = null, action) {
+const authInfo = function(state = null, action) {
   	switch (action.type) {
   	case ActionTypes.FETCH_AUTH_INFO:
   		return action.json ? action.json : state;
@@ -134,4 +134,4 @@ const annotations = function(state = {content: {}}, action) {
 	}
 }
 
-export default combineReducers({authentication, accessToken, resolvedRev, srclibDataVersion, build, def, defs, annotations});
+export default combineReducers({authInfo, accessToken, resolvedRev, srclibDataVersion, build, def, defs, annotations});
