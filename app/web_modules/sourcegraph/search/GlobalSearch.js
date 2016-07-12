@@ -22,6 +22,7 @@ import CSSModules from "react-css-modules";
 import styles from "./styles/GlobalSearch.css";
 import base from "sourcegraph/components/styles/_base.css";
 import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
+import escapeRegExp from "sourcegraph/util/escapeRegExp";
 import popularRepos from "./popularRepos";
 import type {SearchSettings} from "sourcegraph/search";
 import type {WantResultsPayload} from "sourcegraph/search/SearchActions";
@@ -65,9 +66,10 @@ class GlobalSearch extends Container {
 		this.state = {
 			query: "",
 			repo: null,
-			matchingResults: {Repos: [], Defs: [], Options: [], outstandingFetches: 0},
+			matchingResults: {Repos: [], Defs: [], Options: [], Tokens: [], outstandingFetches: 0},
 			className: null,
 			resultClassName: null,
+			matchTerms: null,
 			selectionIndex: -1,
 			githubToken: null,
 			searchSettings: null,
@@ -80,6 +82,7 @@ class GlobalSearch extends Container {
 		this._scrollToVisibleSelection = this._scrollToVisibleSelection.bind(this);
 		this._setSelectedItem = this._setSelectedItem.bind(this);
 		this._onSelection = debounce(this._onSelection.bind(this), 200, {leading: false, trailing: true});
+		this._highlightTerms = this._highlightTerms.bind(this);
 	}
 
 	state: {
@@ -87,10 +90,12 @@ class GlobalSearch extends Container {
 		query: string;
 		className: ?string;
 		resultClassName: ?string;
+		matchTerms: ?string;
 		matchingResults: {
 			Repos: Array<Repo>,
 			Defs: Array<Def>,
 			Options: Array<Options>,
+			Tokens: Array<string>,
 			outstandingFetches: number,
 		};
 		selectionIndex: number;
@@ -221,15 +226,24 @@ class GlobalSearch extends Container {
 					const results = SearchStore.get(q.query, q.repos, q.notRepos, q.commitID, q.limit, q.includeRepos, q.fast);
 					if (results) memo.outstandingFetches -= 1;
 					if (results && !results.Error) {
-						if (results.Repos) memo.Repos.push(...results.Repos);
-						if (results.Defs) memo.Defs.push(...results.Defs);
-						if (results.Options) memo.Options.push(...results.Options);
+						if (results.defs) {
+							memo.Defs.push(...results.defs);
+							if (results.defs.repos) memo.Repos.push(...results.defs.repos);
+						}
+						if (results.options) memo.Options.push(...results.options);
+						if (results.tokens) memo.Tokens.push(...results.tokens);
 					}
 					return memo;
-				}, {Repos: [], Defs: [], Options: [], outstandingFetches: state._queries.length});
+				}, {Repos: [], Defs: [], Options: [], Tokens: [], outstandingFetches: state._queries.length});
 			} else {
 				state.matchingResults = null;
 			}
+		}
+
+		if (state.matchingResults && state.matchingResults.Tokens) {
+			state.matchTerms = `(${state.matchingResults.Tokens.map((str, i, arr) => escapeRegExp(str)).join("|")})`;
+		} else {
+			state.matchTerms = null;
 		}
 	}
 
@@ -250,6 +264,17 @@ class GlobalSearch extends Container {
 				});
 			}
 		}
+	}
+
+	_highlightTerms(txt) {
+		if (!this.state.matchTerms || !txt) {
+			return txt;
+		}
+		let out: Array<any> = txt.split(new RegExp(this.state.matchTerms, "i"));
+		for (let j = 1; j < out.length; j+=2) {
+			out[j] = <span styleName="highlight" key={j}>{out[j]}</span>;
+		}
+		return out;
 	}
 
 	__onDispatch(action) {
@@ -468,7 +493,7 @@ class GlobalSearch extends Container {
 						<div styleName="flex">
 							<code styleName="block f5">
 								Repository
-								<span styleName="bold"> {repo.URI.split(/[// ]+/).pop()}</span>
+								<span styleName="bold"> {repo.split(/[// ]+/).pop()}</span>
 							</code>
 							{firstLineDocString && <p styleName="docstring" className={base.mt0}>{firstLineDocString}</p>}
 						</div>
@@ -503,11 +528,10 @@ class GlobalSearch extends Container {
 					onClick={() => this._onSelection(true)}>
 					<div styleName="cool-gray flex-container" className={base.pt3}>
 						<div styleName="flex w100">
-							<p styleName="cool-mid-gray block-s" className={`${base.ma0} ${base.pl4} ${base.pr2} ${base.fr}`}>{trimRepo(def.Repo)}</p>
-							<code styleName="block f5" className={base.pb3}>
-								{qualifiedNameAndType(def, {nameQual: "DepQualified"})}
-							</code>
-							{firstLineDocString && <p styleName="docstring" className={base.mt0}>{firstLineDocString}</p>}
+					<div styleName="cool-mid-gray block-s" className={`${base.ma0} ${base.pl4} ${base.pr2} ${base.fr}`}>{trimRepo(def.Repo)}</div>
+					<code styleName="block f5" className={base.pb3}> {qualifiedNameAndType(def, {nameQual: "DepQualified",
+						highlighter: (x, j) => <span key={j}>{this._highlightTerms(x)}</span>})}</code>
+					{firstLineDocString && <div styleName="docstring" className={base.mt0}>{this._highlightTerms(firstLineDocString)}</div>}
 						</div>
 					</div>
 				</Link>

@@ -76,3 +76,7 @@ code.block {
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
+
+.highlight {
+    background-color: yellow;
+}
