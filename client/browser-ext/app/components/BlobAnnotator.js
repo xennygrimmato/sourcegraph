@@ -265,10 +265,9 @@ export default class BlobAnnotator extends Component {
 		console.log(this.state);
 		if (build && !build.Failure && !build.Killed) return "Indexing";
 
-
-		// issue: there's a conflict between not being signed in and something being indexed
 		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+
 		let scopeAuth = "";
 		if (this.props.authInfo && this.props.authInfo.GitHubToken && this.props.authInfo.GitHubToken.scope) scopeAuth = this.props.authInfo.GitHubToken.scope;
 		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
@@ -276,6 +275,7 @@ export default class BlobAnnotator extends Component {
 
 		if (!build) return "";
 		if (build.Failure) return "No annotations found";
+
 		return "";
 	}
 
