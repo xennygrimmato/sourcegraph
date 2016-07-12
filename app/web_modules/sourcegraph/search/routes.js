@@ -77,8 +77,8 @@ export function queryFromStateOrURL(loc: RouterLocation): ?string {
 }
 
 
-export function langFromStateOrURL(loc: RouterLocation): ?string[] {
-	if (loc.state && loc.state.hasOwnProperty("lang")) return typeof loc.state.lang === "string" ? [loc.state.lang] :loc.state.lang;
+export function langsFromStateOrURL(loc: RouterLocation): ?string[] {
+	if (loc.state && loc.state.hasOwnProperty("lang")) return loc.state.lang;
 	else if (loc.query && loc.query.hasOwnProperty("lang")) return typeof loc.query.lang === "string" ? [loc.query.lang] : loc.query.lang;
 	return null;
 }

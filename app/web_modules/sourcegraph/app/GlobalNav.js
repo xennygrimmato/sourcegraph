@@ -15,7 +15,7 @@ import {EllipsisHorizontal, CheckIcon} from "sourcegraph/components/Icons";
 import {FaChevronDown} from "sourcegraph/components/Icons";
 import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
 import GlobalSearchInput from "sourcegraph/search/GlobalSearchInput";
-import {locationForSearch, queryFromStateOrURL, langFromStateOrURL, scopeFromStateOrURL} from "sourcegraph/search/routes";
+import {locationForSearch, queryFromStateOrURL, langsFromStateOrURL, scopeFromStateOrURL} from "sourcegraph/search/routes";
 import GlobalSearch from "sourcegraph/search/GlobalSearch";
 import SearchSettings from "sourcegraph/search/SearchSettings";
 import invariant from "invariant";
@@ -150,7 +150,7 @@ class SearchForm extends React.Component {
 		super(props);
 
 		this.state.query = queryFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
-		this.state.lang = langFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
+		this.state.lang = langsFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
 		this.state.scope = scopeFromStateOrURL(props.location); // eslint-disable-line react/no-direct-mutation-state
 
 		this._handleGlobalHotkey = this._handleGlobalHotkey.bind(this);
