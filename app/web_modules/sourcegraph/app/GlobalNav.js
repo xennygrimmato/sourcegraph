@@ -154,6 +154,7 @@ class SearchForm extends React.Component {
 		this._handleGlobalHotkey = this._handleGlobalHotkey.bind(this);
 		this._handleGlobalClick = this._handleGlobalClick.bind(this);
 		this._handleSubmit = this._handleSubmit.bind(this);
+		this._onReset = this._onReset.bind(this);
 		this._handleKeyDown = this._handleKeyDown.bind(this);
 		this._handleChange = this._handleChange.bind(this);
 		this._handleFocus = this._handleFocus.bind(this);
@@ -178,8 +179,11 @@ class SearchForm extends React.Component {
 	componentWillReceiveProps(nextProps) {
 		const nextQuery = queryFromStateOrURL(nextProps.location);
 		if (this.state.query !== nextQuery) {
-			if (nextQuery && !this.state.query) this.setState({open: true});
-			this.setState({query: nextQuery});
+			if (nextQuery && !this.state.query) {
+				this.setState({open: true});
+			} else {
+				this.setState({query: nextQuery});
+			}
 		}
 
 		if (!nextQuery) {
@@ -200,6 +204,7 @@ class SearchForm extends React.Component {
 	_handleGlobalHotkey: any;
 	_handleGlobalClick: any;
 	_handleSubmit: any;
+	_handleReset: any;
 	_handleKeyDown: any;
 	_handleChange: any;
 	_handleFocus: any;
@@ -227,6 +232,12 @@ class SearchForm extends React.Component {
 	_handleSubmit(ev: Event) {
 		ev.preventDefault();
 		this.props.router.push(locationForSearch(this.props.location, this.state.query, true, true));
+	}
+
+	_onReset(ev: Event) {
+		this.props.router.push(locationForSearch(this.props.location, null, false, true));
+		this.setState({focused: false, open: false});
+		// this.props.router.replace({...this.props.location, query: ""});
 	}
 
 	_handleKeyDown(ev: KeyboardEvent) {
@@ -271,6 +282,7 @@ class SearchForm extends React.Component {
 				ref={e => this._container = e}>
 				<form
 					onSubmit={this._handleSubmit}
+					onReset={this._onReset}
 					styleName="search-form"
 					autoComplete="off">
 					<GlobalSearchInput
@@ -286,6 +298,7 @@ class SearchForm extends React.Component {
 						onKeyDown={this._handleKeyDown}
 						onClick={this._handleFocus}
 						onChange={this._handleChange} />
+						{this.props.showResultsPanel && this.state.open && <button styleName="close-icon" type="reset"></button>}
 				</form>
 				{this.props.showResultsPanel && this.state.open && <SearchResultsPanel query={this.state.query || ""} repo={this.props.repo} location={this.props.location} />}
 			</div>

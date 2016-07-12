@@ -40,7 +40,6 @@ export class UserStore extends Store {
 
 		if (global.window) {
 			let storedUserSettings = window.localStorage.getItem("userSettings");
-			debugger;
 			if (!storedUserSettings) {
 				storedUserSettings = {
 					search: {
