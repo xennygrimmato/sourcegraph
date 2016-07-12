@@ -212,7 +212,6 @@ class SearchForm extends React.Component {
 
 	_handleGlobalHotkey(ev: KeyboardEvent) {
 		if (ev.keyCode === 27 /* ESC */) {
-			console.log("Escape key pressed");
 			// Check that the element exists on the page before trying to set state.
 			if (document.getElementById("e2etest-search-input")) {
 				this.setState({
@@ -246,7 +245,6 @@ class SearchForm extends React.Component {
 	_handleReset(ev: Event) {
 		this.props.router.push(locationForSearch(this.props.location, null, false, true));
 		this.setState({focused: false, open: false});
-		// this.props.router.replace({...this.props.location, query: ""});
 	}
 
 	_handleKeyDown(ev: KeyboardEvent) {
