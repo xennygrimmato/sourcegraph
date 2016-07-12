@@ -154,7 +154,7 @@ class SearchForm extends React.Component {
 		this._handleGlobalHotkey = this._handleGlobalHotkey.bind(this);
 		this._handleGlobalClick = this._handleGlobalClick.bind(this);
 		this._handleSubmit = this._handleSubmit.bind(this);
-		this._onReset = this._onReset.bind(this);
+		this._handleReset = this._handleReset.bind(this);
 		this._handleKeyDown = this._handleKeyDown.bind(this);
 		this._handleChange = this._handleChange.bind(this);
 		this._handleFocus = this._handleFocus.bind(this);
@@ -211,6 +211,15 @@ class SearchForm extends React.Component {
 	_handleBlur: any;
 
 	_handleGlobalHotkey(ev: KeyboardEvent) {
+		if (ev.keyCode === 27 /* ESC */) {
+			console.log("Escape key pressed");
+			// Check that the element exists on the page before trying to set state.
+			if (document.getElementById("e2etest-search-input")) {
+				this.setState({
+					open: false,
+				});
+			}
+		}
 		// Hotkey "/" to focus search field.
 		invariant(this._input, "input not available");
 		if (ev.keyCode === 191 /* forward slash "/" */) {
@@ -234,7 +243,7 @@ class SearchForm extends React.Component {
 		this.props.router.push(locationForSearch(this.props.location, this.state.query, true, true));
 	}
 
-	_onReset(ev: Event) {
+	_handleReset(ev: Event) {
 		this.props.router.push(locationForSearch(this.props.location, null, false, true));
 		this.setState({focused: false, open: false});
 		// this.props.router.replace({...this.props.location, query: ""});
@@ -282,7 +291,7 @@ class SearchForm extends React.Component {
 				ref={e => this._container = e}>
 				<form
 					onSubmit={this._handleSubmit}
-					onReset={this._onReset}
+					onReset={this._handleReset}
 					styleName="search-form"
 					autoComplete="off">
 					<GlobalSearchInput
@@ -310,7 +319,7 @@ SearchForm = CSSModules(SearchForm, styles);
 let SearchResultsPanel = ({repo, location, query}: {repo: ?string, location: RouterLocation, query: string}) =>
 	<Panel hoverLevel="low" styleName="search-panel">
 		<SearchSettings styleName="search-settings" innerClassName={styles["search-settings-inner"]} location={location} repo={repo} />
-		<GlobalSearch styleName="search-results" query={query} repo={repo} location={location} resultClassName={styles["search-result"]} />
+		{query && <GlobalSearch styleName="search-results" query={query} repo={repo} location={location} resultClassName={styles["search-result"]} />}
 	</Panel>;
 
 SearchResultsPanel = CSSModules(SearchResultsPanel, styles);

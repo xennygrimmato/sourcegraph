@@ -66,7 +66,7 @@ class SearchSettings extends Container {
 	}
 
 	_langs(): Array<LanguageID> {
-		return this.state.settings && this.state.settings.search && this.state.settings.search.languages && this.state.settings.search.languages.length > 0 ? Array.from(this.state.settings.search.languages) : ["golang"];
+		return this.state.settings && this.state.settings.search && this.state.settings.search.languages ? Array.from(this.state.settings.search.languages) : ["golang"];
 	}
 
 	_scope() {
@@ -78,7 +78,7 @@ class SearchSettings extends Container {
 	}
 
 	_toggleLang(lang: LanguageID) {
-		const langs = Array.from(this.state.settings.search.languages);
+		const langs = this._langs();
 		const enabled = langs.includes(lang);
 
 		if (enabled) {
@@ -126,7 +126,8 @@ class SearchSettings extends Container {
 	}
 
 	_renderLanguages() {
-		const langs = Array.from(this.state.settings.search.languages);
+		const langs = this._langs();
+
 		return (
 			<div styleName="group">
 				<span styleName="label" className={base.pr3}>Languages:</span>

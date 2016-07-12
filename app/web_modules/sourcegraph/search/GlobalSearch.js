@@ -429,7 +429,6 @@ class GlobalSearch extends Container {
 			return [<div key="_nosymbol" className={`${base.ph4} ${base.pt4}`}styleName="result">Loading results...</div>];
 		}
 
-		console.log(`Logging query: ${this.state.query}`);
 		if (this.state.query && this.state.matchingResults &&
 			(!this.state.matchingResults.Defs || this.state.matchingResults.Defs.length === 0) &&
 			(!this.state.matchingResults.Repos || this.state.matchingResults.Repos.length === 0)) {
