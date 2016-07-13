@@ -577,7 +577,10 @@ class GlobalSearch extends Container {
 					<div styleName="cool-mid-gray block-s" className={`${base.ma0} ${base.pl4} ${base.pr2} ${base.fr}`}>{trimRepo(def.Repo)}</div>
 					{/* eslint-disable */}
 					<code styleName="block f5" className={base.pb3}> {qualifiedNameAndType(def, {nameQual: "DepQualified",
-						highlighter: (x, j) => <span key={j}>{this._highlightTerms(x)}</span>})}</code>
+																								 highlighter: (() => {
+																									 let j = 0;
+																									 x => <span key={j++}> {this._highlightTerms(x)} </span>
+																								 })()})}</code>
 					{/* eslint-enable */}
 					{firstLineDocString &&
 						<div styleName="docstring" className={base.mt0}>
