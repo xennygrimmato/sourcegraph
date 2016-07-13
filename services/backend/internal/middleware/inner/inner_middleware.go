@@ -1075,3 +1075,16 @@ func (s wrappedUsers) RegisterBeta(ctx context.Context, param *sourcegraph.BetaR
 	}
 	return
 }
+
+func (s wrappedUsers) AdminFeedback(ctx context.Context, param *sourcegraph.AdminFeedbackOp) (res *pbtypes.Void, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "Users", "AdminFeedback", param)
+	defer func() {
+		trace.After(ctx, "Users", "AdminFeedback", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.Users.AdminFeedback(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "Users.AdminFeedback returned nil, nil")
+	}
+	return
+}
