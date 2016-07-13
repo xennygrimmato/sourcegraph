@@ -64,7 +64,7 @@ class ChromeFaqsPage extends React.Component {
 
 					<a id="buildfailure"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Troubleshooting</Heading>
-					<p styleName="p"> Sourcegraph runs static code analysis on your code. If there are errors running the analysis, Sourcegraph does not index the code.
+					<p styleName="p"> Sourcegraph runs static code analysis on your code. Properly indexing code requires some time, but if there are errors running the analysis, Sourcegraph does not index the code.
 					If you'd like to report a bug, please send an email to <a href="mailto:support@sourcegraph.com"> support@sourcegraph.com</a>.</p>
 				</div>
 				<Hero pattern="objects" className={base.pv5}/>
