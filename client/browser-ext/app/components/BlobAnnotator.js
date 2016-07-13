@@ -261,11 +261,14 @@ export default class BlobAnnotator extends Component {
 	}
 
 	_indicatorText(repoURI, rev) {
-		let build = this._getBuild(repoURI, rev);
+		let buildCache = this._getBuild(repoURI, rev);
+		let build = this.props.build["content"];
 		let data = this._getSrclibDataVersion(repoURI, rev);
 		if (data) return "Indexed";
 
-		if (!build || build.Failure) return "No annotations found";
+		if (!buildCache || buildCache.Failure) return "No annotations found";
+
+		if (build) return "Indexing";
 
 		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
@@ -285,17 +288,18 @@ export default class BlobAnnotator extends Component {
 	getBuildIndicator(indicatorText, prefix) {
 		let url = "https://staging.sourcegraph.com";
 		switch (indicatorText) {
+			case "Indexing":
 			case "Indexed":
 			case "Unsupported language":
 			case "Fetching":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
 			case "Sign in to Sourcegraph":
-				return (<a onClick={this.onClick.bind(this)} href={url+"/browser-faqs#signin"}> <u> {prefix}{indicatorText} </u> </a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#signin"}> <u> {prefix}{indicatorText} </u> </a>);
 			case "Enable Sourcegraph":
-				return (<a onClick={this.onClick.bind(this)} href={url+"/browser-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
 			case "No annotations found":
 				setTimeout(() => this.reconcileState(this.state, this.props), 1000);
-				return (<a onClick={this.onClick.bind(this)} href={url+"/browser-faqs#buildfailure"}><u>{prefix}{indicatorText}</u></a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#buildfailure"}><u>{prefix}{indicatorText}</u></a>);
 			default:
 				return (<span/>);
 		}
@@ -304,11 +308,11 @@ export default class BlobAnnotator extends Component {
 	render() {
 		let build = this.props.build["content"];
 		let indicatorText = "";
-		if (Object.keys(build).length === 0) {
+		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
+			indicatorText = "Unsupported language";
+		} else if (Object.keys(build).length === 0) {
 			setTimeout(() => this._queryForBuild(), 5000);
 			indicatorText = "Fetching"
-		} else if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
-			indicatorText = "Unsupported language";
 		} else {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
 		}
