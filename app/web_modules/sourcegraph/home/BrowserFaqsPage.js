@@ -10,7 +10,7 @@ import CSSModules from "react-css-modules";
 import GitHubAuthButton from "sourcegraph/components/GitHubAuthButton";
 import Helmet from "react-helmet";
 
-class ChromeFaqsPage extends React.Component {
+class BrowserFaqsPage extends React.Component {
 	static propTypes = {
 		location: React.PropTypes.object.isRequired,
 	};
@@ -28,10 +28,10 @@ class ChromeFaqsPage extends React.Component {
 	render() {
 		return (
 			<div>
-				<Helmet title="Chrome FAQs" />
+				<Helmet title="Browser Extension FAQs" />
 				<Hero pattern="objects" className={base.pv5}>
 					<div styleName="container">
-						<Heading level="2" color="blue">Sourcegraph Chrome Extension FAQs</Heading>
+						<Heading level="2" color="blue">Sourcegraph Browser Extension FAQs</Heading>
 					</div>
 				</Hero>
 
@@ -39,7 +39,7 @@ class ChromeFaqsPage extends React.Component {
 					<Heading level="3" underline="blue" className={styles.h5}>How does it work?</Heading>
 					<p styleName="p"> Sourcegraph is how developers discover and understand code. It is a fast, global, semantic code search and cross-reference engine.
 					You can search for any function, type, or package, and see how other developers use it, globally. It's cross-repository and massively scalable, with
-					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
+					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph browser Extension.</p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Can I use the extension anonymously?</Heading>
 					<p styleName="p">Sourcegraph indexes popular public repositories written in supported languages. Don't see a public repository you'd like indexed? Sign in @ Sourcegraph.com,
@@ -50,16 +50,16 @@ class ChromeFaqsPage extends React.Component {
 					<p styleName="p"> You must be signed in on Sourcegraph.com to access your indexed private repositories, or enable Sourcegraph to index your private repositories. Sign in or
 					sign up below with GitHub OAuth.</p>
 					<div styleName="tc">
-					{!this.context.signedIn && <GitHubAuthButton returnTo="/chrome-faqs#signin"> Sign up or sign in</GitHubAuthButton>}
+					{!this.context.signedIn && <GitHubAuthButton returnTo="/browser-faqs#signin"> Sign up or sign in</GitHubAuthButton>}
 					</div>
 
 					<a id="enable"/>
-					<Heading level="3" underline="blue" className={styles.h5}>How do I use the Chrome extension with private repositories?</Heading>
+					<Heading level="3" underline="blue" className={styles.h5}>How do I use the browser extension with private repositories?</Heading>
 					<p styleName="p"> Sourcegraph must be enabled in order for your private repositories to be indexed. Authorize your repositories at <Link to="settings/repos">
 					sourcegraph.com/settings/repos </Link>. </p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Where else is Sourcegraph?</Heading>
-					<p styleName="p"> Like the Sourcegraph Chrome extension? Sourcegraph can also be used on your desktop, in your editor. Try global semantic search on our homepage
+					<p styleName="p"> Like the Sourcegraph browser extension? Sourcegraph can also be used on your desktop, in your editor. Try global semantic search on our homepage
 					at sourcegraph.com and check out more tools at <Link to="/tools"> sourcegraph.com/tools</Link>.</p>
 
 					<a id="buildfailure"/>
@@ -73,4 +73,4 @@ class ChromeFaqsPage extends React.Component {
 	}
 }
 
-export default CSSModules(ChromeFaqsPage, styles);
+export default CSSModules(BrowserFaqsPage, styles);

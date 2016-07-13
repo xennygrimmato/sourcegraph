@@ -290,12 +290,12 @@ export default class BlobAnnotator extends Component {
 			case "Fetching":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
 			case "Sign in to Sourcegraph":
-				return (<a onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}> <u> {prefix}{indicatorText} </u> </a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/browser-faqs#signin"}> <u> {prefix}{indicatorText} </u> </a>);
 			case "Enable Sourcegraph":
-				return (<a onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/browser-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
 			case "No annotations found":
 				setTimeout(() => this.reconcileState(this.state, this.props), 1000);
-				return (<a onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}><u>{prefix}{indicatorText}</u></a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/browser-faqs#buildfailure"}><u>{prefix}{indicatorText}</u></a>);
 			default:
 				return (<span/>);
 		}
