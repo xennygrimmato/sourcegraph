@@ -9,6 +9,7 @@ import classNames from "classnames";
 import Component from "sourcegraph/Component";
 import Dispatcher from "sourcegraph/Dispatcher";
 import {urlToBlob} from "sourcegraph/blob/routes";
+import {urlToSearch} from "sourcegraph/search/routes";
 import * as BlobActions from "sourcegraph/blob/BlobActions";
 import * as DefActions from "sourcegraph/def/DefActions";
 import {fastURLToRepoDef} from "sourcegraph/def/routes";
@@ -52,6 +53,10 @@ function fastInsertRevIntoDefURL(urlNoRev: string, repo: string, rev: string): s
 }
 
 class BlobLine extends Component {
+	static contextTypes = {
+		router: React.PropTypes.object.isRequired,
+	};
+
 	componentDidMount(nextProps, nextState) {
 		if (this.state.onMount) this.state.onMount();
 	}
@@ -169,6 +174,10 @@ class BlobLine extends Component {
 		}));
 	}
 
+  _navigateToSearch(query: string) {
+    this.context.router.push(urlToSearch(query));
+  }
+
 	render() {
 		let contents = this.state.annotations ? this._annotate() : simpleContentsString(this.state.contents);
 
@@ -180,9 +189,15 @@ class BlobLine extends Component {
 
 		return (
 			<tr className={`${s.line} ${s[this.state.textSize]} ${this.state.className || ""}`}
-				data-line={this.state.lineNumber}>
+				data-line={this.state.lineNumber}
+				onClick={(event) => {
+          if (event.target.className === "pln" || event.target.className === "atn") {
+            let query = event.target.textContent;
+            this._navigateToSearch(query);
+          }
+        }}>
 				{this.state.lineNumber &&
-					<td className={s.lineNumberCell} onClick={(event) => {
+				 <td className={s.lineNumberCell} onClick={(event) => {
 						if (event.shiftKey) {
 							event.preventDefault();
 							Dispatcher.Stores.dispatch(new BlobActions.SelectLineRange(this.state.repo, this.state.rev, this.state.path, this.state.lineNumber));

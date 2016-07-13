@@ -4,6 +4,7 @@
 		color: #00a4de;
 	}
 	:global .pln {
+		cursor: pointer;
 		color: #435c79;
 	}
 	:global .str {
@@ -30,6 +31,7 @@
 		color: #00a4de;
 	}
 	:global .atn {
+		cursor: pointer;
 		color: #8f2dba;
 	}
 	:global .atv {
