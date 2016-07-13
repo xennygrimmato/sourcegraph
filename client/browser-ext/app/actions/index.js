@@ -140,6 +140,17 @@ function _getNewestBuildForCommit(dispatch, state, repo, commitID) {
 		.catch((err) => { dispatch({type: types.FETCHED_BUILD, repo, commitID, err}); throw err; });
 }
 
+export function refreshBuild(repo, commitID, branch) {
+	return function (dispatch, getState) {
+		//const build = state.build.content[keyFor(repo, commitID)];
+		//if (build) return Promise.resolve();
+
+		return fetch(`https://sourcegraph.com/.api/builds?Sort=updated_at&Direction=desc&PerPage=1&Repo=${repo}&CommitID=${commitID}`)
+			.then((json) => { dispatch({type: types.FETCHED_BUILD, repo, commitID, json}); return json; })
+			.catch((err) => { dispatch({type: types.FETCHED_BUILD, repo, commitID, err}); throw err; });
+	}
+}
+
 export function build(repo, commitID, branch) {
 	return function (dispatch, getState) {
 		const state = getState();

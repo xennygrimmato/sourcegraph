@@ -36,12 +36,12 @@ class ChromeFaqsPage extends React.Component {
 				</Hero>
 
 				<div styleName="content">
-					<Heading level="3" underline="blue" className={styles.h5}>How it works</Heading>
+					<Heading level="3" underline="blue" className={styles.h5}>How does it work?</Heading>
 					<p styleName="p"> Sourcegraph is how developers discover and understand code. It is a fast, global, semantic code search and cross-reference engine.
 					You can search for any function, type, or package, and see how other developers use it, globally. It's cross-repository and massively scalable, with
-					2,000,000,000+ nodes in the public code ind.......ex (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
+					2,000,000,000+ nodes in the public code index (and growing). Sourcegraph currently supports Go and Java. Sourcegraph's code index powers the Sourcegraph Chrome Extension.</p>
 
-					<Heading level="3" underline="blue" className={styles.h5}>Using the extension anonymously</Heading>
+					<Heading level="3" underline="blue" className={styles.h5}>Can I use the extension anonymously?</Heading>
 					<p styleName="p">Sourcegraph indexes popular public repositories written in supported languages. Don't see a public repository you'd like indexed? Sign in @ Sourcegraph.com,
 					and the next time you visit that repository on GitHub, we'll start building it for you.</p>
 
@@ -50,7 +50,7 @@ class ChromeFaqsPage extends React.Component {
 					<p styleName="p"> You must be signed in on Sourcegraph.com to access your indexed private repositories, or enable Sourcegraph to index your private repositories. Sign in or
 					sign up below with GitHub OAuth.</p>
 					<div styleName="tc">
-					<GitHubAuthButton returnTo="/chrome-faqs#signin"> Sign up or sign in</GitHubAuthButton>
+					{!this.context.signedIn && <GitHubAuthButton returnTo="/chrome-faqs#signin"> Sign up or sign in</GitHubAuthButton>}
 					</div>
 
 					<a id="enable"/>

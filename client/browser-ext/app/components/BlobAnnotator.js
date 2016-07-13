@@ -143,6 +143,11 @@ export default class BlobAnnotator extends Component {
 		setTimeout(() => this._addAnnotations(this.state), 500);
 	}
 
+	_queryForBuild() {
+		this.props.actions.refreshBuild(this.state.repoURI, this.state.resolvedRev.CommitID, this.state.rev);
+		this.render();
+	}
+
 	_isSplitDiff() {
 		if (this.state.isPullRequest) {
 			const diffTypeDropdown = document.getElementsByClassName("diffbar-item dropdown js-menu-container");
@@ -262,8 +267,8 @@ export default class BlobAnnotator extends Component {
 		let build = this._getBuild(repoURI, rev);
 		let data = this._getSrclibDataVersion(repoURI, rev);
 		if (data) return "Indexed";
-		console.log(this.state);
-		if (build && !build.Failure && !build.Killed) return "Indexing";
+
+		if (!build || build.Failure) return "No annotations found";
 
 		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
@@ -272,9 +277,6 @@ export default class BlobAnnotator extends Component {
 		if (this.props.authInfo && this.props.authInfo.GitHubToken && this.props.authInfo.GitHubToken.scope) scopeAuth = this.props.authInfo.GitHubToken.scope;
 		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
 		if (name === "") return "Enable Sourcegraph";
-
-		if (!build) return "";
-		if (build.Failure) return "No annotations found";
 
 		return "";
 	}
@@ -287,14 +289,15 @@ export default class BlobAnnotator extends Component {
 		let url = "https://staging.sourcegraph.com";
 		switch (indicatorText) {
 			case "Indexed":
-			case "Indexing":
 			case "Unsupported language":
+			case "Fetching":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
 			case "Sign in to Sourcegraph":
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#signin"}>{prefix}{indicatorText}</a>);
 			case "Enable Sourcegraph":
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#enable"}>{prefix}{indicatorText}</a>);
 			case "No annotations found":
+				setTimeout(() => this.reconcileState(this.state, this.props), 1000);
 				return (<a className="btn btn-sm" onClick={this.onClick.bind(this)} href={url+"/chrome-faqs#buildfailure"}>{prefix}{indicatorText}</a>);
 			default:
 				return (<span/>);
@@ -302,8 +305,12 @@ export default class BlobAnnotator extends Component {
 	}
 
 	render() {
+		let build = this.props.build["content"];
 		let indicatorText = "";
-		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
+		if (Object.keys(build).length === 0) {
+			setTimeout(() => this._queryForBuild(), 5000);
+			indicatorText = "Fetching"
+		} else if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
 		} else {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
