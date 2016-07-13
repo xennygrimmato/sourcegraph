@@ -16,7 +16,7 @@ type PostOpts struct {
 	Username         string // If empty, defaultUsername is used instead.
 	IconEmoji        string
 	IconURL          string
-	Channel          string // If empty, defaultChannel is used instead.
+	Channel          string // If empty, the default channel of the webhook (set via web UI) is used instead.
 	DisableLinkNames bool   // If true, "@ mentions" won't notify users.
 	Attachments      []string
 	WebhookURL       string
@@ -38,9 +38,6 @@ func PostMessage(opt PostOpts) {
 
 	if opt.IconEmoji == "" && opt.IconURL == "" {
 		opt.IconURL = Config.DefaultIcon
-	}
-	if opt.Channel == "" {
-		opt.Channel = Config.DefaultChannel
 	}
 	if opt.Channel != "" && !strings.HasPrefix(opt.Channel, "#") {
 		opt.Channel = "#" + opt.Channel

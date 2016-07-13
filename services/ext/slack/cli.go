@@ -8,8 +8,6 @@ type Flags struct {
 
 	WebhookURL string `long:"slack.webhook-url" description:"the URL to the Slack webhook endpoint for posting Slack notifications" env:"SG_SLACK_WEBHOOK_URL"`
 
-	DefaultChannel string `long:"slack.default-channel" description:"the default channel to post notifications to" default:"dev-bot"`
-
 	DefaultUsername string `long:"slack.default-username" description:"the default username to post notifications as" default:"Sourcegraph"`
 
 	DefaultIcon string `long:"slack.default-icon" description:"the default icon to use in notifications" default:"https://sourcegraph.com/static/img/favicon.png"`
