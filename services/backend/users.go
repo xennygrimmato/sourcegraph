@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"os"
 
 	"golang.org/x/net/context"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
@@ -9,7 +10,10 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/mailchimp"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/mailchimp/chimputil"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
+	"sourcegraph.com/sourcegraph/sourcegraph/services/backend/accesscontrol"
+	"sourcegraph.com/sourcegraph/sourcegraph/services/ext/slack"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/svc"
+	"sourcegraph.com/sqs/pbtypes"
 )
 
 var Users sourcegraph.UsersServer = &users{}
@@ -124,4 +128,21 @@ func (s *users) RegisterBeta(ctx context.Context, opt *sourcegraph.BetaRegistrat
 	return &sourcegraph.BetaResponse{
 		EmailAddress: opt.Email,
 	}, nil
+}
+
+var adminFeedbackWebHookURL = os.Getenv("SG_SLACK_ADMIN_FEEDBACK_WEBHOOK_URL")
+
+func (s *users) AdminFeedback(ctx context.Context, opt *sourcegraph.AdminFeedbackOp) (*pbtypes.Void, error) {
+	if err := accesscontrol.VerifyUserHasAdminAccess(ctx, "Users.AdminFeedback"); err != nil {
+		return nil, err
+	}
+	actor := authpkg.ActorFromContext(ctx)
+	msg := fmt.Sprintf("*%s* provided feedback on: %s\n\n> %s", actor.Login, opt.Page, opt.Msg)
+	slack.PostMessage(slack.PostOpts{
+		Msg:        msg,
+		Username:   "search-feedback",
+		IconEmoji:  ":email:",
+		WebhookURL: adminFeedbackWebHookURL,
+	})
+	return &pbtypes.Void{}, nil
 }
