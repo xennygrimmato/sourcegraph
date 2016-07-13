@@ -28,7 +28,7 @@ class ChromeFaqsPage extends React.Component {
 	render() {
 		return (
 			<div>
-				<Helmet title="chroms-faqs" />
+				<Helmet title="Chrome FAQs" />
 				<Hero pattern="objects" className={base.pv5}>
 					<div styleName="container">
 						<Heading level="2" color="blue">Sourcegraph Chrome Extension FAQs</Heading>
@@ -46,7 +46,7 @@ class ChromeFaqsPage extends React.Component {
 					and the next time you visit that repository on GitHub, we'll start building it for you.</p>
 
 					<a id="signin"/>
-					<Heading level="3" underline="blue" className={styles.h5}>Sign up or sign in to access private repositories</Heading>
+					<Heading level="3" underline="blue" className={styles.h5}>How do I sign in to see my indexed code?</Heading>
 					<p styleName="p"> You must be signed in on Sourcegraph.com to access your indexed private repositories, or enable Sourcegraph to index your private repositories. Sign in or
 					sign up below with GitHub OAuth.</p>
 					<div styleName="tc">
@@ -54,18 +54,17 @@ class ChromeFaqsPage extends React.Component {
 					</div>
 
 					<a id="enable"/>
-					<Heading level="3" underline="blue" className={styles.h5}>Enable your private repository on Sourcegraph to use the Chrome extension</Heading>
-					<p styleName="p"> Sourcegraph must be enabled for each private repository. When signed in, only you have access to examples
-					and definitions that are in your private repositories. Authorize your repositories at <Link to="settings/repos">
+					<Heading level="3" underline="blue" className={styles.h5}>How do I use the Chrome extension with private repositories?</Heading>
+					<p styleName="p"> Sourcegraph must be enabled in order for your private repositories to be indexed. Authorize your repositories at <Link to="settings/repos">
 					sourcegraph.com/settings/repos </Link>. </p>
 
 					<Heading level="3" underline="blue" className={styles.h5}>Where else is Sourcegraph?</Heading>
-					<p styleName="p"> Liked the Sourcegraph Chrome extension? Sourcegraph can also help you out on your desktop, in your editor. Try global semantic search on our homepage
-					at <a href="https://sourcegraph.com"> sourcegraph.com</a> and check out more tools at <Link to="/tools"> sourcegraph.com/tools</Link>.</p>
+					<p styleName="p"> Like the Sourcegraph Chrome extension? Sourcegraph can also be used on your desktop, in your editor. Try global semantic search on our homepage
+					at sourcegraph.com and check out more tools at <Link to="/tools"> sourcegraph.com/tools</Link>.</p>
 
 					<a id="buildfailure"/>
 					<Heading level="3" underline="blue" className={styles.h5}>Troubleshooting</Heading>
-					<p styleName="p"> Sourcegraph first compiles code before indexing it. If there are errors when the code is compiled, Sourcegraph does not index the code.
+					<p styleName="p"> Sourcegraph runs static code analysis on your code. If there are errors running the analysis, Sourcegraph does not index the code.
 					If you'd like to report a bug, please send an email to <a href="mailto:support@sourcegraph.com"> support@sourcegraph.com</a>.</p>
 				</div>
 				<Hero pattern="objects" className={base.pv5}/>
