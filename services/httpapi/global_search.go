@@ -64,7 +64,7 @@ func serveGlobalSearch(w http.ResponseWriter, r *http.Request) error {
 	op := &sourcegraph.SearchOp{
 		Query: params.Query,
 		Opt: &sourcegraph.SearchOptions{
-			Repos:        paramsRepos,
+			// Repos:        paramsRepos,
 			NotRepos:     paramsNotRepos,
 			ListOptions:  sourcegraph.ListOptions{PerPage: params.Limit},
 			IncludeRepos: params.IncludeRepos,
