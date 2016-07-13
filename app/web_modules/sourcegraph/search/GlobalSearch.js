@@ -539,7 +539,7 @@ class GlobalSearch extends Container {
 						<div styleName="flex">
 							<code styleName="block f5">
 								Repository
-								<span styleName="bold"> {repo.split(/[// ]+/).pop()}</span>
+								<span styleName="bold"> {repo.URI.split(/[// ]+/).pop()}</span>
 							</code>
 							{firstLineDocString && <p styleName="docstring" className={base.mt0}>{firstLineDocString}</p>}
 						</div>
