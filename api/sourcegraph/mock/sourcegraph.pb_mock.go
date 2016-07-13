@@ -557,6 +557,8 @@ type AuthClient struct {
 	GetExternalToken_             func(ctx context.Context, in *sourcegraph.ExternalTokenSpec) (*sourcegraph.ExternalToken, error)
 	SetExternalToken_             func(ctx context.Context, in *sourcegraph.ExternalToken) (*pbtypes.Void, error)
 	DeleteAndRevokeExternalToken_ func(ctx context.Context, in *sourcegraph.ExternalTokenSpec) (*pbtypes.Void, error)
+	BlacklistToken_               func(ctx context.Context, in *sourcegraph.BlacklistTokenSpec) (*sourcegraph.BlacklistResponse, error)
+	CheckBlacklist_               func(ctx context.Context, in *sourcegraph.BlacklistCheckSpec) (*sourcegraph.BlacklistCheckResponse, error)
 }
 
 func (s *AuthClient) GetAccessToken(ctx context.Context, in *sourcegraph.AccessTokenRequest, opts ...grpc.CallOption) (*sourcegraph.AccessTokenResponse, error) {
@@ -579,6 +581,14 @@ func (s *AuthClient) DeleteAndRevokeExternalToken(ctx context.Context, in *sourc
 	return s.DeleteAndRevokeExternalToken_(ctx, in)
 }
 
+func (s *AuthClient) BlacklistToken(ctx context.Context, in *sourcegraph.BlacklistTokenSpec, opts ...grpc.CallOption) (*sourcegraph.BlacklistResponse, error) {
+	return s.BlacklistToken_(ctx, in)
+}
+
+func (s *AuthClient) CheckBlacklist(ctx context.Context, in *sourcegraph.BlacklistCheckSpec, opts ...grpc.CallOption) (*sourcegraph.BlacklistCheckResponse, error) {
+	return s.CheckBlacklist_(ctx, in)
+}
+
 var _ sourcegraph.AuthClient = (*AuthClient)(nil)
 
 type AuthServer struct {
@@ -587,6 +597,8 @@ type AuthServer struct {
 	GetExternalToken_             func(v0 context.Context, v1 *sourcegraph.ExternalTokenSpec) (*sourcegraph.ExternalToken, error)
 	SetExternalToken_             func(v0 context.Context, v1 *sourcegraph.ExternalToken) (*pbtypes.Void, error)
 	DeleteAndRevokeExternalToken_ func(v0 context.Context, v1 *sourcegraph.ExternalTokenSpec) (*pbtypes.Void, error)
+	BlacklistToken_               func(v0 context.Context, v1 *sourcegraph.BlacklistTokenSpec) (*sourcegraph.BlacklistResponse, error)
+	CheckBlacklist_               func(v0 context.Context, v1 *sourcegraph.BlacklistCheckSpec) (*sourcegraph.BlacklistCheckResponse, error)
 }
 
 func (s *AuthServer) GetAccessToken(v0 context.Context, v1 *sourcegraph.AccessTokenRequest) (*sourcegraph.AccessTokenResponse, error) {
@@ -607,6 +619,14 @@ func (s *AuthServer) SetExternalToken(v0 context.Context, v1 *sourcegraph.Extern
 
 func (s *AuthServer) DeleteAndRevokeExternalToken(v0 context.Context, v1 *sourcegraph.ExternalTokenSpec) (*pbtypes.Void, error) {
 	return s.DeleteAndRevokeExternalToken_(v0, v1)
+}
+
+func (s *AuthServer) BlacklistToken(v0 context.Context, v1 *sourcegraph.BlacklistTokenSpec) (*sourcegraph.BlacklistResponse, error) {
+	return s.BlacklistToken_(v0, v1)
+}
+
+func (s *AuthServer) CheckBlacklist(v0 context.Context, v1 *sourcegraph.BlacklistCheckSpec) (*sourcegraph.BlacklistCheckResponse, error) {
+	return s.CheckBlacklist_(v0, v1)
 }
 
 var _ sourcegraph.AuthServer = (*AuthServer)(nil)

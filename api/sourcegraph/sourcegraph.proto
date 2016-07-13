@@ -1297,7 +1297,11 @@ service Auth {
 	// (e.g., for GitHub, it hits the "revoke an authorizations for an
 	// application" API endpoint).
 	rpc DeleteAndRevokeExternalToken(ExternalTokenSpec) returns (pbtypes.Void);
+
+	rpc BlacklistToken(BlacklistTokenSpec) returns (BlacklistResponse);
+	rpc CheckBlacklist(BlacklistCheckSpec) returns (BlacklistCheckResponse);
 }
+
 
 // LoginCredentials is the information a user submits to log in.
 message LoginCredentials {
@@ -2324,4 +2328,25 @@ message ChannelSendOp {
 // ChannelSendResult describes the result of a Channel.Send call.
 message ChannelSendResult {
 	// No fields.
+}
+
+
+
+message BlacklistTokenSpec {
+	// UID is the UID of the user whose token is requested.
+	int32 uid = 1;
+	// Host is the external service whose token is requested.
+	string token = 2;
+}
+message BlacklistCheckSpec {
+	int32  uid = 1;
+	string token = 2;
+}
+message BlacklistResponse {
+	bool added = 1;
+}
+
+message BlacklistCheckResponse {
+	bool ok = 1;
+	pbtypes.Timestamp blacklisted_until = 2;
 }

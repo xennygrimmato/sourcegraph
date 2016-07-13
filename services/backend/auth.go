@@ -4,16 +4,12 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"math"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"math"
+	"os"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	authpkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth/accesstoken"
@@ -23,6 +19,9 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/services/ext/github"
 	"sourcegraph.com/sourcegraph/sourcegraph/services/ext/github/githubcli"
 	"sourcegraph.com/sqs/pbtypes"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var (
@@ -81,7 +80,9 @@ func (s *auth) authenticateLogin(ctx context.Context, cred *sourcegraph.LoginCre
 	a.Write = user.Write
 	a.Admin = user.Admin
 
-	tok, err := accesstoken.New(idkey.FromContext(ctx), &a, nil, 7*24*time.Hour, true)
+	// TODO should make token expire time dynamically configurable
+	// This was previously set to 7 days, change to 90 June 30th 2016.
+	tok, err := accesstoken.New(idkey.FromContext(ctx), &a, nil, 90*24*time.Hour, true)
 
 	if err != nil {
 		return nil, err
@@ -210,6 +211,35 @@ func (s *auth) Identify(ctx context.Context, _ *pbtypes.Void) (*sourcegraph.Auth
 
 		IntercomHash: intercomHMAC(a.UID),
 	}, nil
+}
+
+func (s *auth) BlacklistToken(ctx context.Context, tok *sourcegraph.BlacklistTokenSpec) (r *sourcegraph.BlacklistResponse, err error) {
+
+	if tok.Token == "" {
+		panic("empty token passed to blacklist")
+	}
+
+	// This is not an error, but we won't add the token to blacklist for the 0 UID
+	if tok.Uid == 0 {
+		return &sourcegraph.BlacklistResponse{Added: false}, nil
+	}
+
+	blackliststore := store.BlacklistedSessionTokensFromContext(ctx)
+
+	r, dberr := blackliststore.PersistBlacklistedToken(ctx, tok.Uid, tok.Token)
+	if dberr != nil {
+		return &sourcegraph.BlacklistResponse{Added: false}, dberr
+	}
+	return &sourcegraph.BlacklistResponse{Added: false}, nil
+}
+
+// The blacklist check is triggred during conteext initialization in our oauth middleware
+func (s *auth) CheckBlacklist(ctx context.Context, tok *sourcegraph.BlacklistCheckSpec) (*sourcegraph.BlacklistCheckResponse, error) {
+
+	blackliststore := store.BlacklistedSessionTokensFromContext(ctx)
+	result, err := blackliststore.CheckSessionTokenBlacklist(ctx, tok.Uid, tok.Token)
+
+	return result, err
 }
 
 func (s *auth) GetExternalToken(ctx context.Context, tok *sourcegraph.ExternalTokenSpec) (*sourcegraph.ExternalToken, error) {

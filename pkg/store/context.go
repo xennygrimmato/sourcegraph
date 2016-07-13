@@ -19,31 +19,33 @@ import (
 
 // Stores has a field for each store interface.
 type Stores struct {
-	Accounts           Accounts
-	BuildLogs          BuildLogs
-	Builds             Builds
-	Channel            Channel
-	DefExamples        DefExamples
-	Defs               Defs
-	Directory          Directory
-	ExternalAuthTokens ExternalAuthTokens
-	GlobalDeps         GlobalDeps
-	GlobalRefs         GlobalRefs
-	Graph              srcstore.MultiRepoStoreImporterIndexer
-	Orgs               Orgs
-	Password           Password
-	Queue              Queue
-	RepoConfigs        RepoConfigs
-	RepoStatuses       RepoStatuses
-	RepoVCS            RepoVCS
-	Repos              Repos
-	Users              Users
+	Accounts                 Accounts
+	BlacklistedSessionTokens BlacklistedSessionTokens
+	BuildLogs                BuildLogs
+	Builds                   Builds
+	Channel                  Channel
+	DefExamples              DefExamples
+	Defs                     Defs
+	Directory                Directory
+	ExternalAuthTokens       ExternalAuthTokens
+	GlobalDeps               GlobalDeps
+	GlobalRefs               GlobalRefs
+	Graph                    srcstore.MultiRepoStoreImporterIndexer
+	Orgs                     Orgs
+	Password                 Password
+	Queue                    Queue
+	RepoConfigs              RepoConfigs
+	RepoStatuses             RepoStatuses
+	RepoVCS                  RepoVCS
+	Repos                    Repos
+	Users                    Users
 }
 
 type contextKey int
 
 const (
 	_AccountsKey contextKey = iota
+	_BlacklistedSessionTokensKey
 	_BuildLogsKey
 	_BuildsKey
 	_ChannelKey
@@ -68,6 +70,9 @@ const (
 func WithStores(ctx context.Context, s Stores) context.Context {
 	if s.Accounts != nil {
 		ctx = WithAccounts(ctx, s.Accounts)
+	}
+	if s.BlacklistedSessionTokens != nil {
+		ctx = WithBlacklistedSessionTokens(ctx, s.BlacklistedSessionTokens)
 	}
 	if s.BuildLogs != nil {
 		ctx = WithBuildLogs(ctx, s.BuildLogs)
@@ -136,6 +141,20 @@ func AccountsFromContext(ctx context.Context) Accounts {
 	s, ok := ctx.Value(_AccountsKey).(Accounts)
 	if !ok || s == nil {
 		panic("no Accounts set in context")
+	}
+	return s
+}
+
+// WithBlacklistedSessionTokens returns a copy of parent with the given BlacklistedSessionTokens store.
+func WithBlacklistedSessionTokens(parent context.Context, s BlacklistedSessionTokens) context.Context {
+	return context.WithValue(parent, _BlacklistedSessionTokensKey, s)
+}
+
+// BlacklistedSessionTokensFromContext gets the context's BlacklistedSessionTokens store. If the store is not present, it panics.
+func BlacklistedSessionTokensFromContext(ctx context.Context) BlacklistedSessionTokens {
+	s, ok := ctx.Value(_BlacklistedSessionTokensKey).(BlacklistedSessionTokens)
+	if !ok || s == nil {
+		panic("no BlacklistedSessionTokens set in context")
 	}
 	return s
 }

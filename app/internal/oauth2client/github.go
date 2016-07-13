@@ -131,6 +131,8 @@ func oauthLoginURL(r *http.Request, state oauthAuthorizeClientState, scopes []st
 	return url.Parse(oauth2Config(ctx, scopes).AuthCodeURL(string(stateText)))
 }
 
+// TODO(sjl) This logic needs to be refactored to support multi auth providers well
+// see https://app.asana.com/0/87040567695724/150033734214850
 func serveGitHubOAuth2Receive(w http.ResponseWriter, r *http.Request) (err error) {
 	returnTo := "/"
 
@@ -179,7 +181,6 @@ func serveGitHubOAuth2Receive(w http.ResponseWriter, r *http.Request) (err error
 	if err != nil {
 		return err
 	}
-
 	ghUser := tok.GitHubUser
 
 	// If this GitHub user is already authed with us, then continue

@@ -1,10 +1,9 @@
 package oauth2util
 
 import (
-	"strings"
-
 	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/inconshreveable/log15.v2"
+	"strings"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -15,6 +14,7 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth/accesstoken"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth/idkey"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 )
 
 // GRPCMiddleware reads the OAuth2 access token from the gRPC call's
@@ -63,10 +63,18 @@ func GRPCMiddleware(ctx context.Context) (context.Context, error) {
 
 	// Make future calls use this access token.
 	ctx = sourcegraph.WithCredentials(ctx, oauth2.StaticTokenSource(&oauth2.Token{TokenType: "Bearer", AccessToken: tokStr}))
-
-	// Set actor in context.
 	if actor != nil {
 		ctx = auth.WithActor(ctx, *actor)
+	}
+
+	// Now that the context is populated, we do a final check to see this isn't a blacklisted token before we allow
+	// a user to access resources with it
+	blackliststore := store.BlacklistedSessionTokensFromContext(ctx)
+	blacklistResp, blErr := blackliststore.CheckSessionTokenBlacklist(ctx, int32(actor.UID), tokStr)
+	if blacklistResp.Ok == false {
+		log15.Error("Blacklisted token found in authorization header", "token", tokStr, "error", blErr)
+
+		return nil, grpc.Errorf(codes.Unauthenticated, "unauthorized access attempt")
 	}
 
 	return ctx, nil

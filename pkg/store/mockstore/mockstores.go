@@ -18,47 +18,49 @@ import (
 
 // Stores has a field for each store interface with the concrete mock type (to obviate the need for tedious type assertions in test code).
 type Stores struct {
-	Accounts           Accounts
-	BuildLogs          BuildLogs
-	Builds             Builds
-	Channel            Channel
-	DefExamples        DefExamples
-	Defs               Defs
-	Directory          Directory
-	ExternalAuthTokens ExternalAuthTokens
-	GlobalDeps         GlobalDeps
-	GlobalRefs         GlobalRefs
-	Graph              srcstore.MockMultiRepoStore
-	Orgs               Orgs
-	Password           Password
-	Queue              Queue
-	RepoConfigs        RepoConfigs
-	RepoStatuses       RepoStatuses
-	RepoVCS            RepoVCS
-	Repos              Repos
-	Users              Users
+	Accounts                 Accounts
+	BlacklistedSessionTokens BlacklistedSessionTokens
+	BuildLogs                BuildLogs
+	Builds                   Builds
+	Channel                  Channel
+	DefExamples              DefExamples
+	Defs                     Defs
+	Directory                Directory
+	ExternalAuthTokens       ExternalAuthTokens
+	GlobalDeps               GlobalDeps
+	GlobalRefs               GlobalRefs
+	Graph                    srcstore.MockMultiRepoStore
+	Orgs                     Orgs
+	Password                 Password
+	Queue                    Queue
+	RepoConfigs              RepoConfigs
+	RepoStatuses             RepoStatuses
+	RepoVCS                  RepoVCS
+	Repos                    Repos
+	Users                    Users
 }
 
 func (s *Stores) Stores() store.Stores {
 	return store.Stores{
-		Accounts:           &s.Accounts,
-		BuildLogs:          &s.BuildLogs,
-		Builds:             &s.Builds,
-		Channel:            &s.Channel,
-		DefExamples:        &s.DefExamples,
-		Defs:               &s.Defs,
-		Directory:          &s.Directory,
-		ExternalAuthTokens: &s.ExternalAuthTokens,
-		GlobalDeps:         &s.GlobalDeps,
-		GlobalRefs:         &s.GlobalRefs,
-		Graph:              &s.Graph,
-		Orgs:               &s.Orgs,
-		Password:           &s.Password,
-		Queue:              &s.Queue,
-		RepoConfigs:        &s.RepoConfigs,
-		RepoStatuses:       &s.RepoStatuses,
-		RepoVCS:            &s.RepoVCS,
-		Repos:              &s.Repos,
-		Users:              &s.Users,
+		Accounts:                 &s.Accounts,
+		BlacklistedSessionTokens: &s.BlacklistedSessionTokens,
+		BuildLogs:                &s.BuildLogs,
+		Builds:                   &s.Builds,
+		Channel:                  &s.Channel,
+		DefExamples:              &s.DefExamples,
+		Defs:                     &s.Defs,
+		Directory:                &s.Directory,
+		ExternalAuthTokens:       &s.ExternalAuthTokens,
+		GlobalDeps:               &s.GlobalDeps,
+		GlobalRefs:               &s.GlobalRefs,
+		Graph:                    &s.Graph,
+		Orgs:                     &s.Orgs,
+		Password:                 &s.Password,
+		Queue:                    &s.Queue,
+		RepoConfigs:              &s.RepoConfigs,
+		RepoStatuses:             &s.RepoStatuses,
+		RepoVCS:                  &s.RepoVCS,
+		Repos:                    &s.Repos,
+		Users:                    &s.Users,
 	}
 }

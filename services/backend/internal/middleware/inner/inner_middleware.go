@@ -292,6 +292,32 @@ func (s wrappedAuth) DeleteAndRevokeExternalToken(ctx context.Context, param *so
 	return
 }
 
+func (s wrappedAuth) BlacklistToken(ctx context.Context, param *sourcegraph.BlacklistTokenSpec) (res *sourcegraph.BlacklistResponse, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "Auth", "BlacklistToken", param)
+	defer func() {
+		trace.After(ctx, "Auth", "BlacklistToken", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.Auth.BlacklistToken(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "Auth.BlacklistToken returned nil, nil")
+	}
+	return
+}
+
+func (s wrappedAuth) CheckBlacklist(ctx context.Context, param *sourcegraph.BlacklistCheckSpec) (res *sourcegraph.BlacklistCheckResponse, err error) {
+	start := time.Now()
+	ctx = trace.Before(ctx, "Auth", "CheckBlacklist", param)
+	defer func() {
+		trace.After(ctx, "Auth", "CheckBlacklist", param, err, time.Since(start))
+	}()
+	res, err = backend.Services.Auth.CheckBlacklist(ctx, param)
+	if res == nil && err == nil {
+		err = grpc.Errorf(codes.Internal, "Auth.CheckBlacklist returned nil, nil")
+	}
+	return
+}
+
 type wrappedBuilds struct{}
 
 func (s wrappedBuilds) Get(ctx context.Context, param *sourcegraph.BuildSpec) (res *sourcegraph.Build, err error) {

@@ -2,17 +2,18 @@ package httpapi
 
 import (
 	"encoding/json"
-	"net/http"
-
-	"gopkg.in/inconshreveable/log15.v2"
-
+	"fmt"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
+	"gopkg.in/inconshreveable/log15.v2"
+	"net/http"
 	"sourcegraph.com/sourcegraph/sourcegraph/api/sourcegraph"
 	appauth "sourcegraph.com/sourcegraph/sourcegraph/app/auth"
+
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth/accesstoken"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/auth/idkey"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/handlerutil"
 	"sourcegraph.com/sqs/pbtypes"
 )
@@ -139,7 +140,33 @@ func finishLoginOrSignup(ctx context.Context, cl *sourcegraph.Client, w http.Res
 }
 
 func serveLogout(w http.ResponseWriter, r *http.Request) error {
+	ctx, cl := handlerutil.Client(r)
+	session, err := appauth.ReadSessionCookie(r)
+	token := session.AccessToken
+	uid := int32(0)
+	ctx = sourcegraph.WithCredentials(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"}))
+	actor, err := accesstoken.ParseAndVerify(idkey.FromContext(ctx), token)
+	if err != nil {
+		log15.Debug("Cookie parse:", "errror", err)
+	} else {
+		uid = int32(actor.UID)
+	}
+
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	// This actually removes the cookie from the browser, but doesn't invalidate it
 	appauth.DeleteSessionCookie(w)
+
+	// This step adds the invalid cookie to our session blacklist
+	blacklist := &sourcegraph.BlacklistTokenSpec{Uid: uid, Token: session.AccessToken}
+	blResp, blacklistErr := cl.Auth.BlacklistToken(ctx, blacklist)
+
+	if blResp.Added == false || err != nil || blacklistErr != nil {
+		log15.Debug("Unable to blacklist token", "token", session.AccessToken, "error", blacklistErr)
+		return writeJSON(w, &authResponse{Success: false})
+	}
 	return writeJSON(w, &authResponse{Success: true})
 }
 
