@@ -87,11 +87,11 @@ export const routes: Array<Route> = [
 		},
 	},
 	{
-		path: rel.chromeFaqs,
+		path: rel.browserFaqs,
 		getComponents: (location, callback) => {
 			require.ensure([], (require) => {
 				callback(null, {
-					main: require("sourcegraph/home/ChromeFaqsPage").default,
+					main: require("sourcegraph/home/BrowserFaqsPage").default,
 				});
 			});
 		},

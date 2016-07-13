@@ -74,7 +74,7 @@ export const abs: {[key: RouteName]: string} = {
 	about: rel.about,
 	contact: rel.contact,
 	security: rel.security,
-	chromeFaqs: rel.chromeFaqs,
+	browserFaqs: rel.browserFaqs,
 	pricing: rel.pricing,
 	terms: rel.terms,
 	privacy: rel.privacy,

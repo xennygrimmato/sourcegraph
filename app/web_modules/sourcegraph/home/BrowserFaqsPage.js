@@ -50,7 +50,7 @@ class BrowserFaqsPage extends React.Component {
 					<p styleName="p"> You must be signed in on Sourcegraph.com to access your indexed private repositories, or enable Sourcegraph to index your private repositories. Sign in or
 					sign up below with GitHub OAuth.</p>
 					<div styleName="tc">
-					{!this.context.signedIn && <GitHubAuthButton returnTo="/browser-faqs#signin"> Sign up or sign in</GitHubAuthButton>}
+					{!this.context.signedIn && <GitHubAuthButton returnTo="/about/browser-faqs#signin"> Sign up or sign in</GitHubAuthButton>}
 					</div>
 
 					<a id="enable"/>
