@@ -385,7 +385,7 @@ func (c *langRefsCmd) Execute(args []string) error {
 					}
 					var toks []*lang.Tok
 					for _, tok := range allToks.Toks {
-						if tok.Type == lang.Tok_NAME || strings.HasPrefix(tok.Type.String(), "NAME_") {
+						if tok.Type >= lang.Tok_NAME && tok.Type <= lang.Tok_NAME_END {
 							toks = append(toks, tok)
 						}
 					}

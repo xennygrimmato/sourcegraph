@@ -15,6 +15,7 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/lang"
 	annotationspkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/annotations"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/inventory/filelang"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/routevar"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/syntaxhighlight"
@@ -93,6 +94,10 @@ func (s *annotations) List(ctx context.Context, opt *sourcegraph.AnnotationsList
 }
 
 func (s *annotations) listSyntaxHighlights(ctx context.Context, opt *sourcegraph.AnnotationsListOptions, entry *sourcegraph.TreeEntry) ([]*sourcegraph.Annotation, error) {
+	if feature.Features.ExpUniverse {
+		return s.listSyntaxHighlightExpUniverse(ctx, opt, entry)
+	}
+
 	if opt.Range == nil {
 		opt.Range = &sourcegraph.FileRange{}
 	}
@@ -215,7 +220,67 @@ func computeLineStartBytes(data []byte) []uint32 {
 	return pos
 }
 
+func (s *annotations) listSyntaxHighlightExpUniverse(ctx context.Context, opt *sourcegraph.AnnotationsListOptions, entry *sourcegraph.TreeEntry) ([]*sourcegraph.Annotation, error) {
+	matchedLangs := filelang.Langs.ByFilename(opt.Entry.Path)
+	if len(matchedLangs) == 0 {
+		return nil, nil
+	}
+	cl, err := lang.ClientForLang(matchedLangs[0].Name)
+	if err != nil {
+		return nil, err
+	}
+	res, err := cl.Toks(ctx, &lang.ToksOp{
+		Source: entry.Contents,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	anns := make([]*sourcegraph.Annotation, 0, len(res.Toks))
+	for _, tok := range res.Toks {
+		var cls string
+		switch {
+		case tok.Type >= lang.Tok_KEYWORD && tok.Type <= lang.Tok_KEYWORD_END:
+			cls = "kwd"
+		case tok.Type == lang.Tok_NAME_ATTRIBUTE:
+			cls = "atn"
+		case tok.Type == lang.Tok_NAME_TAG:
+			cls = "tag"
+		case tok.Type >= lang.Tok_NAME && tok.Type <= lang.Tok_NAME_END:
+			cls = "pln"
+		case tok.Type >= lang.Tok_STRING && tok.Type <= lang.Tok_STRING_END:
+			cls = "str"
+		case tok.Type >= lang.Tok_NUMBER && tok.Type <= lang.Tok_NUMBER_END:
+			cls = "dec"
+		case tok.Type >= lang.Tok_LITERAL && tok.Type <= lang.Tok_LITERAL_END:
+			cls = "lit"
+		case tok.Type >= lang.Tok_OPERATOR && tok.Type <= lang.Tok_OPERATOR_END:
+			cls = "pun"
+		case tok.Type >= lang.Tok_PUNCTUATION && tok.Type <= lang.Tok_PUNCTUATION_END:
+			cls = "pun"
+		case tok.Type >= lang.Tok_COMMENT && tok.Type <= lang.Tok_COMMENT_END:
+			cls = "com"
+		case tok.Type >= lang.Tok_GENERIC && tok.Type <= lang.Tok_GENERIC_END:
+			cls = ""
+		}
+		if cls == "" {
+			continue
+		}
+		anns = append(anns, &sourcegraph.Annotation{
+			StartByte: tok.StartByte,
+			EndByte:   tok.StartByte + tok.ByteLen,
+			Class:     cls,
+		})
+	}
+	return anns, nil
+}
+
 func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.AnnotationsListOptions, entry *sourcegraph.TreeEntry, repo int32, repoPath string) ([]*sourcegraph.Annotation, error) {
+	const annotateAtLoadTime = false
+	if !annotateAtLoadTime {
+		return nil, nil
+	}
+
 	vcsrepo, err := store.RepoVCSFromContext(ctx).Open(ctx, repo)
 	if err != nil {
 		return nil, err

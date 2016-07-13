@@ -207,6 +207,8 @@ message Tok {
 	uint32 start_byte = 1;
 	uint32 byte_len = 2;
 	enum TokType {
+		option allow_alias = true; // lets us define "xyz_END" entries
+
 		// Token types are taken from http://pygments.org/docs/tokens.
 		//
 		// TODO(sqs): reorder these to make the most commonly used
@@ -219,6 +221,7 @@ message Tok {
 		KEYWORD_PSEUDO = 4;
 		KEYWORD_RESERVED = 5;
 		KEYWORD_TYPE = 6;
+		KEYWORD_END = 6;
 
 		NAME = 7;
 		NAME_ATTRIBUTE = 8;
@@ -238,6 +241,7 @@ message Tok {
 		NAME_VARIABLE_CLASS = 22;
 		NAME_VARIABLE_GLOBAL = 23;
 		NAME_VARIABLE_INSTANCE = 24;
+		NAME_END = 24;
 
 		LITERAL = 25;
 		LITERAL_DATE = 26;
@@ -253,6 +257,7 @@ message Tok {
 		STRING_REGEX = 36;
 		STRING_SINGLE = 37;
 		STRING_SYMBOL = 38;
+		STRING_END = 38;
 		NUMBER = 39;
 		NUMBER_BIN = 40;
 		NUMBER_FLOAT = 41;
@@ -260,11 +265,15 @@ message Tok {
 		NUMBER_INTEGER = 43;
 		NUMBER_INTEGER_LONG = 44;
 		NUMBER_OCT = 45;
+		NUMBER_END = 45;
+		LITERAL_END = 45;
 
 		OPERATOR = 46;
 		OPERATOR_WORD = 47;
+		OPERATOR_END = 47;
 
 		PUNCTUATION = 48;
+		PUNCTUATION_END = 48;
 
 		COMMENT = 49;
 		COMMENT_HASHBANG = 50;
@@ -272,6 +281,7 @@ message Tok {
 		COMMENT_PREPROC = 52;
 		COMMENT_SINGLE = 53;
 		COMMENT_SPECIAL = 54;
+		COMMENT_END = 54;
 
 		GENERIC = 55;
 		GENERIC_DELETED = 56;
@@ -284,6 +294,7 @@ message Tok {
 		GENERIC_STRONG = 63;
 		GENERIC_SUBHEADING = 64;
 		GENERIC_TRACEBACK = 65;
+		GENERIC_END = 65;
 	}
 	TokType type = 3;
 }

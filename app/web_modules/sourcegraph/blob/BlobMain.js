@@ -56,6 +56,7 @@ export default class BlobMain extends Container {
 
 	static contextTypes = {
 		router: React.PropTypes.object.isRequired,
+		features: React.PropTypes.object.isRequired,
 	};
 
 	constructor(props) {
@@ -225,7 +226,7 @@ export default class BlobMain extends Container {
 						rev={this.state.rev}
 						commitID={this.state.commitID}
 						path={this.state.path} />
-					{(!this.state.blob || (this.state.blob && !this.state.blob.Error && !this.state.skipAnns && !this.state.anns)) && <BlobContentPlaceholder />}
+					{(!this.state.blob || (this.state.blob && !this.state.blob.Error && !this.state.skipAnns && !this.state.anns)) && !this.context.features.ExpUniverse && <BlobContentPlaceholder />}
 					{this.state.blob && !this.state.blob.Error && typeof this.state.blob.ContentsString !== "undefined" && (this.state.skipAnns || (this.state.anns && !this.state.anns.Error)) &&
 					<Blob
 						repo={this.state.repo}
