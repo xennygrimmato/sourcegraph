@@ -197,6 +197,27 @@ export class BetaSubscriptionCompleted {
 	}
 }
 
+export class SubmitAdminFeedback {
+	page: string;
+	msg: string;
+	// eventName purposefully left out
+
+	constructor(page: string, msg: string) {
+		this.page = page;
+		this.msg = msg;
+	}
+}
+
+export class AdminFeedbackCompleted {
+	resp: any;
+	eventName: string;
+
+	constructor(resp: any) {
+		this.resp = resp;
+		this.eventName = "AdminFeedbackCompleted";
+	}
+}
+
 export class UpdateSettings {
 	settings: Settings;
 

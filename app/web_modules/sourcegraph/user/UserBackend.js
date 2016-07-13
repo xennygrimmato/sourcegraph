@@ -176,6 +176,21 @@ const UserBackend = {
 					Dispatcher.Stores.dispatch(new UserActions.BetaSubscriptionCompleted(data));
 				});
 			break;
+		case UserActions.SubmitAdminFeedback:
+			UserBackend.fetch(`/.api/admin-feedback`, {
+				method: "POST",
+				body: JSON.stringify({
+					Page: action.page,
+					Msg: action.msg,
+				}),
+			})
+				.then(checkStatus)
+				.then((resp) => resp.json())
+				.catch((err) => ({Error: err}))
+				.then((data) => {
+					Dispatcher.Stores.dispatch(new UserActions.AdminFeedbackCompleted(data));
+				});
+			break;
 		}
 	},
 };

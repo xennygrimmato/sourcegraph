@@ -5,7 +5,8 @@ import {Link} from "react-router";
 import type {RouterLocation} from "react-router";
 import LocationStateToggleLink from "sourcegraph/components/LocationStateToggleLink";
 import {LocationStateModal, dismissModal} from "sourcegraph/components/Modal";
-import {Avatar, Panel, Popover, Menu, TabItem, Logo} from "sourcegraph/components";
+import Modal from "sourcegraph/components/Modal";
+import {Avatar, Panel, Popover, Menu, TabItem, Logo, Heading, Button} from "sourcegraph/components";
 import LogoutLink from "sourcegraph/user/LogoutLink";
 import CSSModules from "react-css-modules";
 import styles from "./styles/GlobalNav.css";
@@ -16,6 +17,8 @@ import {FaChevronDown} from "sourcegraph/components/Icons";
 import * as AnalyticsConstants from "sourcegraph/util/constants/AnalyticsConstants";
 import GlobalSearchInput from "sourcegraph/search/GlobalSearchInput";
 import {locationForSearch, queryFromStateOrURL, langsFromStateOrURL, scopeFromStateOrURL} from "sourcegraph/search/routes";
+import Dispatcher from "sourcegraph/Dispatcher";
+import * as UserActions from "sourcegraph/user/UserActions";
 import GlobalSearch from "sourcegraph/search/GlobalSearch";
 import SearchSettings from "sourcegraph/search/SearchSettings";
 import invariant from "invariant";
@@ -23,6 +26,7 @@ import {rel} from "sourcegraph/app/routePatterns";
 import {repoPath, repoParam} from "sourcegraph/repo";
 import {isPage} from "sourcegraph/page";
 import debounce from "lodash.debounce";
+import {MdFeedback} from "sourcegraph/components/Icons";
 
 function GlobalNav({navContext, location, params, channelStatusCode}, {user, siteConfig, signedIn, router, eventLogger}) {
 	const isHomepage = location.pathname === "/";
@@ -33,6 +37,7 @@ function GlobalNav({navContext, location, params, channelStatusCode}, {user, sit
 	if (location.pathname === "/styleguide") return <span />;
 	const repoSplat = repoParam(params.splat);
 	let repo = repoSplat ? repoPath(repoSplat) : null;
+
 	return (
 		<nav id="global-nav" styleName={isHomepage ? "navbar-homepage" : "navbar-non-homepage"} role="navigation">
 
@@ -146,6 +151,10 @@ class SearchForm extends React.Component {
 		showResultsPanel: React.PropTypes.bool.isRequired,
 	};
 
+	static contextTypes = {
+		user: React.PropTypes.object,
+	};
+
 	constructor(props) {
 		super(props);
 
@@ -161,17 +170,24 @@ class SearchForm extends React.Component {
 		this._handleChange = this._handleChange.bind(this);
 		this._handleFocus = this._handleFocus.bind(this);
 		this._handleBlur = this._handleBlur.bind(this);
+		this._submitFeedback = this._submitFeedback.bind(this);
 	}
 
 	state: {
 		open: bool;
 		focused: bool;
+		feedbackForm: bool;
+		submittingFeedback: bool;
+		feedbackSuccess: bool;
 		query: ?string;
 		lang: ?string[];
 		scope: ?Object;
 	} = {
 		open: false,
 		focused: false,
+		feedbackForm: false,
+		submittingFeedback: false,
+		feedbackSuccess: false,
 		query: null,
 		lang: null,
 		scope: null,
@@ -180,6 +196,7 @@ class SearchForm extends React.Component {
 	componentDidMount() {
 		document.addEventListener("keydown", this._handleGlobalHotkey);
 		document.addEventListener("click", this._handleGlobalClick);
+		this._dispatcherToken = Dispatcher.Stores.register(this._onDispatch.bind(this));
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -200,10 +217,13 @@ class SearchForm extends React.Component {
 	componentWillUnmount() {
 		document.removeEventListener("keydown", this._handleGlobalHotkey);
 		document.removeEventListener("click", this._handleGlobalClick);
+		Dispatcher.Stores.unregister(this._dispatcherToken);
 	}
 
 	_container: HTMLElement;
 	_input: HTMLInputElement;
+	_feedback: HTMLTextAreaElement;
+	_dispatcherToken: string;
 
 	// NOTE: Flow doesn't automatically treat methods as props, so this manual list
 	// is necessary. See https://github.com/facebook/flow/issues/1517.
@@ -215,6 +235,7 @@ class SearchForm extends React.Component {
 	_handleChange: any;
 	_handleFocus: any;
 	_handleBlur: any;
+	_submitFeedback: any;
 
 	_handleGlobalHotkey(ev: KeyboardEvent) {
 		if (ev.keyCode === 27 /* ESC */) {
@@ -290,16 +311,52 @@ class SearchForm extends React.Component {
 		this.setState({focused: false});
 	}
 
+	_onDispatch(action) {
+		if (action instanceof UserActions.AdminFeedbackCompleted) {
+			this.setState({
+				feedbackSuccess: true,
+			});
+			setTimeout(() => {
+				this.setState({
+					feedbackSuccess: false,
+					feedbackForm: false,
+					submittingFeedback: false,
+				});
+			}, 1500);
+		}
+	}
+
+	_submitFeedback() {
+		this.setState({submittingFeedback: true});
+		Dispatcher.Backends.dispatch(new UserActions.SubmitAdminFeedback(
+			window.location.href,
+			this._feedback.value,
+		));
+	}
+
 	render() {
 		return (
 			<div
 				styleName="search-form-container"
 				ref={e => this._container = e}>
+				{this.state.feedbackForm && <SearchFeedbackModal
+					onDismiss={() => this.setState({feedbackForm: false})}
+					onSubmit={this._submitFeedback}
+					textareaRef={(ref) => this._feedback = ref}
+					disabled={this.state.submittingFeedback}
+					success={this.state.feedbackSuccess} />}
 				<form
 					onSubmit={this._handleSubmit}
 					onReset={this._handleReset}
 					styleName="search-form"
 					autoComplete="off">
+					{this.context.user && this.context.user.Admin && <a
+						href="#"
+						onClick={() => this.setState({feedbackForm: !this.state.feedbackForm})}
+						styleName="search-feedback-link"
+						title="Provide feedback on this search query">
+						<MdFeedback />
+					</a>}
 					<GlobalSearchInput
 						name="q"
 						icon={true}
@@ -329,3 +386,26 @@ let SearchResultsPanel = ({repo, location, query}: {repo: ?string, location: Rou
 	</Panel>;
 
 SearchResultsPanel = CSSModules(SearchResultsPanel, styles);
+
+let SearchFeedbackModal = ({onDismiss, onSubmit, textareaRef, disabled, success}: {onDismiss: any, onSubmit: any, textareaRef: any, disabled: boolean, success: boolean}) => <Modal
+	onDismiss={onDismiss}>
+	<Panel styleName="search-feedback-modal">
+		{success && <Heading level="4" styleName="search-feedback-header">Thank you for your feedback!</Heading>}
+		{!success && <div>
+			<Heading level="4" styleName="search-feedback-header">How can this query be improved?</Heading>
+			<textarea styleName="search-feedback-textarea" ref={textareaRef}>
+			</textarea>
+			<Button
+				block={true}
+				color="purple"
+				type="submit"
+				onClick={onSubmit}
+				disabled={disabled}
+				outline={true}>
+					Submit
+			</Button>
+		</div>}
+	</Panel>
+</Modal>;
+
+SearchFeedbackModal = CSSModules(SearchFeedbackModal, styles);

@@ -284,6 +284,7 @@ export class EventLogger {
 			}
 			break;
 		case UserActions.BetaSubscriptionCompleted:
+		case UserActions.AdminFeedbackCompleted:
 			if (action.eventName) {
 				this.logEventForCategory(AnalyticsConstants.CATEGORY_ENGAGEMENT, AnalyticsConstants.ACTION_SUCCESS, action.eventName);
 			}

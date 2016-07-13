@@ -151,6 +151,26 @@
 	composes: f4 from typography;
 }
 
+.search-feedback-modal {
+	composes: mt6 ph4 pb3 mb5 center from base;
+	composes: col-10 from grid;
+	align-content: center;
+	text-align: center;
+	max-width: 450px;
+}
+.search-feedback-link {
+	font-size: 1.8rem;
+	margin-top: 0.6rem;
+	margin-left: 0.8rem;
+}
+.search-feedback-header {
+	composes: pv3 from base;
+}
+.search-feedback-textarea {
+	height: 10rem;
+	width: 100%;
+}
+
 .search-icon {
 	font-size: 1.3rem;
 }

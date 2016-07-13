@@ -25,6 +25,7 @@ export const PlayIcon = iconWrapper(require("react-icons/lib/fa/play-circle"));
 export const ToolsIcon = iconWrapper(require("react-icons/lib/go/tools"));
 export const FaThumbsUp = iconWrapper(require("react-icons/lib/fa/thumbs-up"));
 export const FaThumbsDown = iconWrapper(require("react-icons/lib/fa/thumbs-down"));
+export const MdFeedback = iconWrapper(require("react-icons/lib/md/feedback"));
 
 // iconWrapper lets you pass a style directly to any of the exported components, e.g.
 // <RepoIcon styleName="foo" />
