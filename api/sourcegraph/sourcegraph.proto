@@ -1244,6 +1244,15 @@ message BetaResponse {
 	string EmailAddress = 1;
 }
 
+// AdminFeedbackOp represents feedback from an admin user.
+message AdminFeedbackOp {
+	// Page is the page feedback is being provided about.
+	string Page = 1;
+
+	// Msg is the feedback message.
+	string Msg = 2;
+}
+
 // UsersService communicates with the users-related endpoints in the Sourcegraph
 // API.
 service Users {
@@ -1262,6 +1271,10 @@ service Users {
 	// RegisterBeta registers the currently authenticated user for beta program
 	// access (to be granted at the discretion of an admin user in the future).
 	rpc RegisterBeta(BetaRegistration) returns (BetaResponse);
+
+	// AdminFeedback is an admin-only endpoint which can be used to submit
+	// feedback messages to Slack.
+	rpc AdminFeedback(AdminFeedbackOp) returns (pbtypes.Void);
 }
 
 // Auth manages authentication and authorization (via OAuth2).
