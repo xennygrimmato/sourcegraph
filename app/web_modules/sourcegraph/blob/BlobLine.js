@@ -161,7 +161,9 @@ class BlobLine extends Component {
 							ev.preventDefault();
 
 							let cmps = annURLs[0].split("-");
-							let repo = cmps[0].split("/"), unit = cmps[1].split("/"), path = cmps[2].split("/");
+							// let repo = cmps[0].split("/");
+							// let unit = cmps[1].split("/");
+							let path = cmps[2].split("/");
 							let query = [];
 							// query.push(repo[2], repo[3]);
 							// query.push(...unit.slice(3));
