@@ -271,6 +271,10 @@ class GlobalSearch extends Container {
 		}
 	}
 
+	// _highlightTerms creates an ordered array of txt that's split up into the parts that
+	// match this.state.matchTerms, and the parts that don't. The elements of the
+	// array that match this.state.matchTerms are wrapped in span elements that
+	// have the "highlight" class.
 	_highlightTerms(txt) {
 		if (!(this.state.matchTerms && txt)) {
 			return txt;
@@ -282,6 +286,13 @@ class GlobalSearch extends Container {
 		return out;
 	}
 
+	// _getSnippets transforms txt into a string that highlights the parts
+	// of txt that match this.state.matchTerms.
+	// The returned string conisists of the first "init" chars of txt
+	// (rounded to the location of the next space char), followed by the sections of
+	// of the rest of txt that match this.state.matchTerms, padded with the surrouding
+	// padSize chars (again rounded to the location of the next space char), and separated
+	// by an ellipsis.
 	_getSnippets(txt, init, padSize) {
 		if (!(this.state.matchTerms && txt)) {
 			return txt;
@@ -293,8 +304,9 @@ class GlobalSearch extends Container {
 		let matcher = new RegExp(this.state.matchTerms, "ig");
 		let result = matcher.exec(rest);
 		while (result) {
+			// Get the closest words to the right of the indicies for both left and right padding.
 			let leftPadIndex = Math.max(lastEndIndex, rest.indexOf(" ", result.index - padSize));
-			let rightPadIndex = Math.max(rest.indexOf(" ", matcher.lastIndex + padSize));
+			let rightPadIndex = rest.indexOf(" ", matcher.lastIndex + padSize);
 			if (rightPadIndex === -1) {
 				rightPadIndex = rest.length;
 			}
