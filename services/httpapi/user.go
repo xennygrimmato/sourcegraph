@@ -53,3 +53,18 @@ func serveBetaSubscription(w http.ResponseWriter, r *http.Request) error {
 	}
 	return writeJSON(w, resp)
 }
+
+func serveAdminFeedback(w http.ResponseWriter, r *http.Request) error {
+	var opt sourcegraph.AdminFeedbackOp
+	if err := json.NewDecoder(r.Body).Decode(&opt); err != nil {
+		return err
+	}
+
+	ctx, cl := handlerutil.Client(r)
+	_, err := cl.Users.AdminFeedback(ctx, &opt)
+	if err != nil {
+		return err
+	}
+	w.WriteHeader(http.StatusOK)
+	return nil
+}
