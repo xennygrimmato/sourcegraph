@@ -7,6 +7,7 @@ import Container from "sourcegraph/Container";
 import type {Def} from "sourcegraph/def";
 import Dispatcher from "sourcegraph/Dispatcher";
 import Blob from "sourcegraph/blob/Blob";
+import BlobExpUniverse from "sourcegraph/blob/BlobExpUniverse";
 import BlobContentPlaceholder from "sourcegraph/blob/BlobContentPlaceholder";
 import BlobToolbar from "sourcegraph/blob/BlobToolbar";
 import FileMargin from "sourcegraph/blob/FileMargin";
@@ -217,6 +218,8 @@ export default class BlobMain extends Container {
 			title = `${defTitle(this.state.defObj)} · ${title}`;
 		}
 
+		const BlobComponent = this.context.features.ExpUniverse ? BlobExpUniverse : Blob;
+
 		return (
 			<div className={Style.container}>
 				{title && <Helmet title={title} />}
@@ -228,7 +231,7 @@ export default class BlobMain extends Container {
 						path={this.state.path} />
 					{(!this.state.blob || (this.state.blob && !this.state.blob.Error && !this.state.skipAnns && !this.state.anns)) && !this.context.features.ExpUniverse && <BlobContentPlaceholder />}
 					{this.state.blob && !this.state.blob.Error && typeof this.state.blob.ContentsString !== "undefined" && (this.state.skipAnns || (this.state.anns && !this.state.anns.Error)) &&
-					<Blob
+					<BlobComponent
 						repo={this.state.repo}
 						rev={this.state.rev}
 						ref={(c) => { this.setState({selectionStartLine: (c && c.refs && c.refs.startLineComponent) ? c.refs.startLineComponent : null}); }}

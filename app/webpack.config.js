@@ -99,7 +99,7 @@ module.exports = {
 	plugins: plugins,
 	module: {
 		preLoaders: [
-			{test:	/\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
+			//{test:	/\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
 		],
 		loaders: [
 			{test: /\.js$/, exclude: /node_modules/, loader: "babel-loader?cacheDirectory"},
@@ -111,7 +111,7 @@ module.exports = {
 				loader: "style!css?sourceMap&modules&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]!postcss",
 			},
 		],
-		noParse: /\.min\.js$/,
+		noParse: [/\.min\.js$/],
 	},
 	postcss: [require("postcss-modules-values"), autoprefixer({remove: false})],
 	devServer: {
