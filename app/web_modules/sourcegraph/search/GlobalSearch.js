@@ -32,6 +32,10 @@ export const RESULTS_LIMIT = 20;
 
 const resultIconSize = "24px";
 
+// The following two constants are initial guesses for what looks reasonable when displaying
+// DocString snippets for the search results. DOCSTRING_BASE_NUM_CHARS corresponds to how
+// many chars of the original DocString we're going to show, and SNIPPET_PADDING_NUM_CHARS corresponds
+// to how many chars of "padding" we have surrounding each matching part of the DocString.
 const DOCSTRING_BASE_NUM_CHARS = 80;
 
 const SNIPPET_PADDING_NUM_CHARS = 10;
