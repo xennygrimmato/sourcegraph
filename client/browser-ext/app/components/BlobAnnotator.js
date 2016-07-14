@@ -264,7 +264,7 @@ constructor(props) {
 		let data = this._getSrclibDataVersion(repoURI, rev);
 
 		if (data) return "Indexed";
-		if (buildCache && buildCache.Failure) return "Code not analyzed";
+		if (buildCache && (buildCache.Failure || buildCache.Killed)) return "Code not analyzed";
 
 		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Code not analyzed. Sign in to Sourcegraph";
@@ -307,7 +307,7 @@ constructor(props) {
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
 		} else if (Object.keys(build).length === 0) {
-			setTimeout(() => this._queryForBuild(), 3000);
+			setTimeout(() => this._queryForBuild(), 4000);
 			indicatorText = "Analyzing..."
 		} else {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
