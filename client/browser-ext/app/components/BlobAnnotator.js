@@ -265,10 +265,8 @@ export default class BlobAnnotator extends Component {
 		let build = this.props.build["content"];
 		let data = this._getSrclibDataVersion(repoURI, rev);
 		if (data) return "Indexed";
-
-		if (!buildCache || buildCache.Failure) return "No annotations found";
-
-		if (build) return "Indexing";
+		if (build) return "Analyzing...";
+		if (!buildCache || buildCache.Failure) return "Code not analyzed";
 
 		let webToken = this.props.accessToken;
 		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
@@ -288,16 +286,16 @@ export default class BlobAnnotator extends Component {
 	getBuildIndicator(indicatorText, prefix) {
 		let url = "https://staging.sourcegraph.com";
 		switch (indicatorText) {
-			case "Indexing":
 			case "Indexed":
+				return (<SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} />);
 			case "Unsupported language":
-			case "Fetching":
+			case "Analyzing...":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
 			case "Sign in to Sourcegraph":
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#signin"}> <u> {prefix}{indicatorText} </u> </a>);
 			case "Enable Sourcegraph":
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
-			case "No annotations found":
+			case "Code not analyzed":
 				setTimeout(() => this.reconcileState(this.state, this.props), 1000);
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#buildfailure"}><u>{prefix}{indicatorText}</u></a>);
 			default:
@@ -312,18 +310,18 @@ export default class BlobAnnotator extends Component {
 			indicatorText = "Unsupported language";
 		} else if (Object.keys(build).length === 0) {
 			setTimeout(() => this._queryForBuild(), 5000);
-			indicatorText = "Fetching"
+			indicatorText = "Analyzing..."
 		} else {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);
 		}
 		if (!this.state.isDelta) {
-			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getBuildIndicator(indicatorText,null)} </span>);
+			return (<span> {this.getBuildIndicator(indicatorText,null)} </span>);
 		} else {
 			let baseText = this._indicatorText(this.state.baseRepoURI, this.state.baseCommitID);
 			let headText = this._indicatorText(this.state.headRepoURI, this.state.headCommitID);
 			let baseRender = this.getBuildIndicator(baseText);
 			let headRender = this.getBuildIndicator(headText);
-			return (<span><SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} /> {this.getRender(baseText,"base: ")} {this.getRender(headText,"head: ")} </span>);
+			return (<span>{this.getRender(baseText,"base: ")} {this.getRender(headText,"head: ")} </span>);
 		}
 	}
 }

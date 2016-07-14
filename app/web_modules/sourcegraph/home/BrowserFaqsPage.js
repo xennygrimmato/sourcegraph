@@ -25,6 +25,8 @@ class BrowserFaqsPage extends React.Component {
 		super(props);
 	}
 
+	something = true;
+
 	render() {
 		return (
 			<div>
