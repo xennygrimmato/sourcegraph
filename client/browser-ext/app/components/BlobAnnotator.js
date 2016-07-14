@@ -35,7 +35,7 @@ export default class BlobAnnotator extends Component {
 		blobElement: React.PropTypes.object.isRequired,
 	};
 
-	constructor(props) {
+constructor(props) {
 		super(props);
 		this._clickRefresh = this._clickRefresh.bind(this);
 		this.state = utils.parseURL();
@@ -137,12 +137,11 @@ export default class BlobAnnotator extends Component {
 		// Diff expansion is not synchronous, so we must wait for
 		// elements to get added to the DOM before calling into the
 		// annotations code. 500ms is arbitrary but seems to work well.
-		setTimeout(() => this._addAnnotations(this.state), 500);
+		setTimeout(() => this._addAnnotations(this.state), 5000);
 	}
 
 	_queryForBuild() {
-		this.props.actions.refreshBuild(this.state.repoURI, this.state.resolvedRev.CommitID, this.state.rev);
-		this.render();
+		this.props.actions.stashRefreshedBuild(this.state.repoURI, this.state.resolvedRev.CommitID, this.state.rev);
 	}
 
 	_isSplitDiff() {
@@ -262,21 +261,20 @@ export default class BlobAnnotator extends Component {
 
 	_indicatorText(repoURI, rev) {
 		let buildCache = this._getBuild(repoURI, rev);
-		let build = this.props.build["content"];
 		let data = this._getSrclibDataVersion(repoURI, rev);
+
 		if (data) return "Indexed";
-		if (build) return "Analyzing...";
-		if (!buildCache || buildCache.Failure) return "Code not analyzed";
+		if (buildCache && buildCache.Failure) return "Code not analyzed";
 
 		let webToken = this.props.accessToken;
-		if (!webToken || webToken === "") return "Sign in to Sourcegraph";
+		if (!webToken || webToken === "") return "Code not analyzed. Sign in to Sourcegraph";
 
 		let scopeAuth = "";
 		if (this.props.authInfo && this.props.authInfo.GitHubToken && this.props.authInfo.GitHubToken.scope) scopeAuth = this.props.authInfo.GitHubToken.scope;
 		let name = (scopeAuth.includes("read:org") && scopeAuth.includes("repo") && scopeAuth.includes("user")) ? scopeAuth : "";
-		if (name === "") return "Enable Sourcegraph";
+		if (name === "") return "Code not analyzed. Enable Sourcegraph";
 
-		return "";
+		return "Code not analyzed";
 	}
 
 	onClick(ev) {
@@ -291,13 +289,13 @@ export default class BlobAnnotator extends Component {
 			case "Unsupported language":
 			case "Analyzing...":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
-			case "Sign in to Sourcegraph":
+			case "Code not analyzed. Sign in to Sourcegraph":
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#signin"}> <u> {prefix}{indicatorText} </u> </a>);
-			case "Enable Sourcegraph":
+			case "Code not analyzed. Enable Sourcegraph":
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
 			case "Code not analyzed":
-				setTimeout(() => this.reconcileState(this.state, this.props), 1000);
-				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#buildfailure"}><u>{prefix}{indicatorText}</u></a>);
+				this._clickRefresh();
+				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#build"}><u>{prefix}{indicatorText}</u></a>);
 			default:
 				return (<span/>);
 		}
@@ -309,7 +307,7 @@ export default class BlobAnnotator extends Component {
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
 		} else if (Object.keys(build).length === 0) {
-			setTimeout(() => this._queryForBuild(), 5000);
+			setTimeout(() => this._queryForBuild(), 3000);
 			indicatorText = "Analyzing..."
 		} else {
 			indicatorText = this._indicatorText(this.state.repoURI, this.state.rev);

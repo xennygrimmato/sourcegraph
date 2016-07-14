@@ -140,14 +140,19 @@ function _getNewestBuildForCommit(dispatch, state, repo, commitID) {
 		.catch((err) => { dispatch({type: types.FETCHED_BUILD, repo, commitID, err}); throw err; });
 }
 
-export function refreshBuild(repo, commitID, branch) {
+export function stashRefreshedBuild(repo, commitID, branch) {
 	return function (dispatch, getState) {
-		//const build = state.build.content[keyFor(repo, commitID)];
-		//if (build) return Promise.resolve();
+		const state = getState();
+		return  _getNewestBuildForCommit(dispatch, state, repo, commitID).then((json) => {
+			if (json && json.Builds && json.Builds.length === 1) {
+				return Promise.resolve();
+			}
 
-		return fetch(`https://sourcegraph.com/.api/builds?Sort=updated_at&Direction=desc&PerPage=1&Repo=${repo}&CommitID=${commitID}`)
-			.then((json) => { dispatch({type: types.FETCHED_BUILD, repo, commitID, json}); return json; })
-			.catch((err) => { dispatch({type: types.FETCHED_BUILD, repo, commitID, err}); throw err; });
+			dispatch({type: types.CREATED_BUILD, repo, commitID, json: {Builds: [{}]}});
+			return fetch(`https://sourcegraph.com/.api/repos/${repo}/-/builds`, {method: "POST", body: JSON.stringify({CommitID: commitID, Branch: branch})})
+				.then((json) => {})
+				.catch((err) => {});
+		}).catch((err) => {}); // no error handling
 	}
 }
 
