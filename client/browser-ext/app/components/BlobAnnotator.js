@@ -290,7 +290,7 @@ constructor(props) {
 			case "Analyzing...":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}><u>{prefix}{indicatorText}</u></span>);
 			case "Code not analyzed. Sign in to Sourcegraph":
-				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#signin"}><u>prefix}{indicatorText}</u></a>);
+				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#signin"}><u>{prefix}{indicatorText}</u></a>);
 			case "Code not analyzed. Enable Sourcegraph":
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#enable"}><u>{prefix}{indicatorText}</u></a>);
 			case "Code not analyzed":
