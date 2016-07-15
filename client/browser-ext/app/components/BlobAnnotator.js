@@ -297,7 +297,7 @@ constructor(props) {
 				this._clickRefresh();
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#build"}><u>{prefix}{indicatorText}</u></a>);
 			default:
-				return (<span/>);
+				return (<span>);
 		}
 	}
 
@@ -319,7 +319,7 @@ constructor(props) {
 			let headText = this._indicatorText(this.state.headRepoURI, this.state.headCommitID);
 			let baseRender = this.getBuildIndicator(baseText);
 			let headRender = this.getBuildIndicator(headText);
-			return (<span>{this.getRender(baseText,"base: ")} {this.getRender(headText,"head: ")} </span>);
+			return (<span>{this.getBuildIndicator(baseText,"base: ")} {this.getBuildIndicator(headText,"head: ")} </span>);
 		}
 	}
 }
