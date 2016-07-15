@@ -286,7 +286,6 @@ constructor(props) {
 		switch (indicatorText) {
 			case "Indexed":
 				return (<SourcegraphIcon style={{marginTop: "-2px", paddingLeft: "5px", paddingRight: "5px", fontSize: "25px"}} />);
-			case "Unsupported language":
 			case "Analyzing...":
 				return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{prefix}{indicatorText}</span>);
 			case "Code not analyzed. Sign in to Sourcegraph":
@@ -297,7 +296,7 @@ constructor(props) {
 				this._clickRefresh();
 				return (<a onClick={this.onClick.bind(this)} href={url+"/about/browser-faqs#build"}><u>{prefix}{indicatorText}</u></a>);
 			default:
-				return (<span>);
+				return (<span/>);
 		}
 	}
 
@@ -306,6 +305,7 @@ constructor(props) {
 		let indicatorText = "";
 		if (!utils.supportedExtensions.includes(utils.getPathExtension(this.state.path))) {
 			indicatorText = "Unsupported language";
+			return (<span id="sourcegraph-build-indicator-text" style={{paddingLeft: "5px"}}>{indicatorText}</span>);
 		} else if (Object.keys(build).length === 0) {
 			setTimeout(() => this._queryForBuild(), 4000);
 			indicatorText = "Analyzing..."
