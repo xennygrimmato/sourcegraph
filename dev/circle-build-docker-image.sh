@@ -3,7 +3,9 @@ set -ex
 
 VERSION=$1
 
-make dist PACKAGEFLAGS="--os=linux $VERSION"
+# HACK: We don't need to do this here because it's already done for every build
+#       by circle-ci-run-e2etests.sh
+#make dist PACKAGEFLAGS="--os=linux $VERSION"
 
 cp release/$VERSION/linux-amd64 deploy/sourcegraph/src
 docker build -t us.gcr.io/sourcegraph-dev/sourcegraph:$VERSION deploy/sourcegraph
