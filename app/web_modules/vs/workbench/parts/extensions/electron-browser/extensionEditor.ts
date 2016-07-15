@@ -8,7 +8,7 @@
 import './media/extensionEditor.css';
 import { localize } from 'vs/nls';
 import { TPromise } from 'vs/base/common/winjs.base';
-import { marked } from 'vs/base/common/marked/marked';
+import * as marked from 'vs/base/common/marked/raw.marked';
 import { IDisposable, empty, dispose, toDisposable } from 'vs/base/common/lifecycle';
 import { Builder } from 'vs/base/browser/builder';
 import { append, emmet as $, addClass, removeClass, finalHandler } from 'vs/base/browser/dom';

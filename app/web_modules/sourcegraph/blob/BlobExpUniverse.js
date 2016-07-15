@@ -2,6 +2,26 @@
 
 import React from "react";
 import * as monaco from "exports?global.monaco!vs/editor/editor.main";
+import BlobBackend from "sourcegraph/blob/BlobBackend";
+
+let monacoInited = false;
+function monacoInitOnce() {
+	if (monacoInited) return;
+	monacoInited = true;
+
+	monaco.languages.register({id: "go"});
+
+	monaco.languages.registerHoverProvider("go", {
+		provideHover: function(model, position) {
+			return Promise.resolve({
+				range: new monaco.Range(1, 1, model.getLineCount(), model.getLineMaxColumn(model.getLineCount())),
+				contents: [
+					"*This* is a **tooltip.**",
+				]
+			});
+		}
+	});
+}
 
 export default class BlobExpUniverse extends React.Component {
 	static propTypes = {
@@ -31,13 +51,13 @@ export default class BlobExpUniverse extends React.Component {
 			//return URL.createObjectURL(b);
 		};
 
+		monacoInitOnce();
+
 		this._editor = monaco.editor.create(this._elem, {
-			value: [
-				'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}',
-			].join('\n'),
+			value: this.props.contents,
 			//readOnly: true,
 			theme: "vs-dark",
-			language: 'javascript',
+			language: 'go',
 			scrollBeyondLastLine: false,
 		});
 		window.editor = this._editor;
@@ -48,6 +68,6 @@ export default class BlobExpUniverse extends React.Component {
 	}
 
 	render() {
-		return <div style={{height: "500px"}} ref={(e) => this._elem = e} />;
+		return <div style={{height: "800px"}} ref={(e) => this._elem = e} />;
 	}
 }

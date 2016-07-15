@@ -6,7 +6,7 @@
 'use strict';
 
 import {WorkerServer} from 'vs/base/common/worker/workerServer';
-import {marked} from 'vs/base/common/marked/marked';
+import * as marked from 'vs/base/common/marked/raw.marked';
 
 
 function link(href, title, text): string {

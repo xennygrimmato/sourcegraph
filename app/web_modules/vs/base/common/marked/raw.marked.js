@@ -5,9 +5,7 @@
  * https://github.com/chjj/marked
  */
 
-// TODO MonacoChange: we have our own way of defining modules
-// ;(function() {
-// END MonacoChange
+;(function() {
 
 /**
  * Block-Level Grammar
@@ -1264,17 +1262,14 @@ marked.inlineLexer = InlineLexer.output;
 
 marked.parse = marked;
 
-// TODO MonacoChange: we have our own way of defining modules
-this.marked = marked;
-//if (typeof module !== 'undefined' && typeof exports === 'object') {
-//  module.exports = marked;
-//} else if (typeof define === 'function' && define.amd) {
-//  define(function() { return marked; });
-//} else {
-//  this.marked = marked;
-//}
-//
-//}).call(function() {
-//  return this || (typeof window !== 'undefined' ? window : global);
-//}());
-// END MonacoChange
+if (typeof module !== 'undefined' && typeof exports === 'object') {
+  module.exports = marked;
+} else if (typeof define === 'function' && define.amd) {
+  define(function() { return marked; });
+} else {
+  this.marked = marked;
+}
+
+}).call(function() {
+  return this || (typeof window !== 'undefined' ? window : global);
+}());
