@@ -317,6 +317,7 @@ constructor(props) {
 		} else {
 			let baseText = this._indicatorText(this.state.baseRepoURI, this.state.baseCommitID);
 			let headText = this._indicatorText(this.state.headRepoURI, this.state.headCommitID);
+			if (baseText == headText) return (<span>{this.getBuildIndicator(baseText)} </span>);
 			let baseRender = this.getBuildIndicator(baseText);
 			let headRender = this.getBuildIndicator(headText);
 			return (<span>{this.getBuildIndicator(baseText,"base: ")} {this.getBuildIndicator(headText,"head: ")} </span>);
