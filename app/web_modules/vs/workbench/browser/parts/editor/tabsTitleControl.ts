@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/tabstitle';
+import './media/tabstitle.css';
 import nls = require('vs/nls');
 import {IAction} from 'vs/base/common/actions';
 import {prepareActions} from 'vs/workbench/browser/actionBarRegistry';

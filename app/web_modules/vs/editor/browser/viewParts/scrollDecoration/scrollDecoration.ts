@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./scrollDecoration';
+import './scrollDecoration.css';
 import * as dom from 'vs/base/browser/dom';
 import {StyleMutator} from 'vs/base/browser/styleMutator';
 import {IConfigurationChangedEvent, EditorLayoutInfo, IScrollEvent} from 'vs/editor/common/editorCommon';

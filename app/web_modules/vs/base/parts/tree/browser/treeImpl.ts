@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./tree';
+import './tree.css';
 import WinJS = require('vs/base/common/winjs.base');
 import TreeDefaults = require('vs/base/parts/tree/browser/treeDefaults');
 import Events = require('vs/base/common/eventEmitter');

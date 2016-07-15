@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./parameterHints';
+import './parameterHints.css';
 import nls = require('vs/nls');
 import { IDisposable, dispose, Disposable } from 'vs/base/common/lifecycle';
 import { TPromise } from 'vs/base/common/winjs.base';

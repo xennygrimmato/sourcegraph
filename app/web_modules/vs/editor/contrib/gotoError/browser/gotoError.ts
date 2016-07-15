@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./gotoError';
+import './gotoError.css';
 import * as nls from 'vs/nls';
 import {onUnexpectedError} from 'vs/base/common/errors';
 import {Emitter} from 'vs/base/common/event';

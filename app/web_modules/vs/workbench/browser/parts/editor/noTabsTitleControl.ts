@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/notabstitle';
+import './media/notabstitle.css';
 import {IAction} from 'vs/base/common/actions';
 import {prepareActions} from 'vs/workbench/browser/actionBarRegistry';
 import errors = require('vs/base/common/errors');

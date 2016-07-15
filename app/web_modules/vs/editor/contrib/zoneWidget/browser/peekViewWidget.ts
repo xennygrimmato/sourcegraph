@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./peekViewWidget';
+import './peekViewWidget.css';
 import * as nls from 'vs/nls';
 import {Action} from 'vs/base/common/actions';
 import * as strings from 'vs/base/common/strings';

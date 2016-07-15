@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/task.contribution';
+import './media/task.contribution.css';
 import 'vs/workbench/parts/tasks/browser/taskQuickOpen';
 
 import * as nls from 'vs/nls';

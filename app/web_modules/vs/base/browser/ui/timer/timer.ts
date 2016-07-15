@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./timer';
+import './timer.css';
 import {TimeKeeper, ITimerEvent, getTimeKeeper} from 'vs/base/common/timer';
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';
 import DomUtils = require('vs/base/browser/dom');

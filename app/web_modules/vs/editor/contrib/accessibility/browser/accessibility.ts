@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./accessibility';
+import './accessibility.css';
 import * as nls from 'vs/nls';
 import {KeyCode, KeyMod} from 'vs/base/common/keyCodes';
 import {Disposable} from 'vs/base/common/lifecycle';

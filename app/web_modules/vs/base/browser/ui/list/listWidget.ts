@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./list';
+import './list.css';
 import { IDisposable, dispose } from 'vs/base/common/lifecycle';
 import { isNumber } from 'vs/base/common/types';
 import * as DOM from 'vs/base/browser/dom';

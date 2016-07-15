@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/binarydiffeditor';
+import './media/binarydiffeditor.css';
 import {TPromise} from 'vs/base/common/winjs.base';
 import nls = require('vs/nls');
 import URI from 'vs/base/common/uri';

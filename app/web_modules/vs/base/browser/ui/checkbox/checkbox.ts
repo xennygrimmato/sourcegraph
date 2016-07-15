@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./checkbox';
+import './checkbox.css';
 
 import DOM = require('vs/base/browser/dom');
 import {KeyCode} from 'vs/base/common/keyCodes';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./button';
+import './button.css';
 import {EventEmitter} from 'vs/base/common/eventEmitter';
 import DOM = require('vs/base/browser/dom');
 import {Builder, $} from 'vs/base/browser/builder';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/fileactions';
+import './media/fileactions.css';
 import {TPromise} from 'vs/base/common/winjs.base';
 import nls = require('vs/nls');
 import {isWindows, isLinux, isMacintosh} from 'vs/base/common/platform';

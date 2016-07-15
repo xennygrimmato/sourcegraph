@@ -6,7 +6,7 @@
 
 'use strict';
 
-import 'vs/css!./contextview';
+import './contextview.css';
 import {Builder, $} from 'vs/base/browser/builder';
 import DOM = require('vs/base/browser/dom');
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';

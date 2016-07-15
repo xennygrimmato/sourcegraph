@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./overlayWidgets';
+import './overlayWidgets.css';
 import {StyleMutator} from 'vs/base/browser/styleMutator';
 import {EditorLayoutInfo} from 'vs/editor/common/editorCommon';
 import {ClassNames, IOverlayWidget, OverlayWidgetPositionPreference} from 'vs/editor/browser/editorBrowser';

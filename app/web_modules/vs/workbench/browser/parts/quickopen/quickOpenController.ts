@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/quickopen';
+import './media/quickopen.css';
 import {TPromise, ValueCallback} from 'vs/base/common/winjs.base';
 import nls = require('vs/nls');
 import {Dimension, withElementById} from 'vs/base/browser/builder';

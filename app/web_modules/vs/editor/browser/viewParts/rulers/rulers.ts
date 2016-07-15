@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./rulers';
+import './rulers.css';
 import {StyleMutator} from 'vs/base/browser/styleMutator';
 import * as editorCommon from 'vs/editor/common/editorCommon';
 import {ViewPart} from 'vs/editor/browser/view/viewPart';

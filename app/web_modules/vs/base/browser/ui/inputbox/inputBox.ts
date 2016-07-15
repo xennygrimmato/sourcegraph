@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./inputBox';
+import './inputBox.css';
 
 import nls = require('vs/nls');
 import * as Bal from 'vs/base/browser/browser';

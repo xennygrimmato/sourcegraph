@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./builder';
+import './builder.css';
 import {TPromise} from 'vs/base/common/winjs.base';
 import types = require('vs/base/common/types');
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';

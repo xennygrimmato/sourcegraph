@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./media/editorpicker';
+import './media/editorpicker.css';
 import {TPromise} from 'vs/base/common/winjs.base';
 import nls = require('vs/nls');
 import labels = require('vs/base/common/labels');

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./dropdown';
+import './dropdown.css';
 import {Builder, $} from 'vs/base/browser/builder';
 import {TPromise} from 'vs/base/common/winjs.base';
 import {Gesture, EventType} from 'vs/base/browser/touch';

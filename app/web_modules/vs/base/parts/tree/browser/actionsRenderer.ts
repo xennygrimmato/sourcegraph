@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./actionsRenderer';
+import './actionsRenderer.css';
 import Lifecycle = require('vs/base/common/lifecycle');
 import WinJS = require('vs/base/common/winjs.base');
 import Builder = require('vs/base/browser/builder');

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./splitview';
+import './splitview.css';
 import lifecycle = require('vs/base/common/lifecycle');
 import ee = require('vs/base/common/eventEmitter');
 import types = require('vs/base/common/types');

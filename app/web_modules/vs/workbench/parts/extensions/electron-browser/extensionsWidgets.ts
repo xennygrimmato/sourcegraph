@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/extensionsWidgets';
+import './media/extensionsWidgets.css';
 import { IDisposable, dispose } from 'vs/base/common/lifecycle';
 import { IExtension, IExtensionsWorkbenchService } from './extensions';
 import { append, emmet as $, addClass } from 'vs/base/browser/dom';

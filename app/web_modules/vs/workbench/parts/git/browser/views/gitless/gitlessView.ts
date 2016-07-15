@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./gitlessView';
+import './gitlessView.css';
 import nls = require('vs/nls');
 import platform = require('vs/base/common/platform');
 import winjs = require('vs/base/common/winjs.base');

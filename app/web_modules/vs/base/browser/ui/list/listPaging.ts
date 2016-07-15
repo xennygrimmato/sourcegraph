@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./list';
+import './list.css';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { range } from 'vs/base/common/arrays';
 import { IDelegate, IRenderer, IFocusChangeEvent, ISelectionChangeEvent } from './list';

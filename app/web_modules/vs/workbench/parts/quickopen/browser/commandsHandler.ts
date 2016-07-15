@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/commandsHandler';
+import './media/commandsHandler.css';
 import {TPromise} from 'vs/base/common/winjs.base';
 import nls = require('vs/nls');
 import arrays = require('vs/base/common/arrays');

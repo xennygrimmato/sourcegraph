@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import nls = require('vs/nls');
-import 'vs/css!../browser/media/breakpointWidget';
+import '../browser/media/breakpointWidget.css';
 import async = require('vs/base/common/async');
 import errors = require('vs/base/common/errors');
 import { CommonKeybindings, KeyCode, KeyMod } from 'vs/base/common/keyCodes';

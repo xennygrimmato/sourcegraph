@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/extensionEditor';
+import './media/extensionEditor.css';
 import { localize } from 'vs/nls';
 import { TPromise } from 'vs/base/common/winjs.base';
 import { marked } from 'vs/base/common/marked/marked';

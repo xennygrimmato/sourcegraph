@@ -5,7 +5,7 @@
 'use strict';
 
 
-import 'vs/css!./octicons/octicons';
+import './octicons/octicons.css';
 import {escape} from 'vs/base/common/strings';
 
 export function expand(text: string): string {

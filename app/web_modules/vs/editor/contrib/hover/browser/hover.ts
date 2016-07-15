@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./hover';
+import './hover.css';
 import * as nls from 'vs/nls';
 import {KeyCode, KeyMod} from 'vs/base/common/keyCodes';
 import * as platform from 'vs/base/common/platform';

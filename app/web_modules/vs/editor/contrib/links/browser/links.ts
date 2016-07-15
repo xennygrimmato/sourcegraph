@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./links';
+import './links.css';
 import * as nls from 'vs/nls';
 import {onUnexpectedError} from 'vs/base/common/errors';
 import {KeyCode} from 'vs/base/common/keyCodes';

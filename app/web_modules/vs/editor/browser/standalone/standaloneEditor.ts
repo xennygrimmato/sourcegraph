@@ -5,7 +5,7 @@
 'use strict';
 
 import './standaloneSchemas';
-import 'vs/css!./media/standalone-tokens';
+import './media/standalone-tokens.css';
 import * as editorCommon from 'vs/editor/common/editorCommon';
 import {ContentWidgetPositionPreference, OverlayWidgetPositionPreference} from 'vs/editor/browser/editorBrowser';
 import {ShallowCancelThenPromise} from 'vs/base/common/async';

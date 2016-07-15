@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./linesDecorations';
+import './linesDecorations.css';
 import * as editorCommon from 'vs/editor/common/editorCommon';
 import {DecorationToRender, DedupOverlay} from 'vs/editor/browser/viewParts/glyphMargin/glyphMargin';
 import {ViewContext} from 'vs/editor/common/view/viewContext';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./findWidget';
+import './findWidget.css';
 import * as nls from 'vs/nls';
 import {onUnexpectedError} from 'vs/base/common/errors';
 import {CommonKeybindings} from 'vs/base/common/keyCodes';

@@ -6,7 +6,7 @@
 
 'use strict';
 
-import 'vs/css!./quickOutline';
+import './quickOutline.css';
 import * as nls from 'vs/nls';
 import {onUnexpectedError} from 'vs/base/common/errors';
 import {matchesFuzzy} from 'vs/base/common/filters';

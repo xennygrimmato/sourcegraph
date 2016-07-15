@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./gotoLine';
+import './gotoLine.css';
 import * as nls from 'vs/nls';
 import {IContext, QuickOpenEntry, QuickOpenModel} from 'vs/base/parts/quickopen/browser/quickOpenModel';
 import {IAutoFocus, Mode} from 'vs/base/parts/quickopen/common/quickOpen';

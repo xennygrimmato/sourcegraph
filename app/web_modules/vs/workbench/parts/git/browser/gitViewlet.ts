@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/gitViewlet';
+import './media/gitViewlet.css';
 import winjs = require('vs/base/common/winjs.base');
 import lifecycle = require('vs/base/common/lifecycle');
 import eventemitter = require('vs/base/common/eventEmitter');

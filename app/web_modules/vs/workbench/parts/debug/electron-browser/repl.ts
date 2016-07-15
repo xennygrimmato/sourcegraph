@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./../browser/media/repl';
+import './../browser/media/repl.css';
 import nls = require('vs/nls');
 import { TPromise } from 'vs/base/common/winjs.base';
 import errors = require('vs/base/common/errors');

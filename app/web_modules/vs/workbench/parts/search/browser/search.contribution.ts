@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/search.contribution';
+import './media/search.contribution.css';
 import {Registry} from 'vs/platform/platform';
 import {ViewletRegistry, Extensions as ViewletExtensions, ViewletDescriptor} from 'vs/workbench/browser/viewlet';
 import {IConfigurationRegistry, Extensions as ConfigurationExtensions} from 'vs/platform/configuration/common/configurationRegistry';

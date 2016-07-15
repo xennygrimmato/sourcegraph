@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./defineKeybinding';
+import './defineKeybinding.css';
 import * as nls from 'vs/nls';
 import {RunOnceScheduler} from 'vs/base/common/async';
 import {MarkedString} from 'vs/base/common/htmlContent';

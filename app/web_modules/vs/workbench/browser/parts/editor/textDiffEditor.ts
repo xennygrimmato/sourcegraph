@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/textdiffeditor';
+import './media/textdiffeditor.css';
 import {TPromise} from 'vs/base/common/winjs.base';
 import nls = require('vs/nls');
 import {Builder} from 'vs/base/browser/builder';

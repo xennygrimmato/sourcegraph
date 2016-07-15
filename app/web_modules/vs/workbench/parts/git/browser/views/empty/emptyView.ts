@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./emptyView';
+import './emptyView.css';
 import nls = require('vs/nls');
 import Lifecycle = require('vs/base/common/lifecycle');
 import EventEmitter = require('vs/base/common/eventEmitter');
