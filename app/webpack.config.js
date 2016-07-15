@@ -99,6 +99,7 @@ module.exports = {
 	plugins: plugins,
 	module: {
 		preLoaders: [
+			// TODO(sqs): uncomment this
 			//{test:	/\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
 		],
 		loaders: [
