@@ -575,10 +575,8 @@ class GlobalSearch extends Container {
 					<div styleName="cool-gray flex-container" className={base.pt3}>
 						<div styleName="flex w100">
 					<div styleName="cool-mid-gray block-s" className={`${base.ma0} ${base.pl4} ${base.pr2} ${base.fr}`}>{trimRepo(def.Repo)}</div>
-					{/* eslint-disable react/display-name */}
 					<code styleName="block f5" className={base.pb3}> {qualifiedNameAndType(def, {nameQual: "DepQualified",
 																								highlighter: x => this._highlightTerms(x)})}</code>
-					{/* eslint-enable */}
 					{firstLineDocString &&
 						<div styleName="docstring" className={base.mt0}>
 						{this._highlightTerms(this._getSnippets(firstLineDocString, DOCSTRING_BASE_NUM_CHARS, SNIPPET_PADDING_NUM_CHARS))}</div>}
