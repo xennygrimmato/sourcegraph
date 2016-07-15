@@ -50,7 +50,10 @@
     "react-addons-test-utils": "^15.1.0",
     "react-hot-loader": "^3.0.0-beta.2",
     "redbox-react": "^1.2.9",
+    "source-map-loader": "^0.1.5",
     "style-loader": "^0.13.1",
+    "ts-loader": "^0.8.2",
+    "typescript": "^1.8.10",
     "url-loader": "^0.5.7",
     "webpack": "^2.1.0-beta.14",
     "webpack-dev-server": "^2.1.0-beta.0"
