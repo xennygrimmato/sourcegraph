@@ -112,6 +112,24 @@ func (s *asyncWorker) do(ctx context.Context, job *store.Job) error {
 }
 
 func (s *asyncWorker) refreshIndexes(ctx context.Context, op *sourcegraph.AsyncRefreshIndexesOp) error {
+	release, ok := tryAcquireRepoLock(ctx, op.Repo)
+	if !ok {
+		// We can't have multiple jobs updating the same
+		// repo. However, there may be a newer commit than the last
+		// one currently being processed. So we try to index again in
+		// the future.
+		args, err := json.Marshal(op)
+		if err != nil {
+			return err
+		}
+		return store.QueueFromContext(ctx).Enqueue(ctx, &store.Job{
+			Type: "RefreshIndexes",
+			Args: args,
+			// RunAt: time.Now().Add(5 * time.Minute)
+		})
+	}
+	defer release()
+
 	_, err := svc.Defs(ctx).RefreshIndex(ctx, &sourcegraph.DefsRefreshIndexOp{
 		Repo:                op.Repo,
 		RefreshRefLocations: true,
@@ -122,4 +140,12 @@ func (s *asyncWorker) refreshIndexes(ctx context.Context, op *sourcegraph.AsyncR
 	}
 
 	return nil
+}
+
+// tryAcquireRepoLock attempts to acquire a lock for repo. If the lock is
+// currently held, it will return (nil, false). Otherwise a (release, true) is
+// returned, where release will unlock the distributed lock.
+func tryAcquireRepoLock(ctx context.Context, repo int32) (release func(), ok bool) {
+	// TODO(keegancsmith) implement distributed lock on repo
+	return func() {}, true
 }
