@@ -1,9 +1,7 @@
 // @flow
 
 import React from "react";
-import loader from "imports?require=>false,global=>window,define=>function(){_amdLoaderGlobal.define.apply(this%2C arguments)}!exports?_amdLoaderGlobal!vs/loader";
-console.log("QQ", loader);
-//import monaco from "vs/editor/editor.main.js";
+import * as monaco from "exports?global.monaco!vs/editor/editor.main";
 
 export default class BlobExpUniverse extends React.Component {
 	static propTypes = {
@@ -16,26 +14,40 @@ export default class BlobExpUniverse extends React.Component {
 		siteConfig: React.PropTypes.object.isRequired,
 	};
 
+	_elem: HTMLElement;
+	_editor: any;
+
 	componentDidMount() {
-		const onGotAmdLoader = () => {
-			// const a = global.require;
-			// const b = require;
-			// console.log("a === b", a === b);
-			global.require = loader.require;
-			global.define = loader.define;
-			loader.require.config({paths: {vs: `${this.context.siteConfig.assetsRoot}/node_modules/monaco-editor/min/vs`}});
-			loader.require(['vs/editor/editor.main'], () => {
-				this._initMonaco();
-			});
+		global.HACK_vsGetWorkerUrl = (workerId: string, label: string): any => {
+			// Run the web worker from a webpack script that is in the bundle but that
+			// doesn't have its own separate URL.
+			//
+			// See http://stackoverflow.com/questions/10343913/how-to-create-a-web-worker-from-a-string and
+			// http://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file
+			// for more information about (and limitations of) this technique.
+
+			return require("worker?inline!vs/base/worker/workerMain");
+			//const b = new Blob([require("raw!worker?inline!vs/base/worker/workerMain")], {type: "text/javascript"});
+			//return URL.createObjectURL(b);
 		};
-		onGotAmdLoader();
+
+		this._editor = monaco.editor.create(this._elem, {
+			value: [
+				'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}', '', 'function x() {', '\tconsole.log("Hello world!");', '}',
+			].join('\n'),
+			//readOnly: true,
+			theme: "vs-dark",
+			language: 'javascript',
+			scrollBeyondLastLine: false,
+		});
+		window.editor = this._editor;
 	}
 
-	_initMonaco() {
-		console.log("INIT MONACO");
+	componentWillUnmount() {
+		if (this._editor) this._editor.destroy();
 	}
 
 	render() {
-		return <h1>Hello! {this.state && this.state.hello}</h1>;
+		return <div style={{height: "500px"}} ref={(e) => this._elem = e} />;
 	}
 }

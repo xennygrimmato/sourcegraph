@@ -1,5 +1,5 @@
-declare module "vs/editor/editor.main" {
+declare module "exports?global.monaco!vs/editor/editor.main" {
 	declare var exports: any;
 }
 
-declare module "vs/loader" {}
+declare module "worker?inline!vs/base/worker/workerMain" {}

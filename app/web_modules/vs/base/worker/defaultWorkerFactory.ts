@@ -10,7 +10,17 @@ import {logOnceWebWorkerWarning, IWorker, IWorkerCallback, IWorkerFactory} from 
 import * as dom from 'vs/base/browser/dom';
 
 function defaultGetWorkerUrl(workerId:string, label:string): string {
-	return require.toUrl('./' + workerId);
+	return global.HACK_vsGetWorkerUrl(workerId, label);
+	// TODO(sqs): Including this dynamic require makes webpack complain that it can't
+	// determine the required module statically. However, we probably can completely bypass
+	// this function (and prevent it from ever getting called) by defining
+	// MonacoEnviroment.getWorkerUrl in our own code (which is a TODO). To do that in the current
+	// vs system, we'd need to be able to assign to global.MonacoEnvironment BEFORE flags.ts is run,
+	// which isn't currently possible. So, we need to add a way to specify the URL function after load,
+	// and then we need to suppress webpack's erroneous complaint (and stop it from trying to parse
+	// this require call). Then we can uncomment this and remove the throw above.
+	//
+	// return require.toUrl('./' + workerId);
 }
 var getWorkerUrl = flags.getCrossOriginWorkerScriptUrl || defaultGetWorkerUrl;
 
@@ -26,7 +36,13 @@ class WebWorker implements IWorker {
 
 	constructor(moduleId:string, id:number, label:string, onMessageCallback:IWorkerCallback, onErrorCallback:(err:any)=>void) {
 		this.id = id;
-		this.worker = new Worker(getWorkerUrl('workerMain.js', label));
+		// TODO(sqs): Originally, getWorkerUrl returned a string. But we want to use
+		// the webpack worker-loader, which lets us avoid using vs's loader.js and instead
+		// use our existing bundle. But worker-loader returns a Worker, not a url, so we
+		// need to accept a worker directly and bypass the new Worker call in that case.
+		let w:any = getWorkerUrl('workerMain.js', label);
+		if (typeof w === "string") this.worker = new Worker(w);
+		else this.worker = new w;
 		this.postMessage(moduleId);
 		this.worker.onmessage = function (ev:any) {
 			onMessageCallback(ev.data);
@@ -77,7 +93,8 @@ class FrameWorker implements IWorker {
 
 		this.iframe = <HTMLIFrameElement> document.createElement('iframe');
 		this.iframe.id = this.iframeId();
-		this.iframe.src = require.toUrl('./workerMainCompatibility.html');
+		console.trace("TODO removed dynamic require");
+		// this.iframe.src = require.toUrl('./workerMainCompatibility.html');
 		(<any> this.iframe).frameborder = this.iframe.height = this.iframe.width = '0';
 		this.iframe.style.display = 'none';
 		this._listeners.push(dom.addDisposableListener(this.iframe, 'load', () => this.onLoaded()));

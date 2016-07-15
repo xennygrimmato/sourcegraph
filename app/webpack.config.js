@@ -89,6 +89,7 @@ module.exports = {
 	],
 	resolve: {
 		modules: [`${__dirname}/web_modules`, "node_modules"],
+		extensions: ["", ".js", ".ts"],
 	},
 	devtool: (process.env.NODE_ENV === "production" && !process.env.WEBPACK_QUICK) ? "source-map" : "eval",
 	output: {
@@ -103,13 +104,20 @@ module.exports = {
 			//{test:	/\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
 		],
 		loaders: [
-			{test: /\.js$/, exclude: /node_modules/, loader: "babel-loader?cacheDirectory"},
+			{test: /\.js$/, exclude: [/node_modules/, /vs\//], loader: "babel-loader?cacheDirectory"},
+			{test: /\.tsx?$/, include: /vs\//, loader: "ts-loader?transpileOnly=true"},
 			{test: /\.json$/, exclude: /node_modules/, loader: "json-loader"},
 			{test: /\.(eot|ttf|woff)$/, loader: "file-loader?name=fonts/[name].[ext]"},
-			{test: /\.svg$/, loader: "url"},
+			{test: /\.(svg|png)$/, loader: "url"},
 			{
 				test: /\.css$/,
+				exclude: /\/web_modules\/vs\//,
 				loader: "style!css?sourceMap&modules&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]!postcss",
+			},
+			{
+				test: /\.css$/,
+				include: /\/web_modules\/vs\//,
+				loader: "style!css?sourceMap",
 			},
 		],
 		noParse: [/\.min\.js$/],

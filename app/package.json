@@ -56,7 +56,8 @@
     "typescript": "^1.8.10",
     "url-loader": "^0.5.7",
     "webpack": "^2.1.0-beta.14",
-    "webpack-dev-server": "^2.1.0-beta.0"
+    "webpack-dev-server": "^2.1.0-beta.0",
+    "worker-loader": "^0.7.1"
   },
   "dependencies": {
     "abab": "^1.0.3",

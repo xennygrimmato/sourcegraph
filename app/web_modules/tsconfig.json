@@ -6,9 +6,8 @@
 		"removeComments": false,
 		"preserveConstEnums": true,
 		"target": "es5",
-		"sourceMap": false,
-		"experimentalDecorators": true,
-		"declaration": true
+		"sourceMap": true,
+		"experimentalDecorators": true
 	},
 	"rootDir": "web_modules"
 }

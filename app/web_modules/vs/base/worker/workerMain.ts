@@ -9,15 +9,12 @@
 	let MonacoEnvironment = (<any>self).MonacoEnvironment;
 	let monacoBaseUrl = MonacoEnvironment && MonacoEnvironment.baseUrl ? MonacoEnvironment.baseUrl : '../../../';
 
-	importScripts(monacoBaseUrl + 'vs/loader.js');
-
-	require.config({
-		baseUrl: monacoBaseUrl,
-		catchError: true
-	});
-
 	let loadCode = function(moduleId) {
-		require([moduleId], function(ws) {
+		// TODO(sqs): webpack doesn't support dynamic requires.
+		if (moduleId !== "vs/base/common/worker/simpleWorker") {
+			throw new Error("can't dynamically load module " + moduleId);
+		}
+		System.import("vs/base/common/worker/simpleWorker").then((ws) => {
 			let messageHandler = ws.create((msg:any) => {
 				(<any>self).postMessage(msg);
 			}, null);
