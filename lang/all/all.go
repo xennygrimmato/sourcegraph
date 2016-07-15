@@ -3,5 +3,5 @@ package all
 
 import (
 	_ "sourcegraph.com/sourcegraph/sourcegraph/lang/golang"
-	_ "sourcegraph.com/sourcegraph/sourcegraph/lang/javascript"
+	//_ "sourcegraph.com/sourcegraph/sourcegraph/lang/javascript"
 )
