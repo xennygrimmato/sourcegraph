@@ -79,6 +79,14 @@ if (process.env.PUBLIC_WEBPACK_DEV_SERVER_URL) {
 	publicWebpackDevServer = uStruct.host;
 }
 
+const preLoaders = [
+	{ test: /\.js$/, loader: "source-map-loader" },
+];
+
+// Allow skipping eslint to speed up builds (with WEBPACK_SKIP=eslint env var).
+if (!/eslint/.test(process.env.WEBPACK_SKIP)) {
+	preLoaders.push({test: /\.js$/, exclude: /node_modules/, loader: "eslint-loader"});
+}
 
 module.exports = {
 	name: "browser",
@@ -88,9 +96,14 @@ module.exports = {
 		"./web_modules/sourcegraph/init/browser.js",
 	],
 	resolve: {
-		modules: [`${__dirname}/web_modules`, "node_modules"],
+		modules: [
+			`${__dirname}/web_modules`,
+			`${__dirname}/vscode/src`,
+			"node_modules",
+		],
+		extensions: ["", ".js", ".ts"],
 	},
-	devtool: (process.env.NODE_ENV === "production" && !process.env.WEBPACK_QUICK) ? "source-map" : "eval",
+	devtool: (process.env.NODE_ENV === "production" && !process.env.WEBPACK_QUICK) ? "source-map" : "cheap-module-eval-source-map",
 	output: {
 		path: `${__dirname}/assets`,
 		filename: "[name].browser.js",
@@ -98,19 +111,21 @@ module.exports = {
 	},
 	plugins: plugins,
 	module: {
-		// Allow skipping eslint to speed up builds (with WEBPACK_SKIP=eslint env var).
-		preLoaders: /eslint/.test(process.env.WEBPACK_SKIP) ? null : [
-			{test: /\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
-		],
+		preLoaders: preLoaders,
 		loaders: [
 			{test: /\.js$/, exclude: /node_modules/, loader: "babel-loader?cacheDirectory"},
 			{test: /\.json$/, exclude: /node_modules/, loader: "json-loader"},
 			{test: /\.(eot|ttf|woff)$/, loader: "file-loader?name=fonts/[name].[ext]"},
-			{test: /\.svg$/, loader: "url"},
+			{test: /\.(svg|png)$/, loader: "url"},
 			{
 				test: /\.css$/,
+				include: `${__dirname}/web_modules`,
 				loader: "style!css?sourceMap&modules&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]!postcss",
 			},
+
+			// Loaders for vscode (vendored in ./vscore).
+			{test: /\.ts$/, include: `${__dirname}/vscode/src/vs`, loader: "ts-loader?" + JSON.stringify({transpileOnly: true, compilerOptions: {declaration: false, module: "commonjs", sourceMap: true}})},
+			{test: /\.css$/, include: `${__dirname}/vscode/src/vs`, loader: "style!css?sourceMap"},
 		],
 		noParse: /\.min\.js$/,
 	},
