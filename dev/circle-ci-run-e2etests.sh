@@ -13,5 +13,5 @@ cp release/$VERSION/linux-amd64 ./src
 src pgsql create -c --db=app
 src pgsql create -c --db=graph
 src serve &
-
+sleep 5
 WRITE_SCREENSHOTS=$CIRCLE_ARTIFACTS TARGET=http://localhost:3080 go test ./test/e2e -v -parallel=50
