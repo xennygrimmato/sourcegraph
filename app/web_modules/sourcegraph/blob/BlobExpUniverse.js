@@ -1,5 +1,6 @@
 import React from "react";
 import * as monaco from "exports?global.monaco!vs/editor/editor.main";
+import * as expGo from "./expGo";
 
 export default class BlobExpUniverse extends React.Component {
 	static propTypes = {
@@ -32,6 +33,9 @@ export default class BlobExpUniverse extends React.Component {
 		monaco.languages.register({id: "go"});
 
 		this._model = monaco.editor.createModel(this.props.contents, "go", monaco.Uri.file(this.props.path));
+
+		monaco.languages.setLanguageConfiguration("go", expGo.conf);
+		monaco.languages.setMonarchTokensProvider("go", expGo.language);
 
 		monaco.languages.registerHoverProvider("go", {
 			provideHover: (model, pos) => {
