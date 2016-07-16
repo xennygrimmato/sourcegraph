@@ -47,15 +47,15 @@ test:
   override:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit:
         parallel: true
-    - ./dev/circle-ci-run-tests.sh:
+    - echo ./dev/circle-ci-run-tests.sh:
         pwd: $REPO
         parallel: true
   post:
-    - ./dev/circle-ci-gather-coverage.sh:
+    - echo ./dev/circle-ci-gather-coverage.sh:
         pwd: $REPO
-    - npm run graph:
+    - echo npm run graph:
         pwd: $REPO/app
-    - cp $REPO/app/artifacts/* $CIRCLE_ARTIFACTS
+    - echo cp $REPO/app/artifacts/* $CIRCLE_ARTIFACTS
 
 deployment:
   master-branch:
