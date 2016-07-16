@@ -98,8 +98,9 @@ module.exports = {
 	},
 	plugins: plugins,
 	module: {
-		preLoaders: [
-			{test:	/\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
+		// Allow skipping eslint to speed up builds (with WEBPACK_SKIP=eslint env var).
+		preLoaders: /eslint/.test(process.env.WEBPACK_SKIP) ? null : [
+			{test: /\.js$/, exclude: /node_modules/, loader: "eslint-loader"},
 		],
 		loaders: [
 			{test: /\.js$/, exclude: /node_modules/, loader: "babel-loader?cacheDirectory"},
