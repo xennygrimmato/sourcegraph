@@ -39,7 +39,7 @@ export default class BlobExpUniverse extends React.Component {
 
 		monaco.languages.registerHoverProvider("go", {
 			provideHover: (model, pos) => {
-				return {contents: "hello", range: new monaco.Range(38, 5, 38, 11)};
+				return {contents: ["hello"], range: new monaco.Range(38, 5, 38, 11)};
 			}
 		});
 
