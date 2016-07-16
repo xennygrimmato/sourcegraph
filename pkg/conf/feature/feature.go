@@ -15,6 +15,8 @@ var Features = struct {
 	Authors bool // use git blame to show the authors of a def
 
 	GodocRefs bool // redirect from /-/godoc/refs (links constructed by github.com/sourcegraph/gddo fork) to ref pages
+
+	ExpUniverse bool // universe experiment
 }{
 	Authors: true,
 }
