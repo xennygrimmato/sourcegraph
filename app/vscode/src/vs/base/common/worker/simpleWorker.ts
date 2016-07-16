@@ -169,6 +169,12 @@ export class SimpleWorkerClient<T> extends Disposable {
 		let lazyProxyFulfill : (v:T)=>void = null;
 		let lazyProxyReject: (err:any)=>void = null;
 
+		// TODO(sqs): lazyProxyReject doesn't SEEM to do anything, but the call to it
+		// below fails with 'Uncaught TypeError: lazyProxyReject is not a function'
+		// because the assignment to it doesn't get called for some reason. So, just make
+		// it a no-op.
+		lazyProxyReject = () => {};
+
 		this._worker = this._register(workerFactory.create(
 			'vs/base/common/worker/simpleWorker',
 			(msg:string) => {
@@ -195,7 +201,8 @@ export class SimpleWorkerClient<T> extends Disposable {
 		// Gather loader configuration
 		let loaderConfiguration:any = null;
 		let globalRequire = (<any>window).require;
-		if (typeof globalRequire.getConfig === 'function') {
+		// TODO(sqs): globalRequire (window.require) is not set when using webpack.
+		if (globalRequire && typeof globalRequire.getConfig === 'function') {
 			// Get the configuration from the Monaco AMD Loader
 			loaderConfiguration = globalRequire.getConfig();
 		} else if (typeof (<any>window).requirejs !== 'undefined') {
@@ -340,8 +347,10 @@ export class SimpleWorkerServer {
 		});
 
 		// Use the global require to be sure to get the global config
-		(<any>self).require([moduleId], (...result:any[]) => {
-			let handlerModule = result[0];
+		if (moduleId !== "vs/editor/common/services/editorSimpleWorker") {
+			throw new Error("can't dynamically load module " + moduleId);
+		}
+		System.import("vs/editor/common/services/editorSimpleWorker").then((handlerModule) => {
 			this._requestHandler = handlerModule.create();
 
 			let methods: string[] = [];

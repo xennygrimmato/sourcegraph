@@ -84,7 +84,9 @@ export class InstantiationService implements IInstantiationService {
 		let canceledError: Error;
 
 		return new TPromise((c, e, p) => {
-			require([descriptor.moduleName], (_module?: any) => {
+			debugger;
+			throw new Error("TODO");
+			/*require([descriptor.moduleName], (_module?: any) => {
 				if (canceledError) {
 					e(canceledError);
 				}
@@ -110,7 +112,7 @@ export class InstantiationService implements IInstantiationService {
 				} catch (error) {
 					return e(error);
 				}
-			}, e);
+			}, e);*/
 		}, () => {
 			canceledError = canceled();
 		});
