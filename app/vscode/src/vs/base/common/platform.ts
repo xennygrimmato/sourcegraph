@@ -43,7 +43,7 @@ if (typeof process === 'object') {
 	_isWindows = (process.platform === 'win32');
 	_isMacintosh = (process.platform === 'darwin');
 	_isLinux = (process.platform === 'linux');
-	_isRootUser = !_isWindows && (process.getuid() === 0);
+	_isRootUser = !_isWindows && (process.getuid && process.getuid() === 0);
 	let vscode_nls_config = process.env['VSCODE_NLS_CONFIG'];
 	if (vscode_nls_config) {
 		try {
