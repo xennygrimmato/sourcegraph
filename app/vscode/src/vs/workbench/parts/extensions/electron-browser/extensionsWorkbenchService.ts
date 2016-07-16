@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/extensionsViewlet';
+import './media/extensionsViewlet.css';
 import Event, { Emitter } from 'vs/base/common/event';
 import { index } from 'vs/base/common/arrays';
 import { assign } from 'vs/base/common/objects';

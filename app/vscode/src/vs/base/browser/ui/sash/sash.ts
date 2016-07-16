@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./sash';
+import './sash.css';
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';
 import {Builder, $} from 'vs/base/browser/builder';
 import {isIPad} from 'vs/base/browser/browser';

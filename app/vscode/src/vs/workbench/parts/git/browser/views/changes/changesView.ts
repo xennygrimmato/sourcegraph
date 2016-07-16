@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./changesView';
+import './changesView.css';
 import nls = require('vs/nls');
 import Platform = require('vs/base/common/platform');
 import Lifecycle = require('vs/base/common/lifecycle');

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/git.contribution';
+import './media/git.contribution.css';
 import nls = require('vs/nls');
 import async = require('vs/base/common/async');
 import errors = require('vs/base/common/errors');

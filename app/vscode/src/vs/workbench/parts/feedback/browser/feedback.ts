@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/feedback';
+import './media/feedback.css';
 import nls = require('vs/nls');
 import {IDisposable} from 'vs/base/common/lifecycle';
 import {Builder, $} from 'vs/base/browser/builder';

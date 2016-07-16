@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/files.contribution';
+import './media/files.contribution.css';
 
 import URI from 'vs/base/common/uri';
 import {ViewletRegistry, Extensions as ViewletExtensions, ViewletDescriptor, ToggleViewletAction} from 'vs/workbench/browser/viewlet';

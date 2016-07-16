@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/debugViewlet';
+import './media/debugViewlet.css';
 import nls = require('vs/nls');
 import builder = require('vs/base/browser/builder');
 import { TPromise } from 'vs/base/common/winjs.base';

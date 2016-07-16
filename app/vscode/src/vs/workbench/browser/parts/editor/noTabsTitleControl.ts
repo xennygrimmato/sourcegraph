@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/notabstitle';
+import './media/notabstitle.css';
 import errors = require('vs/base/common/errors');
 import {IEditorGroup} from 'vs/workbench/common/editor';
 import DOM = require('vs/base/browser/dom');

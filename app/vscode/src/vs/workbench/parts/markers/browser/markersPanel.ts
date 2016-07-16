@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/markers';
+import './media/markers.css';
 
 import * as errors from 'vs/base/common/errors';
 import * as Set from 'vs/base/common/set';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./clipboard';
+import './clipboard.css';
 import * as nls from 'vs/nls';
 import {KeyCode, KeyMod} from 'vs/base/common/keyCodes';
 import {dispose, IDisposable} from 'vs/base/common/lifecycle';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/sidebyside';
+import './media/sidebyside.css';
 import arrays = require('vs/base/common/arrays');
 import Event, {Emitter} from 'vs/base/common/event';
 import {StandardMouseEvent} from 'vs/base/browser/mouseEvent';

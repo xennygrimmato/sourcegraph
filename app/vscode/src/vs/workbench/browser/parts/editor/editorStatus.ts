@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/editorstatus';
+import './media/editorstatus.css';
 import nls = require('vs/nls');
 import {TPromise} from 'vs/base/common/winjs.base';
 import { emmet as $, append, runAtThisOrScheduleAtNextAnimationFrame } from 'vs/base/browser/dom';

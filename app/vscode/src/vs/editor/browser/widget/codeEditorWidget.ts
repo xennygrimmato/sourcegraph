@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./media/editor';
-import 'vs/css!./media/tokens';
+import './media/editor.css';
+import './media/tokens.css';
 import {onUnexpectedError} from 'vs/base/common/errors';
 import {IEventEmitter} from 'vs/base/common/eventEmitter';
 import * as browser from 'vs/base/browser/browser';

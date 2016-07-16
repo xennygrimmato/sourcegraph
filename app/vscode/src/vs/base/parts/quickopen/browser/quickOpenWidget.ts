@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./quickopen';
+import './quickopen.css';
 import nls = require('vs/nls');
 import {TPromise} from 'vs/base/common/winjs.base';
 import platform = require('vs/base/common/platform');

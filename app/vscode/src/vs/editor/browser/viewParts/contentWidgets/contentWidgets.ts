@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./contentWidgets';
+import './contentWidgets.css';
 import * as dom from 'vs/base/browser/dom';
 import {StyleMutator} from 'vs/base/browser/styleMutator';
 import * as editorCommon from 'vs/editor/common/editorCommon';

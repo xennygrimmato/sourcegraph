@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/explorerviewlet';
+import './media/explorerviewlet.css';
 import {IDisposable} from 'vs/base/common/lifecycle';
 import {IAction} from 'vs/base/common/actions';
 import {TPromise} from 'vs/base/common/winjs.base';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./actionbar';
+import './actionbar.css';
 import nls = require('vs/nls');
 import lifecycle = require('vs/base/common/lifecycle');
 import {Promise} from 'vs/base/common/winjs.base';

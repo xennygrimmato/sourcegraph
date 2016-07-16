@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./contextMenuHandler';
+import './contextMenuHandler.css';
 import {$, Builder} from  'vs/base/browser/builder';
 import {combinedDisposable, IDisposable} from  'vs/base/common/lifecycle';
 import {StandardMouseEvent} from  'vs/base/browser/mouseEvent';

@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./menu';
+import './menu.css';
 import {IDisposable} from 'vs/base/common/lifecycle';
 import {$} from 'vs/base/browser/builder';
 import {IActionRunner, IAction} from 'vs/base/common/actions';

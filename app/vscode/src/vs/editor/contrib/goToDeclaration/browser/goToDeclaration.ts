@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./goToDeclaration';
+import './goToDeclaration.css';
 import * as nls from 'vs/nls';
 import {KbExpr} from 'vs/platform/keybinding/common/keybinding';
 import {Throttler} from 'vs/base/common/async';

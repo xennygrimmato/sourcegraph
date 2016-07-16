@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./keybindings';
+import './keybindings.css';
 import * as nls from 'vs/nls';
 import {IHTMLContentElement} from 'vs/base/common/htmlContent';
 import {KeyCode, Keybinding} from 'vs/base/common/keyCodes';

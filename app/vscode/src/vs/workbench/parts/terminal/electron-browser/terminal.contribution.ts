@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/terminal';
-import 'vs/css!./media/xterm';
+import './media/terminal.css';
+import './media/xterm.css';
 import * as panel from 'vs/workbench/browser/panel';
 import * as platform from 'vs/base/common/platform';
 import nls = require('vs/nls');

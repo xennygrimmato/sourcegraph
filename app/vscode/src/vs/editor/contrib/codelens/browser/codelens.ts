@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./codelens';
+import './codelens.css';
 import {RunOnceScheduler, asWinJsPromise} from 'vs/base/common/async';
 import {onUnexpectedError} from 'vs/base/common/errors';
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';

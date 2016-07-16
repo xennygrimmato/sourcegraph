@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./lineNumbers';
+import './lineNumbers.css';
 import * as platform from 'vs/base/common/platform';
 import * as editorCommon from 'vs/editor/common/editorCommon';
 import {DynamicViewOverlay} from 'vs/editor/browser/view/dynamicViewOverlay';

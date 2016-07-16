@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./iPadShowKeyboard';
+import './iPadShowKeyboard.css';
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';
 import * as browser from 'vs/base/browser/browser';
 import * as dom from 'vs/base/browser/dom';

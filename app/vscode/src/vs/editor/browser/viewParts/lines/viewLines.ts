@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./viewLines';
+import './viewLines.css';
 import {RunOnceScheduler} from 'vs/base/common/async';
 import {StyleMutator} from 'vs/base/browser/styleMutator';
 import {Range} from 'vs/editor/common/core/range';

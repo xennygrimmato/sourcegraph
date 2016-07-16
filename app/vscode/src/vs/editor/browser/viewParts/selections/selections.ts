@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./selections';
+import './selections.css';
 import * as editorCommon from 'vs/editor/common/editorCommon';
 import {DynamicViewOverlay} from 'vs/editor/browser/view/dynamicViewOverlay';
 import {ViewContext} from 'vs/editor/common/view/viewContext';

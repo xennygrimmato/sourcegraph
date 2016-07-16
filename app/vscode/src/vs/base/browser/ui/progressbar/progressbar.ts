@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./progressbar';
+import './progressbar.css';
 import {TPromise, ValueCallback} from 'vs/base/common/winjs.base';
 import assert = require('vs/base/common/assert');
 import browser = require('vs/base/browser/browser');

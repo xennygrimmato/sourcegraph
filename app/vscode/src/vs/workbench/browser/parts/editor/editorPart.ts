@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/editorpart';
+import './media/editorpart.css';
 import 'vs/workbench/browser/parts/editor/editor.contribution';
 import {TPromise} from 'vs/base/common/winjs.base';
 import {Registry} from 'vs/platform/platform';

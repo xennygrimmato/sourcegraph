@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./leftRightWidget';
+import './leftRightWidget.css';
 import {Builder, $} from 'vs/base/browser/builder';
 import {IDisposable} from 'vs/base/common/lifecycle';
 

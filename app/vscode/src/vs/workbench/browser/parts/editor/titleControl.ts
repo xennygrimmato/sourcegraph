@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/titlecontrol';
+import './media/titlecontrol.css';
 import nls = require('vs/nls');
 import {Registry} from 'vs/platform/platform';
 import {Scope, IActionBarRegistry, Extensions, prepareActions} from 'vs/workbench/browser/actionBarRegistry';

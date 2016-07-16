@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./zoneWidget';
+import './zoneWidget.css';
 import {Disposables} from 'vs/base/common/lifecycle';
 import * as objects from 'vs/base/common/objects';
 import * as dom from 'vs/base/browser/dom';

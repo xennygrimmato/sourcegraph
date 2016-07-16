@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!../browser/media/debug.contribution';
-import 'vs/css!../browser/media/debugHover';
+import '../browser/media/debug.contribution.css';
+import '../browser/media/debugHover.css';
 import nls = require('vs/nls');
 import { KeyMod, KeyCode } from 'vs/base/common/keyCodes';
 import { TPromise } from 'vs/base/common/winjs.base';

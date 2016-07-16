@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/compositepart';
+import './media/compositepart.css';
 import nls = require('vs/nls');
 import timer = require('vs/base/common/timer');
 import uuid = require('vs/base/common/uuid');

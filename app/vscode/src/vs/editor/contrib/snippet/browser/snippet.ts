@@ -5,4 +5,4 @@
 
 'use strict';
 
-import 'vs/css!./snippet';
+import './snippet.css';

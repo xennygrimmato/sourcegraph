@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/workbench';
+import './media/workbench.css';
 
 import {TPromise, ValueCallback} from 'vs/base/common/winjs.base';
 import types = require('vs/base/common/types');

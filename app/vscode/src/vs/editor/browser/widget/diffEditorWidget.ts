@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/diffEditor';
+import './media/diffEditor.css';
 import {IAction} from 'vs/base/common/actions';
 import {RunOnceScheduler} from 'vs/base/common/async';
 import {EventEmitter, EmitterEvent} from 'vs/base/common/eventEmitter';

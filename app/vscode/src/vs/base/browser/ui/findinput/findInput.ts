@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!./findInput';
+import './findInput.css';
 
 import * as nls from 'vs/nls';
 import * as dom from 'vs/base/browser/dom';

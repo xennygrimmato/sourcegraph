@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import 'vs/css!vs/base/browser/ui/progressbar/progressbar';
+import 'vs/base/browser/ui/progressbar/progressbar.css';
 import * as nls from 'vs/nls';
 import URI from 'vs/base/common/uri';
 import {TPromise} from 'vs/base/common/winjs.base';

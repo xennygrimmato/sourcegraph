@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/shell';
+import './media/shell.css';
 
 import * as nls from 'vs/nls';
 import {TPromise} from 'vs/base/common/winjs.base';

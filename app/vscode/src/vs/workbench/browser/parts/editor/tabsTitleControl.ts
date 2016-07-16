@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./media/tabstitle';
+import './media/tabstitle.css';
 import nls = require('vs/nls');
 import errors = require('vs/base/common/errors');
 import DOM = require('vs/base/browser/dom');

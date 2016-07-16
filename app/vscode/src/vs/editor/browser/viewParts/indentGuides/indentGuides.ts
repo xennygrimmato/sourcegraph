@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./indentGuides';
+import './indentGuides.css';
 import * as editorCommon from 'vs/editor/common/editorCommon';
 import {DynamicViewOverlay} from 'vs/editor/browser/view/dynamicViewOverlay';
 import {ViewContext} from 'vs/editor/common/view/viewContext';

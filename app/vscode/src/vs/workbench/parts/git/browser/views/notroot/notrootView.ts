@@ -5,7 +5,7 @@
 
 'use strict';
 
-import 'vs/css!./notrootView';
+import './notrootView.css';
 import nls = require('vs/nls');
 import winjs = require('vs/base/common/winjs.base');
 import ee = require('vs/base/common/eventEmitter');
