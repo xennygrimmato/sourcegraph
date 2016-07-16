@@ -6,10 +6,6 @@ import Helmet from "react-helmet";
 import Container from "sourcegraph/Container";
 import Dispatcher from "sourcegraph/Dispatcher";
 import Blob from "sourcegraph/blob/Blob";
-import BlobContentPlaceholder from "sourcegraph/blob/BlobContentPlaceholder";
-import BlobToolbar from "sourcegraph/blob/BlobToolbar";
-import FileMargin from "sourcegraph/blob/FileMargin";
-import DefTooltip from "sourcegraph/def/DefTooltip";
 import * as BlobActions from "sourcegraph/blob/BlobActions";
 import * as DefActions from "sourcegraph/def/DefActions";
 import {routeParams as defRouteParams} from "sourcegraph/def";
@@ -17,7 +13,7 @@ import DefStore from "sourcegraph/def/DefStore";
 import "sourcegraph/blob/BlobBackend";
 import "sourcegraph/def/DefBackend";
 import "sourcegraph/build/BuildBackend";
-import Style from "sourcegraph/blob/styles/Blob.css";
+import Style from "sourcegraph/blob/styles/BlobExpUniverse.css";
 import {lineCol, lineRange, parseLineRange} from "sourcegraph/blob/lineCol";
 import urlTo from "sourcegraph/util/urlTo";
 import {makeRepoRev, trimRepo} from "sourcegraph/repo";
@@ -26,16 +22,20 @@ import Header from "sourcegraph/components/Header";
 import {createLineFromByteFunc} from "sourcegraph/blob/lineFromByte";
 import {isExternalLink} from "sourcegraph/util/externalLink";
 import {defTitle, defTitleOK} from "sourcegraph/def/Formatter";
+import Editor from "sourcegraph/editor/Editor";
 
-export default class BlobMain extends Container {
+function langFromFilename(filename: string): ?string {
+	if (filename.endsWith(".go")) return "go";
+	return null;
+}
+
+export default class BlobMainExpUniverse extends Container {
 	static propTypes = {
 		repo: React.PropTypes.string.isRequired,
 		rev: React.PropTypes.string,
 		commitID: React.PropTypes.string,
 		path: React.PropTypes.string,
 		blob: React.PropTypes.object,
-		anns: React.PropTypes.object,
-		skipAnns: React.PropTypes.bool,
 		startLine: React.PropTypes.number,
 		startCol: React.PropTypes.number,
 		startByte: React.PropTypes.number,
@@ -55,14 +55,6 @@ export default class BlobMain extends Container {
 		router: React.PropTypes.object.isRequired,
 	};
 
-	constructor(props) {
-		super(props);
-		this.state = {
-			selectionStartLine: null,
-		};
-
-	}
-
 	componentDidMount() {
 		if (super.componentDidMount) super.componentDidMount();
 		this._dispatcherToken = Dispatcher.Stores.register(this.__onDispatch.bind(this));
@@ -76,48 +68,10 @@ export default class BlobMain extends Container {
 	_dispatcherToken: string;
 
 	reconcileState(state, props) {
-		state.repo = props.repo;
-		state.rev = props.rev || null;
-		state.commitID = props.commitID || null;
-		state.path = props.path || null;
-		state.blob = props.blob || null;
-		state.anns = props.anns || null;
-		state.skipAnns = props.skipAnns || false;
-		state.startLine = props.startLine || null;
-		state.startCol = props.startCol || null;
-		state.startByte = props.startByte || null;
-		state.endLine = props.endLine || null;
-		state.endCol = props.endCol || null;
-		state.endByte = props.endByte || null;
-		state.def = props.def || null;
-		state.defObj = state.def && state.commitID ? DefStore.defs.get(state.repo, state.commitID, state.def) : null;
-		state.children = props.children || null;
+		Object.assign(state, props);
 
-		// Def-specific
-		state.highlightedDef = DefStore.highlightedDef;
-		if (state.highlightedDef && !isExternalLink(state.highlightedDef)) {
-			let {repo, rev, def} = defRouteParams(state.highlightedDef);
-			state.highlightedDefObj = DefStore.defs.get(repo, rev, def);
-		} else {
-			state.highlightedDefObj = null;
-		}
-	}
-
-	onStateTransition(prevState, nextState) {
-		if (nextState.highlightedDef && prevState.highlightedDef !== nextState.highlightedDef) {
-			if (!isExternalLink(nextState.highlightedDef)) { // kludge to filter out external def links
-				let {repo, rev, def, err} = defRouteParams(nextState.highlightedDef);
-				if (err) {
-					console.err(err);
-				} else {
-					Dispatcher.Backends.dispatch(new DefActions.WantDef(repo, rev, def));
-				}
-			}
-		}
-
-		if (prevState.blob !== nextState.blob) {
-			nextState.lineFromByte = nextState.blob && typeof nextState.blob.ContentsString !== "undefined" ? createLineFromByteFunc(nextState.blob.ContentsString) : null;
-		}
+		// TODO(sqs): i think defObj is already on props?
+		//state.defObj = state.def && state.commitID ? DefStore.defs.get(state.repo, state.commitID, state.def) : null;
 	}
 
 	stores() { return [DefStore]; }
@@ -177,46 +131,17 @@ export default class BlobMain extends Container {
 		return (
 			<div className={Style.container}>
 				{title && <Helmet title={title} />}
-				<div className={Style.blobAndToolbar}>
-					<BlobToolbar
-						repo={this.state.repo}
-						rev={this.state.rev}
-						commitID={this.state.commitID}
-						path={this.state.path} />
-					{(!this.state.blob || (this.state.blob && !this.state.blob.Error && !this.state.skipAnns && !this.state.anns)) && <BlobContentPlaceholder />}
-					{this.state.blob && !this.state.blob.Error && typeof this.state.blob.ContentsString !== "undefined" && (this.state.skipAnns || (this.state.anns && !this.state.anns.Error)) &&
-					<Blob
-						repo={this.state.repo}
-						rev={this.state.rev}
-						commitID={this.state.commitID}
-						ref={(c) => { this.setState({selectionStartLine: (c && c.refs && c.refs.startLineComponent) ? c.refs.startLineComponent : null}); }}
-						path={this.state.path}
-						contents={this.state.blob.ContentsString}
-						annotations={this.state.anns}
-						skipAnns={this.state.skipAnns}
-						lineNumbers={true}
-						highlightSelectedLines={true}
-						highlightedDef={this.state.highlightedDef}
-						highlightedDefObj={this.state.highlightedDefObj}
-						activeDef={this.state.def}
-						startLine={this.state.startLine}
-						startCol={this.state.startCol}
-						startByte={this.state.startByte}
-						endLine={this.state.endLine}
-						endCol={this.state.endCol}
-						endByte={this.state.endByte}
-						scrollToStartLine={true}
-						dispatchSelections={true} />}
-					{this.state.highlightedDefObj && !this.state.highlightedDefObj.Error && <DefTooltip currentRepo={this.state.repo} def={this.state.highlightedDefObj} />}
-				</div>
-				<FileMargin
-					className={Style.margin}
-					style={(!this.state.blob || !this.state.anns) ? {visibility: "hidden"} : null}
-					lineFromByte={this.state.lineFromByte}
-					selectionStartLine={this.state.selectionStartLine ? this.state.selectionStartLine : null}
-					startByte={this.state.startByte}>
-					{this.state.children}
-				</FileMargin>
+				<Editor
+					className={Style.editor}
+					path={this.props.path}
+					language={langFromFilename(this.props.path)}
+					startLine={this.state.startLine}
+					startCol={this.state.startCol}
+					startByte={this.state.startByte}
+					endLine={this.state.endLine}
+					endCol={this.state.endCol}
+					endByte={this.state.endByte}
+					contents={this.state.blob ? this.state.blob.ContentsString : ""} />
 			</div>
 		);
 	}

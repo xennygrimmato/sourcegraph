@@ -26,6 +26,7 @@ the entire viewport height.
 .breadcrumb {
 	composes: bb ph3 pv2 from base;
 	composes: b--cool-pale-gray-8 bg-white from colors;
+	height: 41px;
 }
 
 /*

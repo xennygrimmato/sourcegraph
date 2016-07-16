@@ -1,0 +1,16 @@
+@value base "sourcegraph/components/styles/_base.css";
+@value colors "sourcegraph/components/styles/_colors.css";
+@value typography "sourcegraph/components/styles/_typography.css";
+@value animation "sourcegraph/components/styles/animation.css";
+@value GlobalNav "sourcegraph/app/styles/GlobalNav.css";
+
+.container {
+	display: flex;
+	flex-direction: column;
+	flex: 1 0 auto;
+}
+
+.editor {
+	flex: 1 0 auto;
+	overflow: hidden;
+}

@@ -13,6 +13,7 @@ import withResolvedRepoRev from "sourcegraph/repo/withResolvedRepoRev";
 import withFileBlob from "sourcegraph/blob/withFileBlob";
 import withAnnotations from "sourcegraph/blob/withAnnotations";
 import BlobMain from "sourcegraph/blob/BlobMain";
+import BlobMainExpUniverse from "sourcegraph/blob/BlobMainExpUniverse";
 import invariant from "invariant";
 
 export type Helper = {
@@ -123,12 +124,18 @@ function blobLoader(Component) {
 	return BlobLoader;
 }
 
+const BlobComponent = (props, {features}) => {
+	const C = features.ExpUniverse ? BlobMainExpUniverse : BlobMain;
+	return <C {...props} />;
+}
+BlobComponent.contextTypes = {features: React.PropTypes.object.isRequired};
+
 export default (
 	withResolvedRepoRev(
 		blobLoader(
 			withFileBlob(
 				withAnnotations(
-					BlobMain
+					BlobComponent
 				),
 			),
 		),

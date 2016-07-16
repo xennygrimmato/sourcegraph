@@ -17,6 +17,7 @@ import 'vs/editor/contrib/wordHighlighter/common/wordHighlighter';
 // include these in the editor bundle because they are widely used by many languages
 import 'vs/editor/common/languages.common';
 
+import * as go from "./go";
 
 import {createMonacoBaseAPI} from "vs/editor/common/standalone/standaloneBase";
 import {createMonacoEditorAPI} from "vs/editor/browser/standalone/standaloneEditor";
@@ -27,8 +28,14 @@ import {DefaultConfig} from "vs/editor/common/config/defaultConfig";
 DefaultConfig.editor.wrappingIndent = "none";
 DefaultConfig.editor.folding = false;
 
-export default {
+const monaco = {
 	...createMonacoBaseAPI(),
 	editor: createMonacoEditorAPI(),
 	languages: createMonacoLanguagesAPI(),
 };
+export default monaco;
+
+// Set Sourcegraph-specific settings
+monaco.languages.register({id: "go"});
+monaco.languages.setLanguageConfiguration("go", go.conf);
+monaco.languages.setMonarchTokensProvider("go", go.language);
