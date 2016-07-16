@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"go/types"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -22,8 +23,6 @@ import (
 	"sourcegraph.com/sourcegraph/sourcegraph/lang/golang/refinfo"
 )
 
-const _TMP_dir = "/home/sqs/src/github.com/gorilla/mux/"
-
 // TODO(sqs): use golang.org/x/tools/go/buildutil OverlayContext? Says
 // only Context.OpenFile respects it right now, so maybe hold off.
 //
@@ -35,7 +34,7 @@ const _TMP_dir = "/home/sqs/src/github.com/gorilla/mux/"
 //
 // TODO(sqs): use godefinfo to get better results
 func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResult, error) {
-	const _TMP_importPath = "github.com/gorilla/mux"
+	const _TMP_importPath = "TODO"
 	m := map[string]map[string]string{_TMP_importPath: map[string]string{}}
 	for filename, data := range op.Sources {
 		m[_TMP_importPath][filename] = string(data)
@@ -43,6 +42,11 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 	m["net/http"] = map[string]string{"x.go": "package http; func NewRequest() {}"}
 	bctx := buildutil.FakeContext(m)
 	bctx = &dummyBuildContext
+
+	var _TMP_dir string
+	if op.Config != nil {
+		_TMP_dir = filepath.Join("/home/sqs/src", op.Config["go_package_import_path"])
+	}
 
 	fset := token.NewFileSet()
 
@@ -169,7 +173,7 @@ func (s *langServer) Refs(ctx context.Context, op *lang.RefsOp) (*lang.RefsResul
 		var refs []*lang.Ref
 		for _, span := range spans {
 			p := cfg.Fset.Position(span.pos)
-			ri, msgs, err := cfg.Get(context.TODO(), p.Filename, uint32(p.Offset))
+			ri, msgs, err := cfg.Get(context.TODO(), _TMP_dir, p.Filename, uint32(p.Offset))
 			if err != nil {
 				// TODO(sqs): collect these
 				ignore := strings.Contains(err.Error(), "no type information") || strings.Contains(err.Error(), "not a package-level")

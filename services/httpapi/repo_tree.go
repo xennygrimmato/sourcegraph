@@ -50,7 +50,7 @@ func serveRepoTree(w http.ResponseWriter, r *http.Request) error {
 	// UI (like DefInfo.js) from becoming unresponsive in the browser.
 	//
 	// TODO support displaying file ranges on the front-end instead.
-	const maxFileSize = 512 * 1024
+	const maxFileSize = 512 * 1024 * 1024 // TODO(sqs): reduce back to reasonable
 	size := mathutil.Max(len(entry.Contents), len(entry.ContentsString))
 	if entry.Type == sourcegraph.FileEntry && size > maxFileSize {
 		return &errcode.HTTPErr{

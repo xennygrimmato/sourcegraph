@@ -3,6 +3,7 @@ package lang
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kr/fs"
@@ -41,6 +42,13 @@ func SourceFilesByLang(ctx context.Context, vfs vfsutil.WalkableFileSystem) (map
 			w.SkipDir()
 			continue
 		}
+
+		// HACK: for perf
+		if len(w.Path()) > 10 && !strings.Contains(w.Path(), "services/backend") && !strings.Contains(w.Path(), "api/sourcegraph") {
+			w.SkipDir()
+			continue
+		}
+
 		if fi.Mode().IsRegular() {
 			matchedLangs := filelang.Langs.ByFilename(fi.Name())
 			for _, lang := range matchedLangs {

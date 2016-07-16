@@ -32,8 +32,6 @@ type Config struct {
 
 // TODO(sqs): dummy methods, to be replaced by injectable fields
 
-const _TMP_dir = "/home/sqs/src/github.com/gorilla/mux/"
-
 var dlog = log.New(os.Stderr, "DEBUG: ", 0)
 
 const debug = true
@@ -54,11 +52,16 @@ func (v RefInfo) DefName() string {
 	return v.Def1 + "." + v.Def2
 }
 
-func (c *Config) Get(ctx context.Context, filename string, offset uint32) (*RefInfo, []string, error) {
+func (c *Config) Get(ctx context.Context, dir, filename string, offset uint32) (*RefInfo, []string, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("PANIC IN refinfo Config.Get:", err)
+			return
+		}
+	}()
+
 	var msgs []string
 
-	dir := path.Dir(filename)
-	dir = _TMP_dir
 	filename = path.Base(filename)
 
 	// Shared across all attempts.

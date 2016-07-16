@@ -3,31 +3,15 @@
 import React from "react";
 import * as monaco from "exports?global.monaco!vs/editor/editor.main";
 import BlobBackend from "sourcegraph/blob/BlobBackend";
-
-let monacoInited = false;
-function monacoInitOnce() {
-	if (monacoInited) return;
-	monacoInited = true;
-
-	monaco.languages.register({id: "go"});
-
-	monaco.languages.registerHoverProvider("go", {
-		provideHover: function(model, position) {
-			return Promise.resolve({
-				range: new monaco.Range(1, 1, model.getLineCount(), model.getLineMaxColumn(model.getLineCount())),
-				contents: [
-					"*This* is a **tooltip.**",
-				]
-			});
-		}
-	});
-}
+import {checkStatus} from "sourcegraph/util/xhr";
+import * as expGo from "./expGo";
 
 export default class BlobExpUniverse extends React.Component {
 	static propTypes = {
 		contents: React.PropTypes.string,
 		repo: React.PropTypes.string.isRequired,
 		rev: React.PropTypes.string,
+		commitID: React.PropTypes.string.isRequired,
 		path: React.PropTypes.string.isRequired,
 	};
 	static contextTypes = {
@@ -36,6 +20,7 @@ export default class BlobExpUniverse extends React.Component {
 
 	_elem: HTMLElement;
 	_editor: any;
+	_model: any;
 
 	componentDidMount() {
 		global.HACK_vsGetWorkerUrl = (workerId: string, label: string): any => {
@@ -47,24 +32,94 @@ export default class BlobExpUniverse extends React.Component {
 			// for more information about (and limitations of) this technique.
 
 			return require("worker?inline!vs/base/worker/workerMain");
-			//const b = new Blob([require("raw!worker?inline!vs/base/worker/workerMain")], {type: "text/javascript"});
-			//return URL.createObjectURL(b);
 		};
 
-		monacoInitOnce();
+		monaco.languages.register({id: "go"});
+
+		this._model = monaco.editor.createModel(this.props.contents, "go", monaco.Uri.file(this.props.path));
+
+		monaco.languages.setLanguageConfiguration("go", expGo.conf);
+		monaco.languages.setMonarchTokensProvider("go", expGo.language);
+
+		monaco.languages.registerHoverProvider("go", {
+			provideHover: (model, pos) => {
+				return BlobBackend.fetch(`/.api/exp/universe/hover?mode=Go&repo=${this.props.repo}&commitid=${this.props.commitID}&file=${this.props.path}&line=${pos.lineNumber-1}&character=${pos.column-1}`, {
+					method: "POST",
+					body: model.getValue(),
+				})
+					.then(checkStatus)
+					.then((resp) => resp.json())
+					.catch((err) => ({Error: err}))
+					.then((data) => {
+						if (data.Error) return;
+						return {
+							range: new monaco.Range(data.range.start.line, data.range.start.character, data.range.end.line || data.range.start.line, data.range.end.character ),
+							contents: data.contents instanceof Array ? data.contents : [data.contents],
+						};
+					});
+			}
+		});
+
+		monaco.languages.registerReferenceProvider("go", {
+			provideReferences: function(model, position, context) {
+				return Promise.resolve([
+					{uri: monaco.Uri.file(this.props.path), range: new monaco.Range(38, 5, 38, 11)},
+					{uri: monaco.Uri.file(this.props.path), range: new monaco.Range(42, 1, 42, 7)},
+				]);
+			}
+		});
+
+		monaco.languages.registerDefinitionProvider("go", {
+			provideDefinition: (model, pos) => {
+				return BlobBackend.fetch(`/.api/exp/universe/definition?mode=Go&repo=${this.props.repo}&commitid=${this.props.commitID}&file=${this.props.path}&line=${pos.lineNumber-1}&character=${pos.column-1}`, {
+					method: "POST",
+					body: model.getValue(),
+				})
+					.then(checkStatus)
+					.then((resp) => resp.json())
+					.catch((err) => ({Error: err}))
+					.then((data) => {
+						if (data.Error) return;
+						console.log(data);
+						if (!data.uri.endsWith(".go")) {
+							window.location.href = `${window.location.protocol}//${window.location.host}${data.uri}`;
+							return;
+						}
+						return {uri: monaco.Uri.file(this.props.path.replace(/^\//, "")), range: new monaco.Range(data.range.start.line, data.range.start.character, data.range.end.line || data.range.start.line, data.range.end.character )};
+					});
+			}
+		});
 
 		this._editor = monaco.editor.create(this._elem, {
-			value: this.props.contents,
-			//readOnly: true,
-			theme: "vs-dark",
-			language: 'go',
+			model: this._model,
+			theme: "vs",
 			scrollBeyondLastLine: false,
 		});
 		window.editor = this._editor;
+
+		this._scrollTo(this.props);
+	}
+
+	componentWillReceiveProps(nextProps) {
+		this._scrollTo(nextProps);
+	}
+	
+	_scrollTo(p) {
+		const start = p.startByte;
+		const end = p.endByte;
+		if (!start) return;
+		const start2 = this._model.getPositionAt(start);
+		const end2 = this._model.getPositionAt(end);
+		console.log(start2, end2);
+		setTimeout(() => {
+			this._editor.setSelection(new monaco.Range(start2.lineNumber, start2.column, end2.lineNumber, end2.column));
+			this._editor.revealRange(new monaco.Range(start2.lineNumber, start2.column, end2.lineNumber, end2.column));
+			}, 200);
 	}
 
 	componentWillUnmount() {
 		if (this._editor) this._editor.destroy();
+		if (this._model) this._model.destroy();
 	}
 
 	render() {

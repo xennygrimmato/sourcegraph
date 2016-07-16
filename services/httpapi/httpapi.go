@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf"
+	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/csp"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/errcode"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/eventsutil"
@@ -104,6 +105,11 @@ func NewHandler(m *mux.Router) http.Handler {
 	m.Get(apirouter.InternalAppdashRecordSpan).Handler(handler(serveInternalAppdashRecordSpan))
 
 	m.Get(apirouter.BetaSubscription).Handler(handler(serveBetaSubscription))
+
+	if feature.Features.ExpUniverse {
+		m.Path("/exp/universe/definition").Methods("POST").Handler(handler(serveExpUniverseDefinition))
+		m.Path("/exp/universe/hover").Methods("POST").Handler(handler(serveExpUniverseHover))
+	}
 
 	m.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("API no route: %s %s from %s", r.Method, r.URL, r.Referer())

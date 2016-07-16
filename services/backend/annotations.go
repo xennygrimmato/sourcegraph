@@ -2,7 +2,6 @@ package backend
 
 import (
 	"fmt"
-	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,7 +15,6 @@ import (
 	annotationspkg "sourcegraph.com/sourcegraph/sourcegraph/pkg/annotations"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/conf/feature"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/inventory/filelang"
-	"sourcegraph.com/sourcegraph/sourcegraph/pkg/routevar"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/store"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/syntaxhighlight"
 	"sourcegraph.com/sourcegraph/sourcegraph/pkg/vcs"
@@ -32,6 +30,8 @@ var Annotations sourcegraph.AnnotationsServer = &annotations{}
 type annotations struct{}
 
 func (s *annotations) List(ctx context.Context, opt *sourcegraph.AnnotationsListOptions) (*sourcegraph.AnnotationList, error) {
+	return &sourcegraph.AnnotationList{}, nil
+
 	var fileRange sourcegraph.FileRange
 	if opt.Range != nil {
 		fileRange = *opt.Range
@@ -309,62 +309,9 @@ func (s *annotations) listRefsExpUniverse(ctx context.Context, opt *sourcegraph.
 		results = append(results, res)
 	}
 
-	makeURL := func(t *lang.Target) string {
-		var u *url.URL
-		if t != nil {
-			if t.File != "" {
-				u = approuter.Rel.URLToBlob(repoPath, opt.Entry.RepoRev.CommitID, t.File)
-				// TODO(sqs): include name in fragment (or something) to specially highlight the name
-			}
-			if t.Span != nil {
-				endLine := t.Span.EndLine
-				if endLine == 0 {
-					endLine = t.Span.StartLine
-				}
-				if u == nil {
-					u = &url.URL{}
-				}
-				u.Fragment = fmt.Sprintf("L%d:%d-%d:%d", t.Span.StartLine, t.Span.StartCol, endLine, t.Span.EndCol)
-			}
-
-			if u == nil {
-				if c := t.Constraints; c != nil && c["go_package_import_path"] != "" {
-					repo := c["go_package_import_path"]
-					if !strings.Contains(repo, ".") {
-						// Go stdlib
-						repo = "github.com/golang/go"
-					}
-					u = approuter.Rel.URLToDef(routevar.DefAtRev{
-						RepoRev:  routevar.RepoRev{Repo: repo},
-						Unit:     c["go_package_import_path"],
-						UnitType: "GoPackage",
-						Path:     strings.Replace(t.Id, ".", "/", -1),
-					})
-				}
-			}
-
-			if u == nil {
-				var query string
-				// TODO(sqs): apply the target constraints
-				if t != nil && t.Id != "" {
-					query += t.Id
-				} else {
-					query += "%s" // frontend will replace with text of ref
-				}
-				if t != nil && t.File != "" {
-					// TODO(sqs): support searching within a file or dir (not just repo)
-					query += " r:" + repoPath
-				}
-				u = approuter.Rel.URLToSearch(strings.TrimSpace(query))
-			}
-		}
-		if u == nil {
-			return ""
-		}
-		return u.String()
-	}
-
-	return expUniverseResultsToAnnotations(lang.MergeRefsResults(results), opt.Entry.Path, makeURL), nil
+	return expUniverseResultsToAnnotations(lang.MergeRefsResults(results), opt.Entry.Path, func(t *lang.Target) string {
+		return lang.DefURL(t, repoPath, opt.Entry.RepoRev.CommitID)
+	}), nil
 }
 
 func expUniverseResultsToAnnotations(res *lang.RefsResult, origin string, makeURL func(*lang.Target) string) []*sourcegraph.Annotation {

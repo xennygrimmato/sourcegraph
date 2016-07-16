@@ -135,6 +135,19 @@ func (v *defVisitor) Visit(node ast.Node) ast.Visitor {
 
 		// Don't emit a ref for the def name (it would be redundant).
 		v.skip[n.Name] = struct{}{}
+
+	case *ast.TypeSpec:
+		v.defs = append(v.defs, &lang.Def{
+			Id:       n.Name.Name,
+			Title:    fmt.Sprintf("type %s", n.Name.Name),
+			Path:     v.fset.Position(n.Pos()).Filename,
+			Span:     makeNodeSpan(v.fset, n),
+			NameSpan: makeNodeSpan(v.fset, n.Name),
+		})
+
+		// Don't emit a ref for the def name (it would be redundant).
+		v.skip[n.Name] = struct{}{}
+
 	}
 	return v
 }

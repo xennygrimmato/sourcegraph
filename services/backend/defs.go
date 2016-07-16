@@ -5,6 +5,7 @@ import (
 	"log"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/inconshreveable/log15.v2"
 
@@ -112,7 +113,9 @@ func (s *defs) getExpUniverse(ctx context.Context, op *sourcegraph.DefsGetOp) (*
 			return nil, err
 		}
 		for _, def := range res.Defs {
-			if def.Id == op.Def.Path {
+			// TODO(sqs): match on full path
+			if strings.HasSuffix(op.Def.Path, def.Id) {
+				//if def.Id == dottedPath {
 				if d := expuniversemigrate.ToOldDef(def, repoObj.URI, op.Def.CommitID); d != nil {
 					return d, nil
 				}
