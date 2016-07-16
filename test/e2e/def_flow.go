@@ -1,6 +1,10 @@
 package e2e
 
-import "sourcegraph.com/sourcegraph/go-selenium"
+import (
+	"os"
+
+	"sourcegraph.com/sourcegraph/go-selenium"
+)
 
 func init() {
 	Register(&Test{
@@ -11,6 +15,13 @@ func init() {
 }
 
 func testDefFlow(t *T) error {
+	if ci := os.Getenv("CI"); ci != "" {
+		// TODO: Use gRPC to add the repositories that we expect to have
+		// indexed.
+		t.Logf("TODO: def_flow test does not work on CI (expects existing repos)")
+		return nil
+	}
+
 	wd := t.WebDriver
 
 	err := wd.Get(t.Endpoint("/github.com/golang/go/-/info/GoPackage/net/http/-/Header/Get"))
