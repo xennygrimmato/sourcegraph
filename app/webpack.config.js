@@ -85,7 +85,7 @@ const preLoaders = [
 
 // Allow skipping eslint to speed up builds (with WEBPACK_SKIP=eslint env var).
 if (!/eslint/.test(process.env.WEBPACK_SKIP)) {
-	preLoaders.push({test: /\.js$/, exclude: /node_modules/, loader: "eslint-loader"});
+	preLoaders.push({test: /\.js$/, exclude: [/node_modules/, `${__dirname}/vscode`], loader: "eslint-loader"});
 }
 
 module.exports = {
