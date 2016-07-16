@@ -1,5 +1,5 @@
 import React from "react";
-import * as monaco from "exports?global.monaco!vs/editor/editor.main";
+import monaco from "sourcegraph/editor/init";
 import * as expGo from "./expGo";
 
 export default class BlobExpUniverse extends React.Component {
@@ -63,8 +63,9 @@ export default class BlobExpUniverse extends React.Component {
 
 		this._editor = monaco.editor.create(this._elem, {
 			model: this._model,
-			theme: "vs",
+			readOnly: true,
 			scrollBeyondLastLine: false,
+			contextmenu: false,
 		});
 		window.editor = this._editor;
 
