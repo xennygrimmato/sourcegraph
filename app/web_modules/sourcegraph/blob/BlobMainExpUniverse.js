@@ -3,24 +3,14 @@
 import React from "react";
 import Helmet from "react-helmet";
 
-import Container from "sourcegraph/Container";
 import Dispatcher from "sourcegraph/Dispatcher";
-import Blob from "sourcegraph/blob/Blob";
 import * as BlobActions from "sourcegraph/blob/BlobActions";
-import * as DefActions from "sourcegraph/def/DefActions";
-import {routeParams as defRouteParams} from "sourcegraph/def";
-import DefStore from "sourcegraph/def/DefStore";
-import "sourcegraph/blob/BlobBackend";
-import "sourcegraph/def/DefBackend";
-import "sourcegraph/build/BuildBackend";
 import Style from "sourcegraph/blob/styles/BlobExpUniverse.css";
 import {lineCol, lineRange, parseLineRange} from "sourcegraph/blob/lineCol";
 import urlTo from "sourcegraph/util/urlTo";
 import {makeRepoRev, trimRepo} from "sourcegraph/repo";
 import httpStatusCode from "sourcegraph/util/httpStatusCode";
 import Header from "sourcegraph/components/Header";
-import {createLineFromByteFunc} from "sourcegraph/blob/lineFromByte";
-import {isExternalLink} from "sourcegraph/util/externalLink";
 import {defTitle, defTitleOK} from "sourcegraph/def/Formatter";
 import Editor from "sourcegraph/editor/Editor";
 
@@ -29,7 +19,7 @@ function langFromFilename(filename: string): ?string {
 	return null;
 }
 
-export default class BlobMainExpUniverse extends Container {
+export default class BlobMainExpUniverse extends React.Component {
 	static propTypes = {
 		repo: React.PropTypes.string.isRequired,
 		rev: React.PropTypes.string,
@@ -67,15 +57,6 @@ export default class BlobMainExpUniverse extends Container {
 
 	_dispatcherToken: string;
 
-	reconcileState(state, props) {
-		Object.assign(state, props);
-
-		// TODO(sqs): i think defObj is already on props?
-		//state.defObj = state.def && state.commitID ? DefStore.defs.get(state.repo, state.commitID, state.def) : null;
-	}
-
-	stores() { return [DefStore]; }
-
 	__onDispatch(action) {
 		if (action instanceof BlobActions.SelectLine) {
 			this._navigate(action.repo, action.rev, action.path, action.line ? `L${action.line}` : null);
@@ -104,9 +85,9 @@ export default class BlobMainExpUniverse extends Container {
 	}
 
 	render() {
-		if (this.state.blob && this.state.blob.Error) {
+		if (this.props.blob && this.props.blob.Error) {
 			let msg;
-			switch (this.state.blob.Error.response.status) {
+			switch (this.props.blob.Error.response.status) {
 			case 413:
 				msg = "Sorry, this file is too large to display.";
 				break;
@@ -115,33 +96,33 @@ export default class BlobMainExpUniverse extends Container {
 			}
 			return (
 				<Header
-					title={`${httpStatusCode(this.state.blob.Error)}`}
+					title={`${httpStatusCode(this.props.blob.Error)}`}
 					subtitle={msg} />
 			);
 		}
 
 		// NOTE: Title should be kept in sync with app/internal/ui in Go.
-		let title = trimRepo(this.state.repo);
-		const pathParts = this.state.path ? this.state.path.split("/") : null;
+		let title = trimRepo(this.props.repo);
+		const pathParts = this.props.path ? this.props.path.split("/") : null;
 		if (pathParts) title = `${pathParts[pathParts.length - 1]} · ${title}`;
-		if (this.state.defObj && !this.state.defObj.Error && defTitleOK(this.state.defObj)) {
-			title = `${defTitle(this.state.defObj)} · ${title}`;
+		if (this.props.defObj && !this.props.defObj.Error && defTitleOK(this.props.defObj)) {
+			title = `${defTitle(this.props.defObj)} · ${title}`;
 		}
 
 		return (
 			<div className={Style.container}>
 				{title && <Helmet title={title} />}
-				<Editor
+				{this.props.path && this.props.blob && !this.props.blob.Error && <Editor
 					className={Style.editor}
 					path={this.props.path}
 					language={langFromFilename(this.props.path)}
-					startLine={this.state.startLine}
-					startCol={this.state.startCol}
-					startByte={this.state.startByte}
-					endLine={this.state.endLine}
-					endCol={this.state.endCol}
-					endByte={this.state.endByte}
-					contents={this.state.blob ? this.state.blob.ContentsString : ""} />
+					startLine={this.props.startLine}
+					startCol={this.props.startCol}
+					startByte={this.props.startByte}
+					endLine={this.props.endLine}
+					endCol={this.props.endCol}
+					endByte={this.props.endByte}
+					contents={this.props.blob ? this.props.blob.ContentsString : ""} />}
 			</div>
 		);
 	}

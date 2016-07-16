@@ -3,17 +3,15 @@
 import React from "react";
 import monaco from "sourcegraph/editor/init";
 
-global.HACK_vsGetWorkerUrl = (workerId: string, label: string): any => {
-	// Run the web worker from a webpack script that is in the bundle but that
-	// doesn't have its own separate URL.
-	//
-	// See http://stackoverflow.com/questions/10343913/how-to-create-a-web-worker-from-a-string and
-	// http://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file
-	// for more information about (and limitations of) this technique.
-
-	// $FlowHack
-	return require("worker?inline!vs/base/worker/workerMain");
-};
+// Run the web worker from a webpack script that is in the bundle but that
+// doesn't have its own separate URL.
+//
+// See http://stackoverflow.com/questions/10343913/how-to-create-a-web-worker-from-a-string and
+// http://stackoverflow.com/questions/5408406/web-workers-without-a-separate-javascript-file
+// for more information about (and limitations of) this technique.
+//
+// $FlowHack
+global.HACK_vsGetWorkerUrl = (workerId: string, label: string): any => require("worker?inline!vs/base/worker/workerMain");
 
 export default class Editor extends React.Component {
 	static propTypes = {
@@ -44,12 +42,17 @@ export default class Editor extends React.Component {
 
 			wrappingColumn: 0,
 			wrappingIndent: "indent",
+
+			theme: "vs",
 		});
+		/* this._editor.onDidChangeCursorSelection((e) => {
+			console.log(e);
+		});*/
 
 		// For easy debugging via the JavaScript console.
 		window.editor = this._editor;
 
-		if (this.props.startByte || this.props.endByte) this._setActiveRange(this.props.startByte, this.props.endByte);
+		if (this.props.startByte || this.props.endByte)	this._setActiveRange(this.props.startByte, this.props.endByte);
 	}
 
 	componentWillReceiveProps(nextProps: any) {
@@ -73,11 +76,10 @@ export default class Editor extends React.Component {
 	_setActiveRange(startByte: number, endByte: number) {
 		const start = this._model.getPositionAt(startByte);
 		const end = this._model.getPositionAt(endByte);
-		// TODO(sqs): maybe need setTimeout
-		this._editor.setActiveRange(new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column));
-		this._editor.revealRange(new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column));
+		this._editor.setSelection(new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column));
+		this._editor.revealRangeInCenterIfOutsideViewport(new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column));
 	}
-	
+
 	render() {
 		return <div className={this.props.className} ref={(e) => this._elem = e} />;
 	}

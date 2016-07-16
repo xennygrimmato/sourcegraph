@@ -127,7 +127,7 @@ function blobLoader(Component) {
 const BlobComponent = (props, {features}) => {
 	const C = features.ExpUniverse ? BlobMainExpUniverse : BlobMain;
 	return <C {...props} />;
-}
+};
 BlobComponent.contextTypes = {features: React.PropTypes.object.isRequired};
 
 export default (
